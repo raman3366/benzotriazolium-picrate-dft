@@ -5,14 +5,22 @@
 - Source: T. Dhanabal, G. Amirthaganesan, M. Dhandapani and S. K. Das, *Optik* 124 (2013) 1966–1970,
   doi:10.1016/j.ijleo.2012.06.018; deposition CCDC 835950, doi:10.5517/ccx1w4y.
 - The CIF is not included (the CCDC licence does not allow redistribution of CSD data). Download it free of charge
-  from the CCDC (https://www.ccdc.cam.ac.uk/structures/), save it here as `BTPC.cif` (the file name is written into
-  the rebuilt geometry, so keep it), and check it against the copy the calculations used:
+  from the CCDC (https://www.ccdc.cam.ac.uk/structures/) and save it here as `BTPC.cif` (the file name is written
+  into the rebuilt geometry, so keep it). The scripts look for `structure/BTPC.cif`; the environment variable
+  `BTPC_CIF` can name another location.
+- Your copy will not have the SHA-256 of the copy the calculations used. The CCDC writes the download date into
+  every CIF it serves (`_audit_update_record`; the copy used here reads "2011-07-21 deposited with the CCDC." and
+  "2026-06-25 downloaded from the CCDC." on one line), and that copy has CRLF line ends. Compare the content
+  without the download line and the carriage returns instead:
 
   ```
-  sha256  17065c7ac118c838b386de8448cb7d631073c64e02cd2cd4d7e929e34c5349b5  BTPC.cif
+  tr -d '\r' < BTPC.cif | grep -v 'downloaded from the CCDC' | sha256sum
+  9d93fe1c427457780670219100894a7ff2b48af9050038d552bc9e82104c67d9   (expected)
+  17065c7ac118c838b386de8448cb7d631073c64e02cd2cd4d7e929e34c5349b5   (sha256 of the copy used, as downloaded)
   ```
 
-  The scripts look for `structure/BTPC.cif`; the environment variable `BTPC_CIF` can name another location.
+  This comparison is a guide only: `scripts/reproduce.sh` reports it but does not stop on it. The check that counts
+  is the rebuilt ion pair below, whose SHA-256 does not depend on the download date or the line ends.
 
 ## Hydrogen-bonded ion pair (33 atoms)
 
@@ -37,7 +45,8 @@ python scripts/dft/curate_cases.py
 ```
 
 The first command writes `structure/btpc_cluster.xyz` (Cartesian X-ray coordinates of the pair, Å) and a draft case
-file `structure/btpc_gas.json`; the second adds the names, planes and notes. Expected results:
+file `structure/btpc_gas.json`; the second adds the names, planes and notes. Expected results (the same with a CIF
+of another download date or with LF line ends):
 
 ```
 sha256  dfa71f6f1a4b15cf9b9f8f4cf4240f88ef284b073fef5971cfe9c3e5a0f95476  structure/btpc_cluster.xyz

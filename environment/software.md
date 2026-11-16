@@ -55,7 +55,7 @@ phase and for the IEF-PCM check in `freq_step0.005.json`, is 0.005 Bohr.
 | NumPy, SciPy, matplotlib | 2.5.3, 1.18.1, 3.11.2 |
 | PyVista, VTK | 0.49.0, 9.7.0 |
 | gemmi, RDKit, scikit-image, pandas, Pillow | 0.7.5, 2026.3.6, 0.26.0, 3.0.6, 12.3.0 |
-| pandoc (only for `make_tables.py --check`) | 3.11 |
+| pandoc (only for `make_tables.py --check`) | 3.11; the check needs 3.11 or newer (older versions, such as 3.1.3, do not write the table ids it looks for) |
 | Liberation Sans (figure font; metric-compatible with Arial) | system package `fonts-liberation` |
 
 The full list is `environment/paper-requirements.txt`. The figure scripts look for the font files in

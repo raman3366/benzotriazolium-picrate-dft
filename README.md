@@ -114,7 +114,10 @@ The structure was determined by Dhanabal, Amirthaganesan, Dhandapani and Das, *O
 ([doi:10.5517/ccx1w4y](https://doi.org/10.5517/ccx1w4y)). The CIF is not redistributed here. Obtain it free of charge
 from the CCDC (https://www.ccdc.cam.ac.uk/structures/), save it as `structure/BTPC.cif`, and let
 `scripts/dft/build_cluster.py` rebuild the ion pair from it. `structure/README.md` gives the checksums of the CIF the
-calculations used and of the rebuilt geometry.
+calculations used and of the rebuilt geometry. A fresh download will not match the CIF checksum byte for byte: the
+CCDC writes the download date into each CIF it serves, and the copy used here has CRLF line ends.
+`structure/README.md` shows how to compare the content; the checksum of the rebuilt ion pair is the check that
+counts.
 
 ## How to cite
 

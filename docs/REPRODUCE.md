@@ -8,8 +8,10 @@ Run everything from the repository root.
 ## Level A: check, rebuild the numbers and the tables (minutes)
 
 Requirements: Linux or macOS, `xz`, `sha256sum`, Python 3.12 with the packages of
-`environment/paper-requirements.txt` (no PySCF needed), and the CIF of CCDC 835950. pandoc 3.11 is optional (for the
-pandoc part of `make_tables.py --check`).
+`environment/paper-requirements.txt` (no PySCF needed), and the CIF of CCDC 835950. pandoc 3.11 or newer is
+optional (for the pandoc part of `make_tables.py --check`). Older versions, such as 3.1.3 (the Ubuntu 24.04 package),
+do not write the table ids the check looks for, so `reproduce.sh` runs `--check` only with pandoc 3.11 or newer;
+with an older pandoc, or none, it builds the tables without the pandoc checks and prints a note.
 
 ```sh
 python3.12 -m venv .venv && .venv/bin/pip install -r environment/paper-requirements.txt
@@ -18,19 +20,31 @@ python3.12 -m venv .venv && .venv/bin/pip install -r environment/paper-requireme
 PYTHON=.venv/bin/python scripts/reproduce.sh
 ```
 
+**Your CIF will not have the SHA-256 of the copy used here.** The CCDC writes the download date into every CIF it
+serves (`_audit_update_record`; the copy used here reads "2011-07-21 deposited with the CCDC." and "2026-06-25
+downloaded from the CCDC." on one line), and that copy has CRLF line ends. `reproduce.sh` therefore only reports how
+the CIF compares: identical to the copy used (SHA-256 `17065c7a…5349b5`), the same apart from the download line and
+the line ends (SHA-256 `9d93fe1c…4c67d9` after removing the line with "downloaded from the CCDC" and the carriage
+returns), or different (a warning). It does not stop there. The checks that count come next: the rebuilt ion pair
+`structure/btpc_cluster.xyz` must have SHA-256 `dfa71f6f…f95476`, and the rebuilt case file must be identical to
+`cases/btpc_gas.json`.
+
 `scripts/reproduce.sh` runs these steps; each can also be run by hand:
 
 ```sh
 sha256sum -c SHA256SUMS                                   # every line "OK"
 scripts/unpack_grids.sh                                   # xz -dk calculations/*/grids/*.xz, checked against docs/grids.sha256
-echo "17065c7ac118c838b386de8448cb7d631073c64e02cd2cd4d7e929e34c5349b5  structure/BTPC.cif" | sha256sum -c
+tr -d '\r' < structure/BTPC.cif | grep -v 'downloaded from the CCDC' | sha256sum
+#   a guide only (see above): 9d93fe1c427457780670219100894a7ff2b48af9050038d552bc9e82104c67d9
 python scripts/dft/build_cluster.py structure/BTPC.cif btpc --title Benzotriazolium-picrate
+echo "dfa71f6f1a4b15cf9b9f8f4cf4240f88ef284b073fef5971cfe9c3e5a0f95476  structure/btpc_cluster.xyz" | sha256sum -c
 python scripts/dft/curate_cases.py                        # then: cmp structure/btpc_gas.json cases/btpc_gas.json
 ref=$(mktemp) && cp analysis/facts.json "$ref"
 python scripts/analysis/build_facts.py                    # rewrites analysis/facts.json and analysis/derived/
 python scripts/tools/compare_facts.py "$ref" analysis/facts.json
 python scripts/analysis/build_facts_md.py                 # rewrites analysis/facts.md
-python scripts/tables/make_tables.py --check              # rewrites tables/*.md (PANDOC=/path/to/pandoc if needed)
+python scripts/tables/make_tables.py --check              # rewrites tables/*.md; --check needs pandoc >= 3.11
+                                                          # (PANDOC=/path/to/pandoc); with an older one, omit --check
 python scripts/tables/tables_to_csv.py                    # rewrites tables/*.csv
 sha256sum -c SHA256SUMS                                   # the rebuilt files must still be "OK"
 ```
@@ -42,7 +56,8 @@ file, the unpacked grids and `.layout/` are git-ignored.
 ### Expected outputs
 
 Recorded on 16 Nov 2026 (IST) on a 4-core ARM64 machine (Raspberry Pi 5) with Python 3.12.3 and the packages of
-`environment/paper-requirements.txt`, pandoc 3.11, and the CIF of SHA-256 `17065c7a…5349b5`:
+`environment/paper-requirements.txt`, pandoc 3.11, and the CIF the calculations used (downloaded on 25 Jun 2026,
+SHA-256 `17065c7a…5349b5`):
 
 1. **Ion pair from the CIF** (`build_cluster.py`):
 
@@ -54,7 +69,10 @@ Recorded on 16 Nov 2026 (IST) on a 4-core ARM64 machine (Raspberry Pi 5) with Py
    dfa71f6f1a4b15cf9b9f8f4cf4240f88ef284b073fef5971cfe9c3e5a0f95476  structure/btpc_cluster.xyz
    ```
 
-   `curate_cases.py` then writes `structure/btpc_gas.json` byte-identical to `cases/btpc_gas.json`.
+   `curate_cases.py` then writes `structure/btpc_gas.json` byte-identical to `cases/btpc_gas.json`. Copies of the
+   CIF with another download date, with and without the carriage returns, gave the same ion pair, case file, facts
+   register, tables and checksums (16 Nov 2026); `reproduce.sh` reports such a copy as "same content as the copy the
+   calculations used (download date or line ends differ)".
 2. **Facts register** (`build_facts.py`): "wrote 1007 facts" after about 28 s. `analysis/facts.json` and the three CSV
    files in `analysis/derived/` come out byte-identical to the deposited ones (also with a different
    `PYTHONHASHSEED`); `compare_facts.py` reports "1007 / 1007 keys; 0 values differ". `build_facts_md.py` rewrites
@@ -62,7 +80,8 @@ Recorded on 16 Nov 2026 (IST) on a 4-core ARM64 machine (Raspberry Pi 5) with Py
 3. **Tables** (`make_tables.py --check`): 17 tables (main Tables 1–7, SI Tables S1–S10) and `INDEX.md`, all
    byte-identical to the deposited files; the pandoc checks pass (HTML for every table, DOCX for `tbl_geometry`,
    cross-references numbered 1–7 and S1–S10). The check of the main-table order against the built manuscript is
-   skipped, because the manuscript build is not deposited.
+   skipped, because the manuscript build is not deposited. With pandoc 3.1.3 on the PATH, `reproduce.sh` builds
+   the same tables without the pandoc checks and says so.
 4. **Checksums**: `sha256sum -c SHA256SUMS` reports OK for all 282 files, before and after the rebuild.
 
 The register in the project workspace held the same 1007 values; four text values differ only by the substitutions
