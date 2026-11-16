@@ -1,0 +1,26 @@
+[freq] 16 finite-difference workers x 2 threads (load 12.8 on 48 cores, reserving 2)
+
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+converged SCF energy = -1317.20823093817
+[freq] SCF E = -1317.20823094 Ha (100 s); 606 basis functions, 33 atoms
+[freq] parallel finite differences: 99 columns (198 gradients) over 16 workers x 2 threads
+[freq] worker 1/16 finished (exit 0, 133.3 min elapsed)
+[freq] worker 2/16 finished (exit 0, 135.1 min elapsed)
+[freq] worker 3/16 finished (exit 0, 149.3 min elapsed)
+[freq] worker 4/16 finished (exit 0, 149.3 min elapsed)
+[freq] worker 5/16 finished (exit 0, 149.3 min elapsed)
+[freq] worker 6/16 finished (exit 0, 149.3 min elapsed)
+[freq] worker 7/16 finished (exit 0, 149.3 min elapsed)
+[freq] worker 8/16 finished (exit 0, 149.3 min elapsed)
+[freq] worker 9/16 finished (exit 0, 149.3 min elapsed)
+[freq] worker 10/16 finished (exit 0, 149.3 min elapsed)
+[freq] worker 11/16 finished (exit 0, 149.3 min elapsed)
+[freq] worker 12/16 finished (exit 0, 149.3 min elapsed)
+[freq] worker 13/16 finished (exit 0, 149.3 min elapsed)
+[freq] worker 14/16 finished (exit 0, 149.3 min elapsed)
+[freq] worker 15/16 finished (exit 0, 149.3 min elapsed)
+[freq] worker 16/16 finished (exit 0, 149.3 min elapsed)
+[freq] translation/rotation residual: 0.00 cm-1 (should be << 1)
+[freq] 93 modes, lowest: [12.2 21.5 41.6 52.6 53.8 56.6] cm-1; imaginary = 0 (TRUE MINIMUM); Hessian took 149.3 min

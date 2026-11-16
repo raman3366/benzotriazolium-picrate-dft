@@ -1,0 +1,7 @@
+[run_case] btpc_pcm  threads=4  mem=12000MB  fd=12x2  2026-09-17T13:51:24+00:00
+[pipeline] frequencies: done (350.7 min) 
+[pipeline] fmo: done (18.9 min) 
+[pipeline] mwfn: done (1.9 min) 
+[pipeline] plots: done (0.1 min) 
+[pipeline] render: done (0.4 min) 
+[pipeline] report: done (0.0 min) 

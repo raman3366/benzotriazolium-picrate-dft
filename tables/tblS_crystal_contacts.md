@@ -1,0 +1,15 @@
+| D–H···A      | Acceptor at                  | *d*(D–H) (Å) | *d*(H···A) (Å) | *d*(D···A) (Å) | ∠D–H···A (°) | Between the modelled ions |
+|:-------------|:-----------------------|-------:|---------:|---------:|---------:|:---------|
+| N4–H4N···O1  | *x* − 1, −*y* + ½, *z* − ½   |        0.907 |          1.775 |          2.623 |        154.5 | yes                       |
+| N6–H6N···O6  | −*x* + 1, −*y* + 1, −*z* + 1 |        0.832 |          2.103 |          2.885 |        156.5 | no                        |
+| N4–H4N···O7  | *x* − 1, −*y* + ½, *z* − ½   |        0.907 |          2.301 |          2.901 |        123.3 | yes                       |
+| N6–H6N···N3  | −*x* + 1, −*y* + 1, −*z* + 1 |        0.832 |          2.865 |          3.583 |        145.6 | no                        |
+| C5–H5···O6   | *x*, *y*, *z* (same ion)     |        0.808 |          2.301 |          2.637 |        105.7 | –                         |
+| C3–H3···O3   | *x*, *y*, *z* (same ion)     |        0.922 |          2.318 |          2.641 |        100.2 | –                         |
+| C9–H9···O5   | *x*, −*y* + ³⁄₂, *z* − ½     |        0.895 |          2.538 |          3.339 |        149.1 | no                        |
+| C5–H5···O5   | −*x* + 1, −*y* + 1, −*z* + 1 |        0.808 |          2.797 |          3.372 |        129.9 | no                        |
+| C11–H11···O2 | *x* − 1, −*y* + ½, *z* − ½   |        0.961 |          2.863 |          3.806 |        167.2 | yes                       |
+| C11–H11···O4 | −*x*, −*y* + 1, −*z*         |        0.961 |          2.875 |          3.482 |        122.0 | no                        |
+| C10–H10···O3 | −*x*, −*y* + 1, −*z*         |        0.959 |          2.896 |          3.732 |        146.3 | no                        |
+
+Table: All contacts X–H···A (A = N, O) of the *P*2~1~/*c* crystal structure of benzotriazolium picrate with H···A < 2.9 Å and D–H···A > 100°. Derived from the deposited coordinates and the four symmetry operations of *P*2~1~/*c* (search: H···A < 2.9 Å, D–H···A > 100°, N and O acceptors, all images within ±2 cells); the donor is at *x*, *y*, *z* and the acceptor position is given. C5–H5···O6 and C3–H3···O3 are contacts within one picrate with angles near 100°, not hydrogen bonds (both atoms of each belong to the modelled picrate). X-ray X–H lengths are short, so *d*(D···A) is the reliable quantity. {#tbl:tblS_crystal_contacts}

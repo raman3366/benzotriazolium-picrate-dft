@@ -1,0 +1,12 @@
+Quantity,Gas phase,IEF-PCM (water)
+"ELF range, picrate plane",0.0000–1.0000,0.0000–1.0000
+"ELF range, cation plane",0.0000–1.0000,0.0000–1.0000
+ELF at the picrate ring centroid,0.022,0.022
+ELF at the benzo ring centroid,0.022,0.022
+ELF at the triazole ring centroid,0.049,0.048
+"LOL range, picrate plane",0.0011–0.9694,0.0011–0.9664
+"LOL range, cation plane",0.0002–0.9816,0.0002–0.9788
+LOL at the picrate ring centroid,0.130,0.129
+LOL at the benzo ring centroid,0.131,0.131
+LOL at the triazole ring centroid,0.184,0.183
+Distance of O1 from the cation plane (Å),-0.153,-0.362

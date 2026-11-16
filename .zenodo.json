@@ -1,0 +1,63 @@
+{
+  "title": "Benzotriazolium picrate (BTPC): B3LYP/6-311++G(d,p) data on the N4–H4N···O1 ion pair in the gas phase and in IEF-PCM water (geometries, Hessians, wavefunctions, wavefunction analyses and scripts)",
+  "upload_type": "dataset",
+  "description": "<p>Data and scripts for a density functional study of the benzotriazolium picrate ion pair (BTPC; CCDC 835950). The ion pair held together by the charge-assisted N4–H4N···O1 hydrogen bond was rebuilt by symmetry from the crystal structure and optimised at B3LYP/6-311++G(d,p) with PySCF 2.14.0 and geomeTRIC 1.1.1, once in the gas phase and once in an IEF-PCM continuum for water.</p><p>Contents: the specification and builder of the ion pair; one settings file per calculation; starting, optimised and trajectory geometries; finite-difference Hessians and harmonic analyses; PySCF checkpoint and Molden wavefunctions; frontier-orbital, molecular electrostatic potential, NCI, ELF and LOL outputs from Multiwfn 2026.9.13 with their grids (xz-compressed); run logs; the register of every number in the associated paper (facts.json) with the scripts that rebuild it; the tables and figures of the paper; and the pinned software environments. The crystal structure itself (Dhanabal et al., Optik 2013) is not redistributed; obtain it from the CCDC.</p><p>Code (scripts/): MIT License. Data and documentation: CC BY 4.0 (see LICENSE and LICENSE-DATA).</p>",
+  "creators": [
+    {
+      "name": "Lasalle, B. Sahaya Infant",
+      "affiliation": "Department of Physics, SSN Research Centre, Sri Sivasubramaniya Nadar College of Engineering, Kalavakkam 603110, Tamil Nadu, India"
+    },
+    {
+      "name": "Lakshmipathi, Anantha Raman",
+      "affiliation": "Department of Mechanical Engineering, Rajalakshmi Institute of Technology, Chennai 600124, India",
+      "orcid": "0000-0003-3465-286X"
+    },
+    {
+      "name": "Pandian, Muthu Senthil",
+      "affiliation": "Department of Physics, SSN Research Centre, Sri Sivasubramaniya Nadar College of Engineering, Kalavakkam 603110, Tamil Nadu, India"
+    },
+    {
+      "name": "Varaddharajan, Venkatramanan",
+      "affiliation": "Department of Biotechnology, PSG College of Technology, Coimbatore, Tamil Nadu, India"
+    },
+    {
+      "name": "Saravanakkumar, D.",
+      "affiliation": "PG and Research Department of Physics, Thiagarajar College (Autonomous), Madurai 625009, Tamil Nadu, India"
+    },
+    {
+      "name": "Selvarani, S.",
+      "affiliation": "PG and Research Department of Zoology, Thiagarajar College (Autonomous), Madurai 625009, Tamil Nadu, India"
+    }
+  ],
+  "license": "cc-by-4.0",
+  "access_right": "open",
+  "keywords": [
+    "benzotriazolium picrate",
+    "CCDC 835950",
+    "proton-transfer salt",
+    "charge-assisted hydrogen bond",
+    "density functional theory",
+    "polarisable continuum model",
+    "IEF-PCM",
+    "B3LYP",
+    "Hessian",
+    "Multiwfn",
+    "noncovalent interactions"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "10.5517/ccx1w4y",
+      "relation": "references",
+      "scheme": "doi",
+      "resource_type": "dataset"
+    },
+    {
+      "identifier": "10.1016/j.ijleo.2012.06.018",
+      "relation": "references",
+      "scheme": "doi",
+      "resource_type": "publication-article"
+    }
+  ],
+  "language": "eng",
+  "notes": "Contact for the DFT data: Anantha Raman Lakshmipathi (raman3366@gmail.com). Version number, paper reference and DOI are set at release."
+}

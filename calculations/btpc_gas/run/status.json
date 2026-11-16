@@ -1,0 +1,63 @@
+{
+  "case": "btpc_gas",
+  "stages": {
+    "optimize": {
+      "status": "done",
+      "start": "2026-09-16T12:05:34",
+      "end": "2026-09-16T12:19:52",
+      "wall_min": 14.31,
+      "note": ""
+    },
+    "proton_check": {
+      "status": "done",
+      "start": "2026-09-16T14:37:28",
+      "end": "2026-09-16T14:37:28",
+      "wall_min": 0.0,
+      "note": "ionic form retained"
+    },
+    "frequencies": {
+      "status": "done",
+      "start": "2026-09-16T19:02:05",
+      "end": "2026-09-16T21:33:01",
+      "wall_min": 150.94,
+      "note": ""
+    },
+    "fmo": {
+      "status": "done",
+      "start": "2026-09-16T21:33:01",
+      "end": "2026-09-16T22:02:54",
+      "wall_min": 29.89,
+      "note": ""
+    },
+    "mwfn": {
+      "status": "done",
+      "start": "2026-09-16T22:02:54",
+      "end": "2026-09-16T22:04:59",
+      "wall_min": 2.08,
+      "note": ""
+    },
+    "plots": {
+      "status": "done",
+      "start": "2026-09-16T22:04:59",
+      "end": "2026-09-16T22:05:08",
+      "wall_min": 0.15,
+      "note": ""
+    },
+    "render": {
+      "status": "done",
+      "start": "2026-09-16T22:05:08",
+      "end": "2026-09-16T22:05:50",
+      "wall_min": 0.7,
+      "note": ""
+    },
+    "report": {
+      "status": "done",
+      "start": "2026-09-17T00:31:37",
+      "end": "2026-09-17T00:31:37",
+      "wall_min": 0.02,
+      "note": ""
+    }
+  },
+  "pipeline_start": "2026-09-16T12:05:34",
+  "pipeline_end": "2026-09-16T22:05:51"
+}

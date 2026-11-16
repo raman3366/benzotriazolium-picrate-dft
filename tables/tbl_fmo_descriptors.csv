@@ -1,0 +1,20 @@
+Quantity,Gas phase,IEF-PCM (water)
+EHOMO (eV),-6.818,-6.903
+ELUMO (eV),-3.342,-3.167
+ΔEgap (eV),3.476,3.735
+Character of the HOMO–LUMO gap,picrate → cation,within the picrate
+IP (eV),6.818,6.903
+EA (eV),3.342,3.167
+χ (eV),5.080,5.035
+μ (eV),-5.080,-5.035
+η (eV),1.738,1.868
+S (eV⁻¹),0.288,0.268
+ω (eV),7.424,6.787
+Picrate share of the HOMO (%),99.4,99.9
+Picrate share of the LUMO (%),0.4,99.9
+Picrate → cation gap (eV),3.476,4.332
+Gap within the picrate (eV),3.922,3.735
+Gap within the cation (eV),5.059,4.988
+Dipole moment (D),16.36,23.79
+Mulliken charge of the picrate (e),-0.881,-1.000
+Löwdin charge of the picrate (e),-0.722,-0.853

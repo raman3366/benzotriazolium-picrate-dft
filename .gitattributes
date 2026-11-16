@@ -1,0 +1,11 @@
+# Binary data: never diffed or converted
+*.xz binary
+*.npy binary
+*.npz binary
+*.chk binary
+*.png binary
+*.pdf binary
+# Text data: LF line endings on every platform
+*.molden text eol=lf
+*.xyz text eol=lf
+*.cube text eol=lf

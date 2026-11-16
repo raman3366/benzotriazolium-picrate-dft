@@ -1,0 +1,2 @@
+[run_case] btpc_pcm  threads=10  mem=12000MB  fd=10x2  2026-09-18T16:02:46+00:00
+[pipeline] frequencies: done (348.4 min) 

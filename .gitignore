@@ -1,0 +1,14 @@
+# Made by the scripts; not part of the dataset (see docs/REPRODUCE.md)
+/.layout/
+/structure/*.cif
+/structure/*.xyz
+/structure/*.json
+/calculations/*/grids/*.cube
+/calculations/*/grids/*.txt
+/results/
+/scratch/
+/logs/
+/tools/
+/figures/build/
+/tables/build/
+__pycache__/

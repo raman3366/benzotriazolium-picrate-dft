@@ -1,0 +1,34 @@
+- 2026-09-16 14:37  === pipeline started for btpc_pcm (from stage 'optimize') ===
+- 2026-09-16 14:37  reused existing preopt.xyz (pre-optimisation skipped)
+- 2026-09-16 14:37  optimisation started from preopt.xyz; solvent=water
+- 2026-09-17 04:02  optimisation accepted on negligible forces (rms 1.40e-04, max 3.85e-04) after 70 steps; minimum to be confirmed by frequencies
+- 2026-09-17 04:02  === pipeline started for btpc_pcm (from stage 'proton_check') ===
+- 2026-09-17 04:02  proton check: H-N 1.053 A, H-O 1.635 A -> proton retained on the donor; bonds broken none, formed none
+- 2026-09-17 04:02  frequencies: waiting for the machine-wide frequency lock (another case is running)
+- 2026-09-17 12:16  frequencies: holding the machine-wide lock
+- 2026-09-17 12:21  Hessian by parallel finite differences: 198 gradients, 19 workers x 2 threads
+- 2026-09-17 12:48  frequencies FAILED: exit code 1, see logs/frequencies.log
+- 2026-09-17 12:55  FMO: HOMO -6.903 eV, LUMO -3.167 eV, gap 3.735 eV; fragment composition {'picrate anion': 99.9, 'benzotriazolium cation': 0.1} / {'picrate anion': 99.9, 'benzotriazolium cation': 0.1}
+- 2026-09-17 13:18  cubes written (ESP 64^3 in 23.5 min)
+- 2026-09-17 13:51  === pipeline started for btpc_pcm (from stage 'frequencies') ===
+- 2026-09-17 13:51  frequencies: holding the machine-wide lock
+- 2026-09-17 13:56  Hessian by parallel finite differences: 198 gradients, 12 workers x 2 threads
+- 2026-09-17 19:42  frequency projection disagreed with PySCF; using projected set (1 imaginary vs 0 reported)
+- 2026-09-17 19:42  frequencies (finite-difference (gradients, step 0.005 Bohr, 12 workers x 2 threads)): 1 imaginary, lowest -2.5 cm-1, 346 min
+- 2026-09-17 19:46  FMO: HOMO -6.903 eV, LUMO -3.167 eV, gap 3.735 eV; fragment composition {'picrate anion': 99.9, 'benzotriazolium cation': 0.1} / {'picrate anion': 99.9, 'benzotriazolium cation': 0.1}
+- 2026-09-17 19:46  molden padded from 603 to 606 MOs for Multiwfn compatibility
+- 2026-09-17 20:01  cubes written (ESP 64^3 in 14.7 min)
+- 2026-09-17 20:01  MEP surface: min -0.083806 a.u., max 0.1719 a.u.; 9 minima, 18 maxima
+- 2026-09-17 20:02  NCI: 1771560 grid points, 6 RDG spikes with RDG<0.3
+- 2026-09-17 20:02  ELF plane data written for ['picrate_ring', 'benzotriazolium_ring']
+- 2026-09-17 20:02  LOL plane data written for ['picrate_ring', 'benzotriazolium_ring']
+- 2026-09-17 20:03  RESULTS.md assembled
+- 2026-09-17 20:03  === pipeline finished for btpc_pcm ===
+- 2026-09-18 15:03  frequencies: waiting for the machine-wide frequency lock (another case is running)
+- 2026-09-18 15:41  frequencies: holding the machine-wide lock
+- 2026-09-18 15:43  Hessian by parallel finite differences: 198 gradients, 10 workers x 2 threads
+- 2026-09-18 16:02  frequencies: holding the machine-wide lock
+- 2026-09-18 16:05  Hessian by parallel finite differences: 198 gradients, 10 workers x 2 threads
+- 2026-09-18 21:51  frequency projection disagreed with PySCF; using projected set (1 imaginary vs 0 reported)
+- 2026-09-18 21:51  frequencies (finite-difference (gradients, step 0.01 Bohr, 10 workers x 2 threads)): 1 imaginary, lowest -3.2 cm-1, 346 min
+- 2026-09-19 17:53  RESULTS.md assembled

@@ -1,0 +1,30 @@
+- 2026-09-16 12:05  === pipeline started for btpc_gas (from stage 'optimize') ===
+- 2026-09-16 12:05  reused existing preopt.xyz (pre-optimisation skipped)
+- 2026-09-16 12:05  optimisation started from preopt.xyz; solvent=none (gas phase)
+- 2026-09-16 12:19  optimisation converged in 3 steps, 14.3 min, E = -1317.20823094 Ha
+- 2026-09-16 12:19  proton check: H-N 1.109 A, H-O 1.437 A -> proton retained on the donor; bonds broken none, formed none
+- 2026-09-16 12:19  frequencies: waiting for the machine-wide frequency lock (another case is running)
+- 2026-09-16 13:59  frequencies: holding the machine-wide lock
+- 2026-09-16 14:00  === pipeline started for btpc_gas (from stage 'proton_check') ===
+- 2026-09-16 14:00  proton check: H-N 1.109 A, H-O 1.437 A -> proton retained on the donor; bonds broken none, formed none
+- 2026-09-16 14:00  frequencies: waiting for the machine-wide frequency lock (another case is running)
+- 2026-09-16 14:35  frequencies: holding the machine-wide lock
+- 2026-09-16 14:37  === pipeline started for btpc_gas (from stage 'proton_check') ===
+- 2026-09-16 14:37  proton check: H-N 1.109 A, H-O 1.437 A -> proton retained on the donor; bonds broken none, formed none
+- 2026-09-16 14:37  frequencies: waiting for the machine-wide frequency lock (another case is running)
+- 2026-09-16 16:28  frequencies: holding the machine-wide lock
+- 2026-09-16 16:31  analytic Hessian attempted (606 basis functions)
+- 2026-09-16 19:02  === pipeline started for btpc_gas (from stage 'frequencies') ===
+- 2026-09-16 19:02  frequencies: holding the machine-wide lock
+- 2026-09-16 19:03  Hessian by parallel finite differences: 198 gradients, 16 workers x 2 threads
+- 2026-09-16 21:33  frequencies (finite-difference (gradients, step 0.005 Bohr, 16 workers x 2 threads)): 0 imaginary, lowest 12.2 cm-1, 149 min
+- 2026-09-16 21:33  FMO: HOMO -6.818 eV, LUMO -3.342 eV, gap 3.476 eV; fragment composition {'picrate anion': 99.4, 'benzotriazolium cation': 0.6} / {'picrate anion': 0.4, 'benzotriazolium cation': 99.6}
+- 2026-09-16 22:02  cubes written (ESP 64^3 in 28.7 min)
+- 2026-09-16 22:03  MEP surface: min None a.u., max None a.u.; 0 minima, 0 maxima
+- 2026-09-16 22:04  NCI: 1764000 grid points, 9 RDG spikes with RDG<0.3
+- 2026-09-16 22:04  ELF plane data written for ['picrate_ring', 'benzotriazolium_ring']
+- 2026-09-16 22:04  LOL plane data written for ['picrate_ring', 'benzotriazolium_ring']
+- 2026-09-16 22:05  report FAILED: exit code 1, see logs/report.log
+- 2026-09-16 22:05  === pipeline finished for btpc_gas ===
+- 2026-09-17 00:31  MEP surface: min -0.063193 a.u., max 0.130579 a.u.; 10 minima, 17 maxima
+- 2026-09-17 00:31  RESULTS.md assembled

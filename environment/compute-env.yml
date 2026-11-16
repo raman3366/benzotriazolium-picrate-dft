@@ -1,0 +1,23 @@
+# Conda environment of the DFT runs (PySCF, geomeTRIC) and of the Multiwfn and rendering driver scripts in
+# scripts/dft/. Linux x86-64, conda-forge. The pinned versions are the ones recorded for the reported runs:
+#   PySCF 2.14.0     Molden header "made by pyscf v[2.14.0]" (calculations/*/wavefunction/final.molden)
+#   geomeTRIC 1.1.1  banner of calculations/*/run/logs/optimize.log
+#   Python 3.11.16, NumPy 2.4.6, SciPy 1.17.1, matplotlib 3.11.1   conda package list of the run environment
+# RDKit, gemmi, pypdf and python-docx were installed without a recorded version; the calculations do not use
+# them. The libxc version inside the PySCF build was not recorded.
+# scripts/setup_linux.sh creates this environment in tools/env with micromamba.
+name: btpc-dft
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11.16
+  - pyscf=2.14.0
+  - geometric=1.1.1
+  - numpy=2.4.6
+  - scipy=1.17.1
+  - matplotlib=3.11.1
+  - h5py
+  - rdkit
+  - gemmi
+  - pypdf
+  - python-docx

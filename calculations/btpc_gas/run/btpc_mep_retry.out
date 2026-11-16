@@ -1,0 +1,17 @@
+[mwfn] mep: 9 s (exit 174)
+[mwfn] MEP attempt failed (mep: exit 174, SIGSEGV, missing ['surfanalysis.txt']); retrying with a different ESP routine
+[mwfn] mep: 8 s (exit 174, esp_code=3)
+[mwfn] MEP attempt failed (mep: exit 174, SIGSEGV, missing ['surfanalysis.txt']); retrying with a different ESP routine
+[mwfn] mep: 871 s (exit 59, esp_code=1)
+[mwfn] MEP attempt failed (mep: exit 59); retrying with a different ESP routine
+Traceback (most recent call last):
+  File "<run-dir>/dft/mwfn.py", line 191, in <module>
+    {'mep': mep, 'meppost': mep_post, 'nci': nci, 'ncipost': nci_post, 'elf': lambda: plane(9, 'elf'), 'lol': lambda: plane(10, 'lol')}[w]()
+  File "<run-dir>/dft/mwfn.py", line 101, in mep
+    raise last
+  File "<run-dir>/dft/mwfn.py", line 94, in mep
+    txt = run(['12', '0', '1', '7', '-1', 'q'], 'mep', esp_code=code, expect=('surfanalysis.txt',))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<run-dir>/dft/mwfn.py", line 74, in run
+    raise MwfnFailure(f'{tag}: exit {rc}'
+MwfnFailure: mep: exit 59

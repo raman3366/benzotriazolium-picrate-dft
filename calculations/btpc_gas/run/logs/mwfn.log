@@ -1,0 +1,12 @@
+[mwfn] mep: 8 s
+[mwfn] MEP extrema: 0 | global min/max (a.u.): None None
+[mwfn] nci: 101 s
+[mwfn] NCI done; spikes: [(np.float64(-0.08649999999999991), 0.084066108, 391), (np.float64(-0.0824999999999999), 0.17961329, 409), (np.float64(-0.0804999999999999), 0.22279531, 424), (np.float64(-0.016499999999999848), 0.032006369, 3696), (np.float64(-0.010499999999999843), 0.1122033, 6697), (np.float64(-0.005499999999999838), 0.09675139, 12638), (np.float64(0.0045000000000001705), 0.12802483, 13691), (np.float64(0.013500000000000179), 0.039340101, 3870), (np.float64(0.04950000000000021), 0.25267266, 986)]
+[mwfn] elf_picrate_ring: 3 s
+[mwfn] elf plane picrate_ring: 300x300 points, range 0.000..1.000
+[mwfn] elf_benzotriazolium_ring: 3 s
+[mwfn] elf plane benzotriazolium_ring: 300x300 points, range 0.000..1.000
+[mwfn] lol_picrate_ring: 3 s
+[mwfn] lol plane picrate_ring: 300x300 points, range 0.001..0.969
+[mwfn] lol_benzotriazolium_ring: 3 s
+[mwfn] lol plane benzotriazolium_ring: 300x300 points, range 0.000..0.982

@@ -1,0 +1,124 @@
+{
+  "title": "Benzotriazolium picrate (BTZP), CCDC 835950 -- gas phase",
+  "xyz": "molecules/btpc/input/btpc_cluster.xyz",
+  "charge": 0,
+  "spin": 0,
+  "source_cif": "molecules/btpc/input/BTPC.cif",
+  "cif_labels": [
+    "O1",
+    "N3",
+    "O7",
+    "C6",
+    "C1",
+    "C2",
+    "C3",
+    "O6",
+    "C4",
+    "C5",
+    "N1",
+    "N2",
+    "O4",
+    "O5",
+    "O3",
+    "O2",
+    "H5",
+    "H3",
+    "N4#4_666",
+    "N6#4_666",
+    "C7#4_666",
+    "C12#4_666",
+    "N5#4_666",
+    "C11#4_666",
+    "C10#4_666",
+    "C9#4_666",
+    "C8#4_666",
+    "H11#4_666",
+    "H8#4_666",
+    "H10#4_666",
+    "H9#4_666",
+    "H4N#4_666",
+    "H6N#4_666"
+  ],
+  "fragments": {
+    "picrate anion": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "benzotriazolium cation": [
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32
+    ]
+  },
+  "hbonds": {
+    "N4#4_666-H4N#4_666...O1": [
+      18,
+      31,
+      0
+    ]
+  },
+  "distances": {
+    "N4#4_666...O1 (X-ray 2.623 A)": [
+      18,
+      0
+    ]
+  },
+  "planes": {
+    "picrate_ring": [
+      3,
+      8,
+      5
+    ],
+    "benzotriazolium_ring": [
+      18,
+      22,
+      20
+    ]
+  },
+  "cell": [
+    9.2349,
+    11.9272,
+    12.8848,
+    90.0,
+    97.859,
+    90.0
+  ],
+  "proton": {
+    "H": 31,
+    "donor_N": 18,
+    "acceptor_O": 0
+  },
+  "chemical_name": "1H-benzotriazol-1-ium 2,4,6-trinitrophenolate",
+  "formula": "C12H8N6O7",
+  "ccdc": 835950,
+  "source_doi": "10.1016/j.ijleo.2012.06.018",
+  "notes": "Ion pair assembled from the CIF by symmetry: picrate at 1_555, benzotriazolium at 4_666. The two moieties of the asymmetric unit are NOT hydrogen bonded to each other (their closest approach is O4...N5 2.99 A, and N5 carries no hydrogen), so the pair had to be rebuilt from a symmetry image. The resulting N4-H4N...O1 bond (1.775 A, 154.5 deg) is to the picrate phenolate oxygen, the expected charge-assisted contact in a picrate salt. The cation's second N-H (N6-H6N) donates to a further symmetry-related picrate and is therefore not represented here."
+}

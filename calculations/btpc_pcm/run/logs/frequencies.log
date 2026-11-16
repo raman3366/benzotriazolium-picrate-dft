@@ -1,0 +1,29 @@
+[freq] 10 finite-difference workers x 2 threads (load 15.4 on 48 cores, reserving 2)
+
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+
+
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+converged SCF energy = -1317.25368857058
+[freq] SCF E = -1317.25368857 Ha (144 s); 606 basis functions, 33 atoms
+[freq] parallel finite differences: 99 columns (198 gradients) over 10 workers x 2 threads
+[freq] worker 1/10 finished (exit 0, 337.4 min elapsed)
+[freq] worker 2/10 finished (exit 0, 346.0 min elapsed)
+[freq] worker 3/10 finished (exit 0, 346.0 min elapsed)
+[freq] worker 4/10 finished (exit 0, 346.0 min elapsed)
+[freq] worker 5/10 finished (exit 0, 346.0 min elapsed)
+[freq] worker 6/10 finished (exit 0, 346.0 min elapsed)
+[freq] worker 7/10 finished (exit 0, 346.0 min elapsed)
+[freq] worker 8/10 finished (exit 0, 346.0 min elapsed)
+[freq] worker 9/10 finished (exit 0, 346.0 min elapsed)
+[freq] worker 10/10 finished (exit 0, 346.0 min elapsed)
+[freq] NOTE: projected frequencies differ from PySCF. Using the projected set.
+[freq]   PySCF lowest 6   : [ 0. +3.2j  9. +0.j  24.6+0.j  39.8+0.j  50. +0.j  52.2+0.j ]
+[freq]   projected lowest 6: [-3.2  9.  24.6 39.8 50.  52.2]
+[freq] translation/rotation residual: 0.00 cm-1 (should be << 1)
+<run-dir>/dft/frequencies.py:184: ComplexWarning: Casting complex values to real discards the imaginary part
+  print(f'[freq] translation/rotation residual: {tr_res:.2f} cm-1 (should be << 1)', flush=True)
+[freq] 93 modes, lowest: [-3.2  9.  24.6 39.8 50.  52.2] cm-1; imaginary = 1 (NOT a minimum -- re-optimise); Hessian took 346.0 min

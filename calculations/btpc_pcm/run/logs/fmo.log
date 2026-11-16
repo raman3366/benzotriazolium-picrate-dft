@@ -1,0 +1,27 @@
+
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+
+
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+converged SCF energy = -1317.25368857059
+| Descriptor | Formula | Value |
+|---|---|---|
+| E(HOMO) |  | -6.9027 eV |
+| E(LUMO) |  | -3.1672 eV |
+| Energy gap | E(LUMO) - E(HOMO) | 3.7354 eV |
+| Ionization potential (IP) | -E(HOMO) | 6.9027 eV |
+| Electron affinity (EA) | -E(LUMO) | 3.1672 eV |
+| Electronegativity (chi) | (IP+EA)/2 | 5.0349 eV |
+| Chemical potential (mu) | -(IP+EA)/2 | -5.0349 eV |
+| Chemical hardness (eta) | (IP-EA)/2 | 1.8677 eV |
+| Chemical softness (S) | 1/(2 eta) | 0.2677 eV^-1 |
+| Electrophilicity index (omega) | mu^2/(2 eta) | 6.7866 eV |
+| Dipole moment |  | 23.7898 Debye |
+
+[fmo] molden: padding 3 linearly-dependent vectors with zeros (603 MOs -> 606) so Multiwfn sees a square coefficient matrix
+[fmo] wrote final.molden (input for Multiwfn)
+[fmo] orbital/density cubes done (11 s); ESP cube (the slow one, ~100x a density cube) ...
+[fmo] wrote homo/lumo/density cubes and the 64^3 ESP cube (882 s)

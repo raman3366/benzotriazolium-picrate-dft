@@ -1,0 +1,12 @@
+D,H,A,symmetry_code_of_A,symmetry_operation_of_A,D-H_A,H...A_A,D...A_A,D-H...A_deg,kind
+N4,H4N,O1,4_465,"x-1, -y+1/2, z-1/2",0.907,1.775,2.623,154.5,intermolecular
+N6,H6N,O6,3_666,"-x+1, -y+1, -z+1",0.832,2.103,2.885,156.5,intermolecular
+N4,H4N,O7,4_465,"x-1, -y+1/2, z-1/2",0.907,2.301,2.901,123.3,intermolecular
+N6,H6N,N3,3_666,"-x+1, -y+1, -z+1",0.832,2.865,3.583,145.6,intermolecular
+C5,H5,O6,1_555,"x, y, z",0.808,2.301,2.637,105.7,intramolecular
+C3,H3,O3,1_555,"x, y, z",0.922,2.318,2.641,100.2,intramolecular
+C9,H9,O5,4_575,"x, -y+3/2, z-1/2",0.895,2.538,3.339,149.1,intermolecular
+C5,H5,O5,3_666,"-x+1, -y+1, -z+1",0.808,2.797,3.372,129.9,intermolecular
+C11,H11,O2,4_465,"x-1, -y+1/2, z-1/2",0.961,2.863,3.806,167.2,intermolecular
+C11,H11,O4,3_565,"-x, -y+1, -z",0.961,2.875,3.482,122.0,intermolecular
+C10,H10,O3,3_565,"-x, -y+1, -z",0.959,2.896,3.732,146.3,intermolecular

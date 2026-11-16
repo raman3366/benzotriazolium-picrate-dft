@@ -1,0 +1,19 @@
+Quantity,Gas phase,IEF-PCM (water)
+E (Ha),-1317.20823094,-1317.25368856
+Finite-difference step of the Hessian (Bohr),0.005,0.01
+Imaginary modes,0,1
+Three lowest wavenumbers,"12.2, 21.5, 41.6","3.2i, 9.0, 24.6"
+Rigid-body share of these three modes,"0.991, 0.946, 0.806","0.999, 0.998, 0.940"
+Modes below 100 cm⁻¹,9,10a
+N4–H4N stretch (hydrogen-bonded),2167,2890
+N4–H4N in-plane bend,1276,1562
+N4–H4N out-of-plane wag,"1172, 1198","960, 963"
+N6–H6N stretch (free),3633,3578
+N6–H6N in-plane bend,1437,1433
+N6–H6N out-of-plane wags,"590, 689","639, 695"
+ν(N6–H6N) - ν(N4–H4N),1465,689
+Zero-point energy (kcal mol⁻¹),136.01,136.38
+H - E (kcal mol⁻¹),149.58,149.57
+G - E (kcal mol⁻¹),102.18,102.84
+"S, harmonic (cal mol⁻¹ K⁻¹)",159.0,156.7
+"S, quasi-RRHO (cal mol⁻¹ K⁻¹)b",147.3,145.3

@@ -1,0 +1,73 @@
+cff-version: 1.2.0
+message: "If you use this data or code, please cite it as below."
+type: dataset
+title: "Benzotriazolium picrate (BTPC): B3LYP/6-311++G(d,p) data on the N4–H4N···O1 ion pair in the gas phase and in IEF-PCM water (geometries, Hessians, wavefunctions, wavefunction analyses and scripts)"
+authors:
+  - family-names: "Lasalle"
+    given-names: "B. Sahaya Infant"
+    affiliation: "Department of Physics, SSN Research Centre, Sri Sivasubramaniya Nadar College of Engineering, Kalavakkam 603110, Tamil Nadu, India"
+  - family-names: "Lakshmipathi"
+    given-names: "Anantha Raman"
+    affiliation: "Department of Mechanical Engineering, Rajalakshmi Institute of Technology, Chennai 600124, India"
+    orcid: "https://orcid.org/0000-0003-3465-286X"
+    email: "raman3366@gmail.com"
+  - family-names: "Pandian"
+    given-names: "Muthu Senthil"
+    affiliation: "Department of Physics, SSN Research Centre, Sri Sivasubramaniya Nadar College of Engineering, Kalavakkam 603110, Tamil Nadu, India"
+  - family-names: "Varaddharajan"
+    given-names: "Venkatramanan"
+    affiliation: "Department of Biotechnology, PSG College of Technology, Coimbatore, Tamil Nadu, India"
+  - family-names: "Saravanakkumar"
+    given-names: "D."
+    affiliation: "PG and Research Department of Physics, Thiagarajar College (Autonomous), Madurai 625009, Tamil Nadu, India"
+  - family-names: "Selvarani"
+    given-names: "S."
+    affiliation: "PG and Research Department of Zoology, Thiagarajar College (Autonomous), Madurai 625009, Tamil Nadu, India"
+repository-code: "https://github.com/raman3366/benzotriazolium-picrate-dft"
+# CC BY 4.0 for the dataset as a whole (data and documentation); the code in scripts/ is MIT (LICENSE).
+# The DOI (identifiers), the version and the article (preferred-citation) are added at release.
+license: CC-BY-4.0
+keywords:
+  - "benzotriazolium picrate"
+  - "CCDC 835950"
+  - "proton-transfer salt"
+  - "charge-assisted hydrogen bond"
+  - "density functional theory"
+  - "polarisable continuum model"
+  - "IEF-PCM"
+  - "B3LYP"
+  - "Hessian"
+  - "Multiwfn"
+  - "noncovalent interactions"
+references:
+  - type: article
+    title: "Synthesis, structural, thermal and nonlinear optical characterization of benzotriazolinium picrate crystals"
+    authors:
+      - family-names: "Dhanabal"
+        given-names: "T."
+      - family-names: "Amirthaganesan"
+        given-names: "G."
+      - family-names: "Dhandapani"
+        given-names: "M."
+      - family-names: "Das"
+        given-names: "Samar K."
+    journal: "Optik"
+    volume: 124
+    start: 1966
+    end: 1970
+    year: 2013
+    doi: "10.1016/j.ijleo.2012.06.018"
+  - type: data
+    title: "CCDC 835950: Experimental Crystal Structure Determination"
+    authors:
+      - family-names: "Dhanabal"
+        given-names: "T."
+      - family-names: "Amirthaganesan"
+        given-names: "G."
+      - family-names: "Dhandapani"
+        given-names: "M."
+      - family-names: "Das"
+        given-names: "Samar K."
+    publisher:
+      name: "Cambridge Crystallographic Data Centre"
+    doi: "10.5517/ccx1w4y"

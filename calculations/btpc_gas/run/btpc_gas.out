@@ -1,0 +1,7 @@
+[run_case] btpc_gas  threads=4  mem=40000MB  fd=autox2  2026-09-16T19:02:04+00:00
+[pipeline] frequencies: done (150.9 min) 
+[pipeline] fmo: done (29.9 min) 
+[pipeline] mwfn: done (2.1 min) 
+[pipeline] plots: done (0.1 min) 
+[pipeline] render: done (0.7 min) 
+[pipeline] report: FAILED (0.0 min) exit code 1, see logs/report.log

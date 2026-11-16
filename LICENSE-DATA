@@ -1,0 +1,24 @@
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+Copyright (c) 2026 B. Sahaya Infant Lasalle, Anantha Raman Lakshmipathi, Muthu Senthil Pandian,
+Venkatramanan Varaddharajan, D. Saravanakkumar, S. Selvarani
+
+The following parts of this repository are licensed under the Creative Commons Attribution 4.0 International License:
+
+  - structure/, cases/, calculations/, analysis/, tables/, figures/, si/, environment/
+  - the documentation (README.md, CHANGELOG.md and docs/)
+
+You are free to share (copy and redistribute the material in any medium or format) and adapt (remix, transform and
+build upon the material) for any purpose, even commercially, provided that you give appropriate credit, provide a link
+to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that
+suggests the licensor endorses you or your use. No additional restrictions: you may not apply legal terms or
+technological measures that legally restrict others from doing anything the license permits.
+
+This summary is not a substitute for the license. The full legal code is at
+https://creativecommons.org/licenses/by/4.0/legalcode and is the license text that applies.
+
+Excluded: the crystal structure CCDC 835950 (Dhanabal et al., Optik 124 (2013) 1966-1970) is not redistributed here
+and is not covered by this license, nor is material derived from that deposition; obtain the structure from the
+Cambridge Crystallographic Data Centre.
+
+Credit: cite the dataset as given in CITATION.cff.

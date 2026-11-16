@@ -1,0 +1,44 @@
+| Parameter                                      |    X-ray | Gas phase | IEF-PCM (water) |
+|:-----------------------------------------------|---------:|-------:|--------:|
+| *Bond lengths (Å)*                             |          |           |                 |
+| C1–O1                                          | 1.233(3) |     1.261 |           1.247 |
+| C1–C2                                          | 1.450(3) |     1.447 |           1.459 |
+| C1–C6                                          | 1.450(4) |     1.446 |           1.459 |
+| C2–C3                                          | 1.352(4) |     1.375 |           1.373 |
+| C5–C6                                          | 1.367(4) |     1.384 |           1.379 |
+| C2–N1                                          | 1.456(3) |     1.469 |           1.460 |
+| C4–N2                                          | 1.441(3) |     1.461 |           1.444 |
+| C6–N3                                          | 1.443(3) |     1.461 |           1.454 |
+| N1–O2                                          | 1.186(3) |     1.227 |           1.226 |
+| N1–O3                                          | 1.207(3) |     1.225 |           1.232 |
+| N2–O4                                          | 1.229(4) |     1.228 |           1.234 |
+| N2–O5                                          | 1.216(4) |     1.227 |           1.233 |
+| N3–O6                                          | 1.230(3) |     1.226 |           1.233 |
+| N3–O7                                          | 1.214(3) |     1.232 |           1.230 |
+| N4–N5                                          | 1.324(4) |     1.294 |           1.305 |
+| N5–N6                                          | 1.327(4) |     1.326 |           1.312 |
+| C12–N4                                         | 1.377(3) |     1.374 |           1.371 |
+| C7–N6                                          | 1.372(4) |     1.374 |           1.370 |
+| C7–C12                                         | 1.382(4) |     1.404 |           1.405 |
+| N4–H4N                                         |  0.91(4) |     1.109 |           1.053 |
+| N6–H6N                                         |  0.83(4) |     1.010 |           1.015 |
+| *Bond angles (°)*                              |          |           |                 |
+| C2–C1–C6                                       | 111.7(2) |     113.0 |           112.1 |
+| N4–N5–N6                                       | 108.6(3) |     106.2 |           106.1 |
+| C12–N4–N5                                      | 109.1(2) |     112.2 |           112.3 |
+| C7–N6–N5                                       | 109.7(2) |     112.5 |           112.6 |
+| *Ring orientation*                             |          |           |                 |
+| Angle between the ring planes (°)              |      5.5 |      29.1 |            58.2 |
+| Ring centroid distance (Å)                     |    6.746 |     6.466 |           6.936 |
+| Nitro twist, N1 (*ortho*, on C2) (°)           |     10.9 |      40.3 |            35.9 |
+| Nitro twist, N2 (*para*, on C4) (°)            |      9.3 |       0.6 |             0.4 |
+| Nitro twist, N3 (*ortho*, on C6) (°)           |     11.8 |      21.9 |            26.2 |
+| *Agreement with X-ray*                         |          |           |                 |
+| Bond RMSD, 26 heavy-atom bonds (Å)             |        – |    0.0195 |          0.0186 |
+| Bond MAE, 26 heavy-atom bonds (Å)              |        – |    0.0164 |          0.0157 |
+| Angle RMSD, 36 heavy-atom angles (°)           |        – |      1.43 |            1.27 |
+| Superposition RMSD, 25 heavy atoms (Å)         |        – |     0.460 |           0.857 |
+| Superposition RMSD, 16 picrate heavy atoms (Å) |        – |     0.219 |           0.205 |
+| Superposition RMSD, 9 cation heavy atoms (Å)   |        – |     0.028 |           0.027 |
+
+Table: Selected bond lengths (Å), bond angles (°) and ring orientation of benzotriazolium picrate from X-ray diffraction (298 K) and from B3LYP/6-311++G(d,p) optimisation in the gas phase and in IEF-PCM (water). X-ray bond lengths and angles are the CIF values, with standard uncertainties in parentheses; the ring-orientation values were computed from the deposited coordinates. X-ray N–H lengths are short, as usual for hydrogen positions from X-ray diffraction. Ring planes are least-squares planes of the six picrate ring carbons and the nine ring atoms of the cation; a nitro twist is the angle between the O–N–O plane and the picrate ring plane. RMSD and MAE refer to DFT − X-ray over the bonds and angles of the X-ray connectivity that contain no hydrogen; over all 34 bonds, X–H included, the bond RMSD is 0.0918 Å (gas phase) and 0.0886 Å (IEF-PCM). Superposition RMSDs are for a best fit of the atoms named. {#tbl:tbl_geometry}

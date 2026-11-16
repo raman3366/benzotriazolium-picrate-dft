@@ -1,0 +1,60 @@
+{
+  "case": "btpc_pcm",
+  "stages": {
+    "optimize": {
+      "status": "running",
+      "start": "2026-09-16T14:37:34"
+    },
+    "proton_check": {
+      "status": "done",
+      "start": "2026-09-17T04:02:31",
+      "end": "2026-09-17T04:02:31",
+      "wall_min": 0.0,
+      "note": "ionic form retained"
+    },
+    "frequencies": {
+      "status": "done",
+      "start": "2026-09-18T16:02:47",
+      "end": "2026-09-18T21:51:09",
+      "wall_min": 348.37,
+      "note": ""
+    },
+    "fmo": {
+      "status": "done",
+      "start": "2026-09-17T19:42:08",
+      "end": "2026-09-17T20:01:01",
+      "wall_min": 18.88,
+      "note": ""
+    },
+    "mwfn": {
+      "status": "done",
+      "start": "2026-09-17T20:01:01",
+      "end": "2026-09-17T20:02:56",
+      "wall_min": 1.93,
+      "note": ""
+    },
+    "plots": {
+      "status": "done",
+      "start": "2026-09-17T20:02:56",
+      "end": "2026-09-17T20:03:01",
+      "wall_min": 0.08,
+      "note": ""
+    },
+    "render": {
+      "status": "done",
+      "start": "2026-09-17T20:03:01",
+      "end": "2026-09-17T20:03:27",
+      "wall_min": 0.43,
+      "note": ""
+    },
+    "report": {
+      "status": "done",
+      "start": "2026-09-19T17:53:36",
+      "end": "2026-09-19T17:53:37",
+      "wall_min": 0.01,
+      "note": ""
+    }
+  },
+  "pipeline_start": "2026-09-16T14:37:34",
+  "pipeline_end": "2026-09-17T20:03:27"
+}

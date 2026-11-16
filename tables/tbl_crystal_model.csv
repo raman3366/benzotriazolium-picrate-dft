@@ -1,0 +1,31 @@
+Quantity,Value
+Crystal structure,
+Sum formula,C12H8N6O7
+Ions,"C6H6N3+ (benzotriazolium), C6H2N3O7- (picrate)"
+Mr,348.24
+Crystal system,monoclinic
+Space group,P21/c
+"a, b, c (Å)","9.2349(8), 11.9272(11), 12.8848(12)"
+β (°),97.859(2)
+V (Å³),1405.9(2)
+"Z, Z′","4, 1"
+T (K),298(2)
+"Radiation, λ (Å)","Mo Kα, 0.71073"
+Dcalc (g cm⁻³),1.645
+μ (mm⁻¹),0.139
+"Reflections: measured, unique, I > 2σ(I)","14226, 2757, 2320"
+Rint,0.0351
+"R1, wR2 [I > 2σ(I)]","0.0673, 0.1671"
+Goodness of fit,1.097
+H atoms,coordinates and Uiso refined
+Hydrogen-bond table in the CIF,none
+Ion-pair model,
+Picrate at,"x, y, z"
+Cation at,"x + 1, -y + ½, z + ½"
+Hydrogen bond between the ions,N4–H4N···O1 (N···O 2.623 Å in the crystal)
+Crystal hydrogen bond not in the model,N6–H6N···O6 to a second picrate (N···O 2.885 Å)
+"Atoms, electrons","33, 178"
+"Charge, spin multiplicity","0, 1"
+Basis functions,606
+Level of theory,"B3LYP/6-311++G(d,p)"
+Models,"gas phase and IEF-PCM (water, ε = 78.3553)"
