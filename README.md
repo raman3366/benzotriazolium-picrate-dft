@@ -1,5 +1,7 @@
 # Benzotriazolium picrate (BTPC): DFT data on the N4–H4N···O1 ion pair in the gas phase and in IEF-PCM water
 
+**DOI:** [10.5281/zenodo.24471614](https://doi.org/10.5281/zenodo.24471614) (all versions); v1.0.0: [10.5281/zenodo.24471615](https://doi.org/10.5281/zenodo.24471615)
+
 Data and scripts for the density functional study of the benzotriazolium picrate ion pair (BTPC;
 C₆H₆N₃⁺·C₆H₂N₃O₇⁻; CCDC 835950). The ion pair held together by the charge-assisted N4–H4N···O1 hydrogen bond was
 rebuilt by symmetry from the crystal structure and optimised at B3LYP/6-311++G(d,p) twice: in the gas phase and in

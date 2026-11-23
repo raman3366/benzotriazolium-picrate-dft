@@ -3,6 +3,7 @@ message: "If you use this data or code, please cite it as below."
 type: dataset
 version: "1.0.0"
 date-released: "2026-11-23"
+doi: "10.5281/zenodo.24471615"
 title: "Benzotriazolium picrate ion pairs at low ΔpKa: DFT, MP2 and CCSD(T) data on the proton position and the frontier orbitals in the gas phase and in IEF-PCM water (geometries, scans, Hessians, wavefunctions, analyses and scripts)"
 authors:
   - family-names: "Lasalle"
