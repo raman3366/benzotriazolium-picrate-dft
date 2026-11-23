@@ -92,7 +92,7 @@ acceptor indices), `chemical_name`, `formula`, `ccdc`, `source_doi`, `notes`, an
 
 | File | Contents |
 |---|---|
-| `facts.json` | 1007 entries `key: {value, unit, case, source, note}` (some also `expr`, the arithmetic on other keys, and `added`, the revision round). `source` names the file (workspace path) and field the value was read from |
+| `facts.json` | 2490 entries (1007 of the published calculations, 1483 `rev.*` of the revision calculations) `key: {value, unit, case, source, note}` (some also `expr`, the arithmetic on other keys, and `added`, the revision round). `source` names the file (workspace path) and field the value was read from |
 | `facts.md` | The same register as a readable dossier, made by `scripts/analysis/build_facts_md.py`; its last section is a hand-written fact-check log kept across rebuilds |
 | `derived/mo_fragment_composition_<case>.csv` | Every orbital: `index0`, `label`, `energy_eV`, `occupation`, `picrate_pct`, `cation_pct` (Mulliken) |
 | `derived/crystal_hbonds.csv` | Hydrogen bonds of the crystal computed from the CIF by symmetry: donor, H, acceptor, symmetry code and operation, D–H, H···A, D···A (Å), angle (°), kind |

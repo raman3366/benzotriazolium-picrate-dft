@@ -10,5 +10,6 @@
 /logs/
 /tools/
 /figures/build/
+/figures/graphical_abstract/*.tif
 /tables/build/
 __pycache__/

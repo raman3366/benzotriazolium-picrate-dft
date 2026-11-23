@@ -177,6 +177,23 @@ project-relative path `molecules/btpcz/results/<case>/opt.xyz`, padded to the sa
   (`freq.json`: `frequencies_cm-1` and `frequencies_pyscf_cm-1`; `run/STAGES.md`); the pipeline keeps the projected
   set. The `btpcz_pcm` Hessian has no imaginary mode (lowest 5.5 cm⁻¹).
 
+## Facts, tables and figures
+
+The results of the revision jobs enter the facts register through section 10 of `scripts/analysis/build_facts.py`:
+the modules `scripts/analysis/rev/proton.py`, `structure.py`, `electronic.py`, `experimental.py` and `model.py`
+read the job records (`calculations/revision1/<job>/result.json` and the files next to them, under their project
+paths `data/revision_runs/<queue>/out/<job>/`), check them against one another and against the published register,
+and write the `rev.*` keys of `analysis/facts.json` (1483 keys) and the `analysis/derived/rev_*.csv` tables. The
+proton DVR levels are recomputed with `scripts/revision1/dvr.py`. The eleven revision tables
+(`tables/tbl_rev_*.md`, `tables/tblS_rev_*.md`) are made from the register by `scripts/tables/rev_*_tables.py` and
+`fix_widths.py`, and the revision figures by `scripts/figures/fig_rev_eps.py`, `fig_rev_proton.py`,
+`fig_rev_torsion.py` and `graphical_abstract.py`. `scripts/reproduce.sh` rebuilds the register and the tables and
+checks that nothing changes.
+
+Some job records hold input checksums of files that were changed for deposit (paths written as `<run-dir>`);
+`docs/scrubbed_files.tsv` gives the checksum of each such file as the run wrote it, and the fact modules use it when
+they compare a file with a record.
+
 ## Running one job again
 
 The scripts expect the layout of the project copy: they take the folder two levels above

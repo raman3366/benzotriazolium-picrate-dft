@@ -29,5 +29,16 @@
     `docs/grids.sha256` and `scripts/unpack_grids.sh` cover the 22 new grids (44 in all).
   - `scripts/sync_paper_outputs.sh` copies the final facts register, tables, figures, DFT supplementary
     information and analysis scripts from the project workspace; to be run once when they are final (not run yet).
-- Still to come before the release: the revised facts register, tables, figures and DFT supplementary information,
-  and the DOI.
+- Added on 23 Nov 2026 (private): the paper outputs of the revised article.
+  - `analysis/facts.json` with the 1483 `rev.*` keys of the revision calculations (2490 in all), `facts.md`, the
+    fourteen `analysis/derived/rev_*.csv` files and `analysis/experimental.json`, rebuilt inside this repository by
+    `scripts/analysis/build_facts.py` with the revision fact modules (`scripts/analysis/rev/`); every value equals
+    the project register apart from the text values of rules F1, F4–F6.
+  - The eleven revision tables (`scripts/tables/rev_*_tables.py`, `fix_widths.py`) and their CSV copies; all 28
+    tables byte-identical to the project's.
+  - The rendered figures (PNG and PDF, 23 figures) and the graphical abstract, with the scripts of the revision
+    figures; the DFT supplementary information (`si/`).
+  - `scripts/paths.py` maps the revision paths; `docs/scrubbed_files.tsv` gives the as-run checksums of the files
+    changed for deposit; `scripts/reproduce.sh` rebuilds the revision tables too; docs updated (`docs/provenance.md`
+    rules P15–P22, F17, F18, S10).
+- Still to come before the release: the DOI.

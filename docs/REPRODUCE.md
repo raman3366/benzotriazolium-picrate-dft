@@ -73,7 +73,10 @@ SHA-256 `17065c7a…5349b5`):
    CIF with another download date, with and without the carriage returns, gave the same ion pair, case file, facts
    register, tables and checksums (16 Nov 2026); `reproduce.sh` reports such a copy as "same content as the copy the
    calculations used (download date or line ends differ)".
-2. **Facts register** (`build_facts.py`): "wrote 1007 facts" after about 28 s. `analysis/facts.json` and the three CSV
+2. **Facts register** (`build_facts.py`): "wrote 1007 facts" after about 28 s (16 Nov 2026; since 23 Nov 2026,
+   with the revision results: "revision additions: 1483", "wrote 2490 facts", about 30 s, and the fourteen
+   `analysis/derived/rev_*.csv` files, byte-identical to the deposited ones; `compare_facts.py` reports "2490 / 2490
+   keys; 0 values differ"). `analysis/facts.json` and the three CSV
    files in `analysis/derived/` come out byte-identical to the deposited ones (also with a different
    `PYTHONHASHSEED`); `compare_facts.py` reports "1007 / 1007 keys; 0 values differ". `build_facts_md.py` rewrites
    `analysis/facts.md` unchanged (940 lines).
@@ -83,10 +86,14 @@ SHA-256 `17065c7a…5349b5`):
    skipped, because the manuscript build is not deposited. With pandoc 3.1.3 on the PATH, `reproduce.sh` builds
    the same tables without the pandoc checks and says so.
 4. **Checksums**: `sha256sum -c SHA256SUMS` reports OK for all 282 files, before and after the rebuild (1048 files
-   since the revision calculations were added on 23 Nov 2026; the gate gave the same results then).
+   once the revision calculations were added, 1150 with the paper outputs of the revised article, both on
+   23 Nov 2026; the gate gave the same results then).
 
 The register in the project workspace held the same 1007 values; four text values differ only by the substitutions
-listed in docs/provenance.md (rules F1, F4, F5, F6).
+listed in docs/provenance.md (rules F1, F4, F5, F6). With the revision (23 Nov 2026): the same 2490 values, the same
+four text values changed, and the notes of the ten `rev.exp.*` keys (rule F17); the `rev_*.csv` files and all 28
+tables are byte-identical to the project's. The eleven revision tables are rebuilt by `scripts/tables/rev_*_tables.py`
+and `fix_widths.py` (`reproduce.sh` step 5, "11 revision tables rebuilt").
 
 ### Figures
 
@@ -102,15 +109,18 @@ ln -s /usr/share/fonts/truetype/liberation tools/fonts/extracted/usr/share/fonts
 Without it they fall back to DejaVu Sans, and some figures stop with "text outside the canvas" or "text overlap".
 Checked on 16 Nov 2026 with the font in place: `fig_descriptors.py` (PNG pixel-identical to the figure of the
 article), `fig_scheme.py`, `fig_hbond_trajectory.py`, `figS_trajectory_full.py` and `figS_mo_composition.py` run
-without error. The 3-D figures need PyVista with off-screen rendering. The deposited figures come with v1.0.0.
+without error. The 3-D figures need PyVista with off-screen rendering. On 23 Nov 2026 `fig_rev_eps.py`,
+`fig_rev_proton.py`, `fig_rev_torsion.py` and `graphical_abstract.py` were run inside this repository: the PNG files
+are byte-identical to the deposited figures of the article, and the PDF files differ only in their creation date. The
+graphical abstract script also writes a TIFF copy (git-ignored).
 
 ## Revision calculations
 
 `sha256sum -c SHA256SUMS` covers the files of the revision calculations (`docs/revision.md`) as well, and
 `scripts/unpack_grids.sh` unpacks and checks the grids of the second crystal form with the others (44 in all).
 `structure/btpcz/README.md` shows how to rebuild the second form's starting geometry and case files from the COD
-CIF; `docs/revision.md` shows how to run one revision job again. The facts register and the tables above do not
-yet include the revision results (they come with v1.0.0).
+CIF; `docs/revision.md` shows how to run one revision job again. The facts register, the derived CSV files and the
+tables above include the revision results (`rev.*` keys).
 
 ## Level B: full recomputation (Linux x86-64)
 

@@ -200,3 +200,51 @@ Changes to the deposited copies (text files; counted replacements):
 
 The command `$HOME/r007/...` recorded for the host-preparation job `c0_prep` is kept as written (`r007` is the name
 of the working folder, not a path of any machine).
+
+## Paper outputs of the revised article (added 23 Nov 2026)
+
+The facts register, derived tables, tables, figures and DFT supplementary information of the revised article were
+brought in from the project workspace on 23 Nov 2026. The rendered figures, the graphical abstract and the SI PDF
+are copies of the project's files. The facts register (`analysis/facts.json`, `facts.md`, `derived/`) and every
+table were not copied: they were rebuilt inside this repository by the deposited scripts and compared with the
+project's copies (docs/REPRODUCE.md).
+
+| Workspace path | Here |
+|---|---|
+| `papers/btpc/data/rev/*.py` (the revision fact modules, called by section 10 of `build_facts.py`) | `scripts/analysis/rev/` |
+| `papers/btpc/data/experimental.json` | `analysis/experimental.json` |
+| `papers/btpc/data/derived/rev_*.csv` | `analysis/derived/` (written by the rev modules) |
+| `papers/btpc/tables/rev_*_tables.py`, `fix_widths.py` | `scripts/tables/` |
+| `papers/btpc/figures/scripts/fig_rev_*.py`, `graphical_abstract.py` | `scripts/figures/` |
+| `papers/btpc/figures/*.png`, `*.pdf`; `papers/btpc/figures/graphical_abstract/` | `figures/`; `figures/graphical_abstract/` (PNG and PDF; the TIFF copy is not deposited) |
+| `papers/btpc/si/BTPC_Supplementary_Information.pdf` | `si/` |
+
+`scripts/paths.py` now also maps the revision paths that the rev modules read: `data/revision_runs/<queue>/out/<job>/`
+to `calculations/revision1/<job>/`, `data/revision_runs/vm_extras/` and `vm2_extras/` to `environment/revision1/vm1/`
+and `vm2/`, `data/revision_runs/repo_results/btpcz/<case>/` and `molecules/btpcz/` to the second form's files, and
+`dft/revision/` to `scripts/revision1/` (`resolve()` and the view `.layout/`).
+
+Changes to the copies (counted replacements; behaviour unchanged unless stated):
+
+| Rule | Files | What changed | Count |
+|---|---|---|---:|
+| P15 | scripts/analysis/rev/common.py, `__init__.py` | The project root is the view of `scripts/paths.py`; `rel()` without `resolve()` (the view is made of links); new helper `sha256_as_run()` (rule P16); usage line | 3 |
+| P16 | scripts/analysis/rev/proton.py, structure.py | Checksums compared with the job records are taken "as run": for a file listed in `docs/scrubbed_files.tsv` the checksum before the deposit replacements (rules D1–D4) | 2 |
+| P17 | scripts/analysis/rev/proton.py, electronic.py | `dft/revision/dvr.py` and `tddft.py` found through `paths.resolve` (`scripts/revision1/`) | 3 |
+| P18 | scripts/analysis/rev/proton.py | An input path recorded outside the project copy is written `<run-dir>/…` in the deposited records (rule D3); it is recognised like the absolute path it replaced | 1 |
+| P19 | scripts/tables/rev_proton_tables.py, rev_struct_tables.py, rev_elec_tables.py, fix_widths.py | Tables written into `tables/` (make_tables.py's folder) instead of the script folder; usage lines | 8 |
+| P20 | scripts/figures/fig_rev_eps.py, fig_rev_proton.py, fig_rev_torsion.py | Usage lines (each held an absolute workspace path) | 3 |
+| P21 | scripts/figures/graphical_abstract.py | Paths through the view of `scripts/paths.py`; usage line | 3 |
+| P22 | scripts/analysis/build_facts.py | Section 10 of the project version (the revision fact modules) added; `facts.json` written atomically to the file the view links to | 1 |
+| F17 | scripts/analysis/rev/experimental.py | Notes of the `rev.exp.*` keys: the citation of an internal file replaced by "answers to the authors' questionnaire of the revision, not deposited" | 1 |
+| F18 | analysis/experimental.json | `_about` line (read by no script): the same citation and the checksum of the questionnaire file removed | 1 |
+| S10 | scripts/figures/graphical_abstract.py | Docstring wording | 1 |
+
+`docs/scrubbed_files.tsv` lists the 359 text files of the revision calculations changed by rules D1–D4, with the
+SHA-256 each had as the run wrote it (the value in the job records) and the SHA-256 of the deposited file.
+
+Effect on `analysis/facts.json`: 2490 keys in the project's order; every value is identical to the project register
+except the four text values of rules F1, F4, F5 and F6; sources and notes differ only in the keys listed under the
+F rules above and the ten `rev.exp.*` notes (F17). The fourteen `rev_*.csv` files and all 28 tables are
+byte-identical to the project's copies; `facts.md` differs from the project's only by the substitutions of rules
+F1–F16 and M1–M5.

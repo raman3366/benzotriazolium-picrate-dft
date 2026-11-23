@@ -5,14 +5,14 @@ C₆H₆N₃⁺·C₆H₂N₃O₇⁻; CCDC 835950). The ion pair held together b
 rebuilt by symmetry from the crystal structure and optimised at B3LYP/6-311++G(d,p) twice: in the gas phase and in
 an IEF-PCM continuum for water. The deposit holds both optimisations, both finite-difference Hessians, the
 wavefunctions, the frontier-orbital, electrostatic-potential, NCI, ELF and LOL analyses, the run logs, and the
-register of every number in the associated article (`analysis/facts.json`) with the scripts that rebuild it and the
-tables. It also holds the calculations added during the revision of the article: a second crystal form of the salt
+register of every number in the associated article (`analysis/facts.json`) with the scripts that rebuild it, the
+tables, the figures and the DFT supplementary information of the revised article. It also holds the calculations added during the revision of the article: a second crystal form of the salt
 (P2₁/n, COD 2230422) treated in the same way, and 57 further jobs on proton transfer, the location of the LUMO,
 dispersion, the inter-ion torsion and excited states ("Revision calculations" below; `docs/revision.md`).
 
-> **Status: private build v0.1.0, not a release.** The rendered figures (`figures/`) and the DFT supplementary
-> information (`si/`) are added at release v1.0.0, together with the Zenodo DOI cited in the article, and so are the
-> revised facts register and tables. Nothing here is final before v1.0.0.
+> **Status: private build, not a release.** The facts register, tables, figures and DFT supplementary information
+> are those of the revised article (23 Nov 2026). The DOI is added at release v1.0.0; nothing here is final before
+> then.
 
 ## Contents
 
@@ -23,10 +23,10 @@ dispersion, the inter-ion torsion and excited states ("Revision calculations" be
 | `calculations/btpc_gas/`, `calculations/btpc_pcm/` | Per model: `geometry/` (start, optimised, trajectory), `wavefunction/` (Molden, PySCF checkpoint), `frequencies/` (Hessian, harmonic analysis), `orbitals/`, `multiwfn/` (inputs, settings and outputs), `grids/` (cubes and grids, xz-compressed), `run/` (logs and stage records) |
 | `calculations/btpcz_gas/`, `calculations/btpcz_pcm/` | The second crystal form (revision), in the same layout |
 | `calculations/revision1/` | The 57 revision jobs: one folder per job with its record (`result.json`), logs and output files, and the job-queue records (`README.md` there lists every job) |
-| `analysis/` | `facts.json` (1007 numbers, each with unit, source file and note), `facts.md` (the same as a readable dossier), `derived/` (MO fragment shares, crystal hydrogen bonds), `literature_claims.jsonl` (the five literature values the scripts parse) |
-| `tables/` | Every table of the article and its SI as Markdown (`tbl*.md`, made by `scripts/tables/make_tables.py`) with CSV copies; `INDEX.md` lists the facts keys and files behind each table |
-| `figures/` | Rendered figures of the article and SI (added at v1.0.0); every figure is made by a script in `scripts/figures/` |
-| `si/` | The DFT supplementary information as PDF (added at v1.0.0) |
+| `analysis/` | `facts.json` (2490 numbers, each with unit, source file and note: 1007 of the published calculations and 1483 `rev.*` keys of the revision calculations), `facts.md` (a readable dossier of the published part), `derived/` (MO fragment shares, crystal hydrogen bonds, and the `rev_*.csv` tables of the revision results), `experimental.json` (the co-authors' experimental values quoted in the article), `literature_claims.jsonl` (the five literature values the scripts parse) |
+| `tables/` | Every table of the article and its SI as Markdown (`tbl*.md`: 17 made by `scripts/tables/make_tables.py`, 11 of the revision by `scripts/tables/rev_*_tables.py`) with CSV copies; `INDEX.md` lists the facts keys and files behind the first 17 |
+| `figures/` | Rendered figures of the article and SI (PNG and PDF) and the graphical abstract (`graphical_abstract/`); every figure is made by a script in `scripts/figures/` |
+| `si/` | The DFT supplementary information of the revised article as PDF |
 | `scripts/` | DFT pipeline (`dft/`, `run_case.sh`, `setup_linux.sh`), analysis, tables, figures, `paths.py`, `reproduce.sh`, `unpack_grids.sh`; `revision1/`: the scripts, job lists and environment installer of the revision calculations |
 | `environment/` | Pinned software environments and the Multiwfn and ParaView details; `revision1/`: the environment locks of the revision calculations |
 | `docs/` | `protocol.md`, `data_dictionary.md` (formats, units, atom indexing), `provenance.md` (what was changed for deposit), `REPRODUCE.md`, `revision.md` (the revision calculations) |
@@ -80,7 +80,8 @@ The jobs ran through a small job queue on two 32-vCPU cloud VMs (55 and 2 jobs, 
 installed from the explicit conda lock in `environment/revision1/`. Every job folder holds the job's record
 (`result.json`: inputs with SHA-256, settings, software versions, script SHA-256, results) and its logs. The PySCF
 checkpoints of these jobs are not deposited. The scripts are in `scripts/revision1/`; `docs/revision.md` shows
-how to run one job again.
+how to run one job again. Their results enter the facts register as the `rev.*` keys (`scripts/analysis/rev/`, read
+from the job records), and from there the revision tables and figures, like every other number of the article.
 
 ## Provenance and known limitations
 
