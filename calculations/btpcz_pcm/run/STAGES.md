@@ -1,0 +1,30 @@
+- 2026-11-20 23:28  pre-optimisation at B3LYP/6-31g(d): converged (GAU_LOOSE) after 21 steps, 104.1 min (dft/revision/c0_case.py)
+- 2026-11-20 23:28  optimisation started from preopt.xyz (dft/revision/c0_case.py via opt_d3.py); solvent=water
+- 2026-11-21 12:10  optimisation converged in 55 steps, 762.2 min, E = -1317.25373389 Ha
+- 2026-11-21 12:10  proton check: H-N 1.052 A, H-O 1.636 A -> proton retained on the donor; bonds broken none, formed none
+- 2026-11-21 12:17  FMO: HOMO -6.909 eV, LUMO -3.174 eV, gap 3.735 eV; fragment composition {'picrate anion': 99.8, 'benzotriazolium cation': 0.2} / {'picrate anion': 99.5, 'benzotriazolium cation': 0.5}
+- 2026-11-21 12:17  molden padded from 603 to 606 MOs for Multiwfn compatibility
+- 2026-11-21 12:35  cubes written (ESP 64^3 in 18.3 min)
+- 2026-11-21 18:08  === pipeline started for btpcz_pcm (from stage 'mwfn') ===
+- 2026-11-21 18:10  MEP surface: min -0.083294 a.u., max 0.171254 a.u.; 8 minima, 19 maxima
+- 2026-11-21 18:11  NCI: 1773824 grid points, 6 RDG spikes with RDG<0.3
+- 2026-11-21 18:11  ELF plane data written for ['picrate_ring', 'benzotriazolium_ring']
+- 2026-11-21 18:11  LOL plane data written for ['picrate_ring', 'benzotriazolium_ring']
+- 2026-11-21 18:11  plots FAILED: exit code 1, see logs/plots.log
+- 2026-11-21 18:11  === pipeline started for btpcz_pcm (from stage 'mwfn') ===
+- 2026-11-21 18:12  MEP surface: min -0.083294 a.u., max 0.171254 a.u.; 8 minima, 19 maxima
+- 2026-11-21 18:14  NCI: 1773824 grid points, 6 RDG spikes with RDG<0.3
+- 2026-11-21 18:14  ELF plane data written for ['picrate_ring', 'benzotriazolium_ring']
+- 2026-11-21 18:14  LOL plane data written for ['picrate_ring', 'benzotriazolium_ring']
+- 2026-11-21 18:14  plots FAILED: exit code 1, see logs/plots.log
+- 2026-11-21 19:33  === pipeline started for btpcz_pcm (from stage 'mwfn') ===
+- 2026-11-21 19:34  MEP surface: min -0.083294 a.u., max 0.171254 a.u.; 8 minima, 19 maxima
+- 2026-11-21 19:35  NCI: 1773824 grid points, 6 RDG spikes with RDG<0.3
+- 2026-11-21 19:36  ELF plane data written for ['picrate_ring', 'benzotriazolium_ring']
+- 2026-11-21 19:36  LOL plane data written for ['picrate_ring', 'benzotriazolium_ring']
+- 2026-11-21 19:36  Hessian by finite differences in sequential chunks of 3 columns (198 gradients, step 0.005 Bohr, 4 threads; dft/revision/c0_case.py)
+- 2026-11-21 19:36  render FAILED: exit code 1, see logs/render.log
+- 2026-11-21 19:36  RESULTS.md assembled
+- 2026-11-21 19:36  === pipeline finished for btpcz_pcm ===
+- 2026-11-22 06:10  frequencies replaced by a soft-mode check (10 modes of hessian.npy): projected [62.5, 108.6, 150.1, 182.9, 237.2, 273.5, 343.1, 363.6, 409.6, 608.4] cm-1; no imaginary frequency in the soft subspace
+- 2026-11-22 12:25  frequencies (finite-difference (gradients, step 0.005 Bohr, dft/_fd_worker.py in 33 sequential chunks of 3 columns x 4 threads; dft/revision/c0_case.py)): 0 imaginary, lowest 5.5 cm-1, 1003 min

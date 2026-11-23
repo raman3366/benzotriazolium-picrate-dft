@@ -1,0 +1,63 @@
+{
+  "case": "btpcz_gas",
+  "stages": {
+    "optimize": {
+      "status": "done",
+      "start": "2026-11-20T22:53:22",
+      "end": "2026-11-21T08:02:22",
+      "wall_min": 548.99,
+      "note": "optimisation converged in 99 steps, 549.0 min, E = -1317.21139739 Ha"
+    },
+    "proton_check": {
+      "status": "done",
+      "start": "2026-11-21T08:02:22",
+      "end": "2026-11-21T08:02:22",
+      "wall_min": 0.0,
+      "note": "proton transferred"
+    },
+    "frequencies": {
+      "status": "done",
+      "start": "2026-11-21T08:02:23",
+      "end": "2026-11-22T01:13:05",
+      "wall_min": 1028.44,
+      "note": ""
+    },
+    "fmo": {
+      "status": "done",
+      "start": "2026-11-22T01:13:05",
+      "end": "2026-11-22T01:33:12",
+      "wall_min": 20.12,
+      "note": ""
+    },
+    "mwfn": {
+      "status": "done",
+      "start": "2026-11-22T01:44:07",
+      "end": "2026-11-22T01:46:43",
+      "wall_min": 2.6,
+      "note": ""
+    },
+    "plots": {
+      "status": "done",
+      "start": "2026-11-22T01:46:43",
+      "end": "2026-11-22T01:46:48",
+      "wall_min": 0.08,
+      "note": ""
+    },
+    "render": {
+      "status": "failed",
+      "start": "2026-11-22T01:46:48",
+      "end": "2026-11-22T01:46:48",
+      "wall_min": 0.0,
+      "note": "exit code 1, see logs/render.log"
+    },
+    "report": {
+      "status": "done",
+      "start": "2026-11-22T01:46:48",
+      "end": "2026-11-22T01:46:49",
+      "wall_min": 0.01,
+      "note": ""
+    }
+  },
+  "pipeline_start": "2026-11-22T01:44:07",
+  "pipeline_end": "2026-11-22T01:46:49"
+}

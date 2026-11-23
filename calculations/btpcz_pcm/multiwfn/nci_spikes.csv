@@ -1,0 +1,7 @@
+sign_l2_rho_au,min_RDG,n_points,type
+-0.0495,0.069,821,attractive (H-bond)
+-0.0435,0.296,986,attractive (H-bond)
+-0.0145,0.028,4310,van der Waals
+-0.0105,0.112,6317,van der Waals
+0.0105,0.045,4874,steric repulsion
+0.0485,0.254,1010,steric repulsion

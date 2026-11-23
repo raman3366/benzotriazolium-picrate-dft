@@ -1,7 +1,7 @@
 #!/bin/sh
 # Unpack the xz-compressed grids (calculations/<case>/grids/*.xz) next to the .xz files, keeping the .xz files,
 # and check every unpacked file against docs/grids.sha256 (SHA-256 of the uncompressed grids).
-# The unpacked grids (about 420 MiB) are git-ignored.
+# The unpacked grids (about 850 MiB) are git-ignored.
 set -eu
 cd "$(dirname "$0")/.."
 for f in calculations/*/grids/*.xz; do

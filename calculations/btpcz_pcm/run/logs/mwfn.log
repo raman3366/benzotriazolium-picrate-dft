@@ -1,0 +1,13 @@
+[mwfn] mep: 65 s (exit 59)
+[mwfn] mep: non-zero exit 59 but all expected output present -- accepting
+[mwfn] MEP extrema: 27 | global min/max (a.u.): -0.083294 0.171254
+[mwfn] nci: 73 s (exit 0)
+[mwfn] NCI done; spikes: [(np.float64(-0.04949999999999988), 0.069016454, 821), (np.float64(-0.04349999999999987), 0.29552449, 986), (np.float64(-0.014499999999999846), 0.028289083, 4310), (np.float64(-0.010499999999999843), 0.11221911, 6317), (np.float64(0.010500000000000176), 0.045234331, 4874), (np.float64(0.04850000000000021), 0.25381193, 1010)]
+[mwfn] elf_picrate_ring: 2 s (exit 0)
+[mwfn] elf plane picrate_ring: 300x300 points, range 0.000..1.000
+[mwfn] elf_benzotriazolium_ring: 2 s (exit 0)
+[mwfn] elf plane benzotriazolium_ring: 300x300 points, range 0.000..1.000
+[mwfn] lol_picrate_ring: 2 s (exit 0)
+[mwfn] lol plane picrate_ring: 300x300 points, range 0.001..0.957
+[mwfn] lol_benzotriazolium_ring: 2 s (exit 0)
+[mwfn] lol plane benzotriazolium_ring: 300x300 points, range 0.000..0.987

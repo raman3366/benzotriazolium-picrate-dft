@@ -1,0 +1,18 @@
+- 2026-11-20 22:53  pre-optimisation at B3LYP/6-31g(d): converged (GAU_LOOSE) after 45 steps, 72.9 min (dft/revision/c0_case.py)
+- 2026-11-20 22:53  optimisation started from preopt.xyz (dft/revision/c0_case.py via opt_d3.py); solvent=none (gas phase)
+- 2026-11-21 08:02  optimisation converged in 99 steps, 549.0 min, E = -1317.21139739 Ha
+- 2026-11-21 08:02  proton check: H-N 1.823 A, H-O 1.000 A -> PROTON TRANSFERRED to the acceptor; bonds broken ['N6-H6'], formed ['O1-H6']
+- 2026-11-21 08:02  Hessian by finite differences in sequential chunks of 3 columns (198 gradients, step 0.005 Bohr, 4 threads; dft/revision/c0_case.py)
+- 2026-11-22 01:13  frequency projection disagreed with PySCF; using projected set (1 imaginary vs 0 reported)
+- 2026-11-22 01:13  frequencies (finite-difference (gradients, step 0.005 Bohr, dft/_fd_worker.py in 33 sequential chunks of 3 columns x 4 threads; dft/revision/c0_case.py)): 1 imaginary, lowest -59.1 cm-1, 1028 min
+- 2026-11-22 01:15  FMO: HOMO -7.430 eV, LUMO -3.592 eV, gap 3.838 eV; fragment composition {'picrate anion': 0.3, 'benzotriazolium cation': 99.7} / {'picrate anion': 99.9, 'benzotriazolium cation': 0.1}
+- 2026-11-22 01:15  molden padded from 603 to 606 MOs for Multiwfn compatibility
+- 2026-11-22 01:33  cubes written (ESP 64^3 in 17.8 min)
+- 2026-11-22 01:44  === pipeline started for btpcz_gas (from stage 'mwfn') ===
+- 2026-11-22 01:45  MEP surface: min -0.048405 a.u., max 0.100959 a.u.; 11 minima, 17 maxima
+- 2026-11-22 01:46  NCI: 1776600 grid points, 6 RDG spikes with RDG<0.3
+- 2026-11-22 01:46  ELF plane data written for ['picrate_ring', 'benzotriazolium_ring']
+- 2026-11-22 01:46  LOL plane data written for ['picrate_ring', 'benzotriazolium_ring']
+- 2026-11-22 01:46  render FAILED: exit code 1, see logs/render.log
+- 2026-11-22 01:46  RESULTS.md assembled
+- 2026-11-22 01:46  === pipeline finished for btpcz_gas ===

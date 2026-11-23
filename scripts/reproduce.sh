@@ -23,7 +23,7 @@ echo "all files OK"
 
 echo "== 2. unpack the grids"
 sh scripts/unpack_grids.sh > /dev/null
-echo "22 grids unpacked and checked"
+echo "44 grids unpacked and checked"
 
 echo "== 3. the CIF and the ion pair"
 # The CCDC writes the download date into every CIF it serves (_audit_update_record: "... downloaded from the CCDC.")

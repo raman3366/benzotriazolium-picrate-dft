@@ -1,0 +1,63 @@
+{
+  "case": "btpcz_pcm",
+  "stages": {
+    "optimize": {
+      "status": "done",
+      "start": "2026-11-20T23:28:17",
+      "end": "2026-11-21T12:10:33",
+      "wall_min": 762.27,
+      "note": "optimisation converged in 55 steps, 762.2 min, E = -1317.25373389 Ha"
+    },
+    "proton_check": {
+      "status": "done",
+      "start": "2026-11-21T12:10:33",
+      "end": "2026-11-21T12:10:34",
+      "wall_min": 0.0,
+      "note": "ionic form retained"
+    },
+    "fmo": {
+      "status": "done",
+      "start": "2026-11-21T12:10:34",
+      "end": "2026-11-21T12:35:51",
+      "wall_min": 25.28,
+      "note": ""
+    },
+    "mwfn": {
+      "status": "done",
+      "start": "2026-11-21T19:33:35",
+      "end": "2026-11-21T19:36:06",
+      "wall_min": 2.5,
+      "note": ""
+    },
+    "plots": {
+      "status": "done",
+      "start": "2026-11-21T19:36:06",
+      "end": "2026-11-21T19:36:12",
+      "wall_min": 0.1,
+      "note": ""
+    },
+    "render": {
+      "status": "failed",
+      "start": "2026-11-21T19:36:12",
+      "end": "2026-11-21T19:36:12",
+      "wall_min": 0.0,
+      "note": "exit code 1, see logs/render.log"
+    },
+    "frequencies": {
+      "status": "done",
+      "start": "2026-11-21T19:36:06",
+      "end": "2026-11-22T12:25:17",
+      "wall_min": 1003.03,
+      "note": ""
+    },
+    "report": {
+      "status": "done",
+      "start": "2026-11-21T19:36:12",
+      "end": "2026-11-21T19:36:13",
+      "wall_min": 0.02,
+      "note": ""
+    }
+  },
+  "pipeline_start": "2026-11-21T18:08:53",
+  "pipeline_end": "2026-11-21T19:36:13"
+}

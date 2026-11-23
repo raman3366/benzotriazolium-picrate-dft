@@ -1,0 +1,12 @@
+{
+  "bonds_broken": [
+    "N6-H6"
+  ],
+  "bonds_formed": [
+    "O1-H6"
+  ],
+  "d_H_N_A": 1.8234198223329514,
+  "d_H_O_A": 1.0002755262772876,
+  "proton_transferred": true,
+  "connectivity_changed": true
+}

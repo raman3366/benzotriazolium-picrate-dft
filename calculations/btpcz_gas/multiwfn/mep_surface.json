@@ -1,0 +1,18 @@
+{
+  "global_min_au": -0.048405,
+  "global_max_au": 0.100959,
+  "volume_A3": 360.20093,
+  "area_A2": 337.27704,
+  "positive_area_A2": 199.18479,
+  "negative_area_A2": 138.09224,
+  "overall_avg_kcal": 2.93567,
+  "positive_avg_kcal": 15.14034,
+  "negative_avg_kcal": -14.66839,
+  "sigma2_tot_kcal2": 201.25593,
+  "nu": 0.230998,
+  "Pi_kcal": 14.63242,
+  "MPI_eV": 0.64816746,
+  "polar_area_pct": 65.91,
+  "n_minima": 11,
+  "n_maxima": 17
+}
