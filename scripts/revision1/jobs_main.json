@@ -1,0 +1,302 @@
+{
+  "_about": [
+    "Main revision jobs of the BTPC revision for dft/revision/jobqueue.py, msi part: plan section 5 items 3-8 and C0 (the P2_1/n polymorph). Re-costed and re-ordered 21 Nov 2026 (review finding 3); the gas-only jobs of items 5-6 moved to jobs_piserver.json.",
+    "Run on msi AFTER jobs_proton.json (the Tue 24 Nov headline decision needs the proton results first), one job at a time with all 4 threads, from the repository root:",
+    "  cd ~/r007/repo; export MAX_MEMORY_MB=5500 PCM_MAX_MEMORY_MB=3000; Q=dft/revision/jobqueue.py; P=~/r007/env/bin/python",
+    "  setsid nohup sh -c \"$P $Q run --jobs dft/revision/jobs_proton.json --root ~/r007/queue_proton --slots 1 --threads 4; $P $Q run --jobs dft/revision/jobs_main.json --root ~/r007/queue_main --slots 1 --threads 4\" > ~/r007/queues.out 2>&1 &",
+    "Never run this file on piserver: it holds the IEF-PCM optimisations and Hessians (about 3.5x slower there; finding 3). piserver runs jobs_piserver.json.",
+    "Order = priority (finding 3): the short item-3 and item-7 jobs first, then C0 IEF-PCM (the riskiest optimisation, so there is time to react), item 4, C0 gas, the C0 soft-mode check, analyses, item 8; the cut candidates last.",
+    "est_hours = msi wall hours at 4 threads, mid estimate; est_range_hours = low/high (recost.py, 21 Nov). Unit costs: 20 Nov validate.py on msi (gas SCF cycle 28 s, gradient 153 s at 5500 MB; PCM cycle 79 s, gradient 252 s at 3000 MB) and the 21 Nov production timing of one FD column on the stored minima (10.1 cycle-equivalents per gas gradient, 8 per PCM gradient, process start included): gas step / FD gradient 7.3 min, PCM step / FD gradient 17.3 / 14.7 min, 6-31G(d) step 1.8 / 5.2 min (assumed 0.25 / 0.3 of the full step).",
+    "Totals (mid, msi hours): this file 110 h must (+52 h optional); jobs_proton.json 71 h; together 181 h (low 122, high 274) against about 203 h from Sat 21 Nov 01:00 to the Sun 29 Nov noon compute freeze (less for a later start). Cut order if the queue falls behind (the user decides): c0_btpcz_pcm_fdhess (already optional and last), headline_btpcz, sp8_*, a shorter neutral chain in jobs_proton.json (--neutral-to 1.13, about -5 h).",
+    "C0 runs through dft/revision/c0_case.py (review finding 1): resumable stage by stage (B3LYP/6-31G(d) pre-optimisation and the main optimisation through opt_d3.py with a converged flag, restart from their own trajectories, a stall stop and step/wall caps; the FD Hessian through dft/_fd_worker.py in 3-column chunks that survive an interruption). proton_check and fmo use the published pipeline through run_case.sh unchanged, so the repo copy on the host needs run_case.sh and tools/env (c0_prep).",
+    "C0 IEF-PCM frequencies (finding 3): a soft-mode check (21 PCM gradients, ~5 h) of the btpcz_pcm minimum against the btpcz_gas FD Hessian (same atom order) replaces the full PCM FD Hessian (198 PCM gradients, ~49 h), which stays as the optional last job c0_btpcz_pcm_fdhess. Pending the user's agreement.",
+    "Inputs the host needs besides dft/, molecules/ and run_case.sh: data/r2/molecules/btpc/results/btpc_{gas,pcm}/{final.chk,final.molden,hessian.npy} and papers/btpc/data/facts.json. The mwfn stage needs Multiwfn (msi only); render needs ParaView (absent) and fails without stopping the pipeline.",
+    "Hosts are hints only: the queue runs every job it is given on the host it runs on."
+  ],
+  "defaults": {
+    "threads": 4,
+    "retries": 1
+  },
+  "jobs": [
+    {
+      "id": "charges_stored",
+      "item": "3 (Hirshfeld/CM5 in place of Mulliken)",
+      "est_hours": 0.1,
+      "est_range_hours": [
+        0.1,
+        0.2
+      ],
+      "cost": "Hirshfeld/CM5 from the stored wavefunctions (1.3 min measured on msi)",
+      "host_hint": "msi",
+      "command": "{python} dft/revision/charges.py --job {id} --out {root}/out/{id} --source stored --multiwfn auto"
+    },
+    {
+      "id": "headline_gasgeom",
+      "item": "3 (cross single point + permittivity series at the gas minimum)",
+      "est_hours": 1.7,
+      "est_range_hours": [
+        1.2,
+        2.6
+      ],
+      "cost": "1 gas + 6-7 PCM SCFs chained by permittivity",
+      "host_hint": "msi",
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/headline.py --job {id} --out {root}/out/{id} --geom gas --refine 1"
+    },
+    {
+      "id": "headline_pcmgeom",
+      "item": "3 (cross single point + permittivity series at the IEF-PCM minimum)",
+      "est_hours": 1.7,
+      "est_range_hours": [
+        1.2,
+        2.6
+      ],
+      "cost": "1 gas + 6-7 PCM SCFs chained by permittivity",
+      "host_hint": "msi",
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/headline.py --job {id} --out {root}/out/{id} --geom pcm --refine 1"
+    },
+    {
+      "id": "deltascf_gasgeom",
+      "item": "3 (Delta-SCF N+1/N-1 at the gas minimum, in gas and in IEF-PCM)",
+      "est_hours": 4.0,
+      "est_range_hours": [
+        2.5,
+        6.0
+      ],
+      "cost": "2 RKS + 6 UKS (gas and PCM)",
+      "host_hint": "msi",
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/deltascf.py --job {id} --out {root}/out/{id} --combos gas/gas,gas/pcm --plus cation,anion --minus homo"
+    },
+    {
+      "id": "deltascf_pcmgeom",
+      "item": "3 (Delta-SCF N+1/N-1 at the IEF-PCM minimum, in IEF-PCM and in gas)",
+      "est_hours": 4.0,
+      "est_range_hours": [
+        2.5,
+        6.0
+      ],
+      "cost": "2 RKS + 6 UKS (PCM and gas)",
+      "host_hint": "msi",
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/deltascf.py --job {id} --out {root}/out/{id} --combos pcm/pcm,pcm/gas --plus cation,anion --minus homo"
+    },
+    {
+      "id": "td_free",
+      "item": "7 (free picrate and neutral benzotriazole optimised in IEF-PCM; TD-DFT B3LYP and CAM-B3LYP)",
+      "est_hours": 2.0,
+      "est_range_hours": [
+        1.0,
+        3.5
+      ],
+      "host_hint": "msi",
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/tddft.py --job {id} --out {root}/out/{id} --systems picrate-pcm,bta-pcm --xc b3lyp,camb3lyp --nstates 20 --tda",
+      "note": "runs before the ion-pair TD-DFT jobs: its timing (233 and 366 basis functions) calibrates their estimates",
+      "note_rpa": "full TD-DFT: replace --tda by --rpa (about 3x the cost: 3.3x the trial vectors in the msi test)"
+    },
+    {
+      "id": "td_pair_b3lyp",
+      "item": "7 (TD-DFT (TDA) B3LYP, 20 singlets, ion pair in gas and IEF-PCM, non-equilibrium LR-PCM)",
+      "est_hours": 6.0,
+      "est_range_hours": [
+        4.0,
+        10.0
+      ],
+      "host_hint": "msi",
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/tddft.py --job {id} --out {root}/out/{id} --systems pair-gas,pair-pcm --xc b3lyp --nstates 20 --tda",
+      "note_rpa": "full TD-DFT: replace --tda by --rpa (about 3x the cost: 3.3x the trial vectors in the msi test)"
+    },
+    {
+      "id": "td_pair_camb3lyp",
+      "item": "7 (TD-DFT (TDA) CAM-B3LYP, 20 singlets, ion pair in gas and IEF-PCM)",
+      "est_hours": 7.0,
+      "est_range_hours": [
+        4.5,
+        12.0
+      ],
+      "host_hint": "msi",
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/tddft.py --job {id} --out {root}/out/{id} --systems pair-gas,pair-pcm --xc camb3lyp --nstates 20 --tda",
+      "note_rpa": "full TD-DFT: replace --tda by --rpa (about 3x the cost: 3.3x the trial vectors in the msi test)"
+    },
+    {
+      "id": "c0_prep",
+      "item": "C0 (host preparation for run_case.sh)",
+      "threads": 1,
+      "retries": 0,
+      "est_hours": 0.01,
+      "host_hint": "msi",
+      "command": "if [ ! -x tools/env/bin/python ]; then mkdir -p tools && ln -sfn \"$(dirname \"$(dirname {python})\")\" tools/env; fi; if [ ! -x tools/multiwfn/Multiwfn_noGUI ] && [ -x \"$HOME/r007/multiwfn/Multiwfn_noGUI\" ]; then ln -sfn \"$HOME/r007/multiwfn\" tools/multiwfn; fi; tools/env/bin/python -c 'import pyscf, geometric; print(\"pyscf\", pyscf.__version__, \"geometric\", geometric.__version__)'; ls -l tools/"
+    },
+    {
+      "id": "c0_btpcz_pcm_core",
+      "item": "C0 (P2_1/n ion pair, IEF-PCM water: pre-optimisation, optimisation, proton check, FMO/cubes/molden; frequencies in c0_btpcz_pcm_softmode)",
+      "depends_on": [
+        "c0_prep"
+      ],
+      "est_hours": 21.1,
+      "est_range_hours": [
+        11.0,
+        37.5
+      ],
+      "cost": "IEF-PCM: 6-31G(d) pre-optimisation 15-60 steps x 5.2 min (cap 6 h) + 30-100 evaluations x 17.3 min (cap 100 / 30 h) + fmo ~1.2 h",
+      "host_hint": "msi",
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/c0_case.py --job {id} --out {root}/out/{id} --case btpcz_pcm --freq none --preopt-max-hours 6 --opt-maxsteps 100 --opt-max-hours 30 --negligible-stop 10",
+      "note": "resumable (rerun continues); stops early on a stall (gradient criteria met for 10 evaluations with < 1e-6 Ha spread); at a cap it is accepted only on the btpc_pcm rule, otherwise it fails and waits for the user (raise --opt-max-hours to continue)"
+    },
+    {
+      "id": "opt_d3_pcm",
+      "item": "4 (converged IEF-PCM minimum, B3LYP-D3(BJ), seeded with the stored PCM Hessian)",
+      "est_hours": 18.0,
+      "est_range_hours": [
+        9.3,
+        30.7
+      ],
+      "cost": "30-100 PCM evaluations x 17.3 min + final analysis 0.7 h; capped at 30 h",
+      "host_hint": "msi",
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/opt_d3.py --job {id} --out {root}/out/{id} --model pcm --disp d3bj --seed-hessian auto --max-hours 30",
+      "note": "item 4 wants all five criteria, so no stall stop here: at the 30 h cap the job fails (resumable) and the user decides (continue with a larger --max-hours, or accept on forces with --negligible-stop 10)"
+    },
+    {
+      "id": "softmode_d3_pcm",
+      "item": "4 (Hessian check along the 10 softest modes at the D3(BJ) IEF-PCM minimum; 21 PCM gradients)",
+      "depends_on": [
+        "opt_d3_pcm"
+      ],
+      "est_hours": 5.3,
+      "est_range_hours": [
+        4.3,
+        6.1
+      ],
+      "cost": "x0 SCF + 21 PCM gradients x 14.7 min",
+      "host_hint": "msi",
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/softmode_check.py --job {id} --out {root}/out/{id} --geom {root}/out/opt_d3_pcm --model pcm --disp d3bj --ref-hessian auto --nmodes 10 --step 0.02"
+    },
+    {
+      "id": "c0_btpcz_gas_core",
+      "item": "C0 (P2_1/n ion pair, gas: pre-optimisation, optimisation, proton check, finite-difference frequencies, FMO/cubes/molden)",
+      "depends_on": [
+        "c0_prep"
+      ],
+      "est_hours": 28.5,
+      "est_range_hours": [
+        22.8,
+        35.4
+      ],
+      "cost": "gas: 6-31G(d) pre-optimisation 15-60 steps x 1.8 min (cap 3 h) + 5-40 evaluations x 7.3 min (cap 100 / 12 h) + FD Hessian 198 gradients x 7.3 min (measured 21 Nov) in 33 chunks + fmo ~1 h",
+      "host_hint": "msi",
+      "command": "{python} dft/revision/c0_case.py --job {id} --out {root}/out/{id} --case btpcz_gas --freq fd --fd-chunk 3 --preopt-max-hours 3 --opt-maxsteps 100 --opt-max-hours 12 --negligible-stop 10",
+      "note": "resumable: an interruption loses at most one 3-column chunk (6 gradients, ~0.7 h) or one optimisation step; FD worker peak RSS 6.4 GB at MAX_MEMORY_MB 5500 (msi has 7.1 GB)"
+    },
+    {
+      "id": "c0_btpcz_pcm_softmode",
+      "item": "C0 (Hessian check of the btpcz_pcm minimum along the 10 softest modes of the btpcz_gas FD Hessian; replaces the full PCM FD Hessian, see c0_btpcz_pcm_fdhess)",
+      "depends_on": [
+        "c0_btpcz_gas_core",
+        "c0_btpcz_pcm_core"
+      ],
+      "est_hours": 5.2,
+      "est_range_hours": [
+        4.3,
+        6.1
+      ],
+      "cost": "x0 SCF + 20 displaced PCM gradients x 14.7 min",
+      "host_hint": "msi",
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/c0_case.py --job {id} --out {root}/out/{id} --case btpcz_pcm --stages frequencies --freq softmode --ref-hessian molecules/btpcz/results/btpcz_gas/hessian.npy --nmodes 10"
+    },
+    {
+      "id": "c0_btpcz_gas_analysis",
+      "item": "C0 (Multiwfn analyses, plots, render, RESULTS.md for btpcz_gas)",
+      "depends_on": [
+        "c0_btpcz_gas_core"
+      ],
+      "est_hours": 1.0,
+      "est_range_hours": [
+        0.5,
+        1.5
+      ],
+      "host_hint": "msi",
+      "command": "export DFT_MAX_MEMORY_MB=$(( ${MAX_MEMORY_MB:-8000} / 2 )) NO_AUTO_PCM=1; ./run_case.sh btpcz_gas $THREADS -- --from mwfn"
+    },
+    {
+      "id": "c0_btpcz_pcm_analysis",
+      "item": "C0 (Multiwfn analyses, plots, render, RESULTS.md for btpcz_pcm)",
+      "depends_on": [
+        "c0_btpcz_pcm_core"
+      ],
+      "est_hours": 1.0,
+      "est_range_hours": [
+        0.5,
+        1.5
+      ],
+      "host_hint": "msi",
+      "command": "export DFT_MAX_MEMORY_MB=$(( ${MAX_MEMORY_MB:-8000} / 2 )) NO_AUTO_PCM=1; ./run_case.sh btpcz_pcm $THREADS -- --from mwfn",
+      "note": "no freq.json for btpcz_pcm unless c0_btpcz_pcm_fdhess runs: RESULTS.md (dft/report.py, unchanged) then has no frequency table and its methods sentence wrongly says \"analytically\"; the soft-mode result is in softmode_check.json"
+    },
+    {
+      "id": "charges_btpcz",
+      "item": "C0 + 3 (Hirshfeld/CM5 of the P2_1/n minima from their final.chk)",
+      "depends_on": [
+        "c0_btpcz_gas_core",
+        "c0_btpcz_pcm_core"
+      ],
+      "est_hours": 0.1,
+      "est_range_hours": [
+        0.1,
+        0.3
+      ],
+      "host_hint": "msi",
+      "command": "{python} dft/revision/charges.py --job {id} --out {root}/out/{id} --case btpcz --source gas=chk:molecules/btpcz/results/btpcz_gas/final.chk,pcm=chk:molecules/btpcz/results/btpcz_pcm/final.chk --multiwfn auto"
+    },
+    {
+      "id": "sp8_pbe0",
+      "item": "8 (PBE0 at both minima, gas and IEF-PCM: energies and LUMO location; lowest priority)",
+      "est_hours": 1.2,
+      "est_range_hours": [
+        0.9,
+        1.6
+      ],
+      "host_hint": "msi",
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/headline.py --job {id} --out {root}/out/{id} --geom gas,pcm --eps 1,78.3553 --xc pbe0 --refine 0"
+    },
+    {
+      "id": "sp8_camb3lyp",
+      "item": "8 (CAM-B3LYP at both minima, gas and IEF-PCM: energies and LUMO location; lowest priority)",
+      "est_hours": 1.5,
+      "est_range_hours": [
+        1.1,
+        2.0
+      ],
+      "host_hint": "msi",
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/headline.py --job {id} --out {root}/out/{id} --geom gas,pcm --eps 1,78.3553 --xc camb3lyp --refine 0"
+    },
+    {
+      "id": "headline_btpcz",
+      "item": "C0 + 3 (cross single points and permittivity series at the P2_1/n minima; optional)",
+      "depends_on": [
+        "c0_btpcz_gas_core",
+        "c0_btpcz_pcm_core"
+      ],
+      "priority": "optional",
+      "est_hours": 3.0,
+      "est_range_hours": [
+        2.0,
+        4.4
+      ],
+      "host_hint": "msi",
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/headline.py --job {id} --out {root}/out/{id} --case btpcz --geom gas,pcm --refine 1"
+    },
+    {
+      "id": "c0_btpcz_pcm_fdhess",
+      "item": "C0 (full finite-difference IEF-PCM Hessian of btpcz_pcm; optional, cut first: does not fit the calendar at mid estimates)",
+      "depends_on": [
+        "c0_btpcz_pcm_core"
+      ],
+      "priority": "optional (cut candidate)",
+      "est_hours": 48.8,
+      "est_range_hours": [
+        40.1,
+        57.5
+      ],
+      "cost": "reference SCF + 198 PCM gradients x 14.7 min in 33 chunks",
+      "host_hint": "msi",
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/c0_case.py --job {id} --out {root}/out/{id} --case btpcz_pcm --stages frequencies --freq fd --fd-chunk 3"
+    }
+  ]
+}

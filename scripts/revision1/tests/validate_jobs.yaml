@@ -1,0 +1,18 @@
+# Validation through the job queue (dft/revision/jobqueue.py): a smoke run, then the production gas and PCM
+# single points.  Run the runner with the environment's python so that {python} is that interpreter, e.g.
+#   MAX_MEMORY_MB=12000 <run-dir>/env/bin/python dft/revision/jobqueue.py run \
+#       --jobs dft/revision/tests/validate_jobs.yaml --root <run-dir>/queue_validate --slots 1 --threads 4
+defaults:
+  threads: 4
+jobs:
+  - id: validate_smoke
+    est_hours: 0.1
+    command: '{python} dft/revision/validate.py --job {id} --out {root}/out/{id} --smoke'
+  - id: validate_gas
+    depends_on: [validate_smoke]
+    est_hours: 0.5
+    command: '{python} dft/revision/validate.py --job {id} --out {root}/out/{id} --models gas'
+  - id: validate_pcm
+    depends_on: [validate_smoke]
+    est_hours: 1.5
+    command: '{python} dft/revision/validate.py --job {id} --out {root}/out/{id} --models pcm'

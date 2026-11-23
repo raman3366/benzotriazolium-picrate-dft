@@ -1,0 +1,161 @@
+{
+ "_about": [
+  "Proton-coordinate jobs of the BTPC revision (plan section 5, item 2; item 8 for the PCM minimum) for dft/revision/jobqueue.py.",
+  "Run from the repository root with the environment's python, e.g. on msi (4 threads = all cores, one job at a time):",
+  "  MAX_MEMORY_MB=5500 ~/r007/env/bin/python dft/revision/jobqueue.py run --jobs dft/revision/jobs_proton.json --root ~/r007/queue_proton --slots 1 --threads 4",
+  "or on a larger host with --slots N --threads 4N.  Every job uses 4 threads (THREADS is exported by the queue).",
+  "Order = priority: the three scan chains (independent, run in parallel when slots allow), the neutral-start optimisations,",
+  "then the single points (they need all three chains), the PCM-minimum single points, then the DVR (seconds, 1 thread).",
+  "est_hours: msi-class speed at 4 threads (i3-1115G4: gas SCF+gradient about 6.7 min per optimisation step, PCM about 17 min),",
+  "about 15 steps per scan point; see the builder report for the cost in SCF+gradient evaluations.",
+  "Not queued here: an IEF-PCM scan (plan: not this round; proton_scan.py --case btpc_pcm --chains up,down) and the P2_1/n",
+  "polymorph (needs its own optimised minimum first: proton_scan.py --case btpcz_gas --start <btpcz_gas opt.xyz>).",
+  "Re-costed 21 Nov 2026 (review finding 3): est_hours = msi wall hours at 4 threads, gas step 7.3 min and PCM step 17.3 min (measured unit costs, see jobs_main.json); est_range_hours for 10-25 evaluations per scan point and 20-60 (gas) / 30-100 (PCM) for the neutral starts; single points and DVR as estimated by builder 1. Total mid 71 h (low 51, high 108).",
+  "Run this file FIRST on msi (the headline decision of Tue 24 Nov needs it), then jobs_main.json in the same shell (see its _about). At mid estimates it ends about Mon 23 Nov 10 PM IST if started Sat 21 Nov 1 AM.",
+  "Not on piserver: the scan chains and the single points share one queue root, and at 3.35x the chains alone would take about 105 h there.",
+  "Possible cut if msi falls behind (the user's call): --neutral-to 1.13 on scan_gas_neutral (4 points instead of 7; it overlaps 'down' at 1.08-1.28 by design, for the hysteresis check), about -5 h."
+ ],
+ "defaults": {
+  "threads": 4,
+  "retries": 1
+ },
+ "jobs": [
+  {
+   "id": "scan_gas_down",
+   "est_hours": 12.7,
+   "command": "{python} dft/revision/proton_scan.py --job {id} --out {root}/out/{id} --case btpc_gas --chains down",
+   "est_range_hours": [
+    8.5,
+    21.2
+   ],
+   "host_hint": "msi"
+  },
+  {
+   "id": "scan_gas_neutral",
+   "est_hours": 13.9,
+   "command": "{python} dft/revision/proton_scan.py --job {id} --out {root}/out/{id} --case btpc_gas --chains neutral",
+   "est_range_hours": [
+    10.9,
+    23.6
+   ],
+   "host_hint": "msi"
+  },
+  {
+   "id": "scan_gas_up",
+   "est_hours": 7.4,
+   "command": "{python} dft/revision/proton_scan.py --job {id} --out {root}/out/{id} --case btpc_gas --chains up",
+   "est_range_hours": [
+    5.0,
+    12.3
+   ],
+   "host_hint": "msi"
+  },
+  {
+   "id": "neutral_start_gas",
+   "est_hours": 4.8,
+   "command": "{python} dft/revision/neutral_start.py --job {id} --out {root}/out/{id} --system btpc --models gas",
+   "est_range_hours": [
+    2.4,
+    7.3
+   ],
+   "host_hint": "msi"
+  },
+  {
+   "id": "neutral_start_pcm",
+   "est_hours": 17.3,
+   "command": "{python} dft/revision/neutral_start.py --job {id} --out {root}/out/{id} --system btpc --models pcm",
+   "est_range_hours": [
+    8.7,
+    28.8
+   ],
+   "host_hint": "msi"
+  },
+  {
+   "id": "sp_scan_wb97xd3bj",
+   "est_hours": 3.0,
+   "depends_on": [
+    "scan_gas_down",
+    "scan_gas_neutral",
+    "scan_gas_up"
+   ],
+   "command": "{python} dft/revision/singlepoints.py --job {id} --out {root}/out/{id} --scan {root}/out/scan_gas_up --scan {root}/out/scan_gas_down --scan {root}/out/scan_gas_neutral --methods wb97x-d3bj",
+   "host_hint": "msi"
+  },
+  {
+   "id": "sp_scan_m062x",
+   "est_hours": 2.6,
+   "depends_on": [
+    "scan_gas_down",
+    "scan_gas_neutral",
+    "scan_gas_up"
+   ],
+   "command": "{python} dft/revision/singlepoints.py --job {id} --out {root}/out/{id} --scan {root}/out/scan_gas_up --scan {root}/out/scan_gas_down --scan {root}/out/scan_gas_neutral --methods m062x --grid-check-level 5",
+   "host_hint": "msi"
+  },
+  {
+   "id": "sp_scan_dfmp2",
+   "est_hours": 2.5,
+   "depends_on": [
+    "scan_gas_down",
+    "scan_gas_neutral",
+    "scan_gas_up"
+   ],
+   "command": "{python} dft/revision/singlepoints.py --job {id} --out {root}/out/{id} --scan {root}/out/scan_gas_up --scan {root}/out/scan_gas_down --scan {root}/out/scan_gas_neutral --methods dfmp2 --mp2-aux aug-cc-pvtz-ri",
+   "host_hint": "msi"
+  },
+  {
+   "id": "sp_scan_pbe0",
+   "est_hours": 1.5,
+   "depends_on": [
+    "scan_gas_down",
+    "scan_gas_neutral",
+    "scan_gas_up"
+   ],
+   "command": "{python} dft/revision/singlepoints.py --job {id} --out {root}/out/{id} --scan {root}/out/scan_gas_up --scan {root}/out/scan_gas_down --scan {root}/out/scan_gas_neutral --methods pbe0",
+   "host_hint": "msi"
+  },
+  {
+   "id": "sp_scan_camb3lyp",
+   "est_hours": 3.0,
+   "depends_on": [
+    "scan_gas_down",
+    "scan_gas_neutral",
+    "scan_gas_up"
+   ],
+   "command": "{python} dft/revision/singlepoints.py --job {id} --out {root}/out/{id} --scan {root}/out/scan_gas_up --scan {root}/out/scan_gas_down --scan {root}/out/scan_gas_neutral --methods cam-b3lyp",
+   "host_hint": "msi"
+  },
+  {
+   "id": "sp_min_pcm",
+   "est_hours": 2.5,
+   "command": "{python} dft/revision/singlepoints.py --job {id} --out {root}/out/{id} --xyz {repo}/molecules/btpc/results/btpc_pcm/opt.xyz --solvent water --methods wb97x-d3bj,m062x,pbe0,cam-b3lyp,dfmp2 --no-grid-check",
+   "host_hint": "msi"
+  },
+  {
+   "id": "dvr_gas_b3lyp",
+   "threads": 1,
+   "est_hours": 0.02,
+   "depends_on": [
+    "scan_gas_down",
+    "scan_gas_neutral",
+    "scan_gas_up"
+   ],
+   "command": "{python} dft/revision/dvr.py --job {id} --out {root}/out/{id} --scan {root}/out/scan_gas_up --scan {root}/out/scan_gas_down --scan {root}/out/scan_gas_neutral --selftest",
+   "host_hint": "msi"
+  },
+  {
+   "id": "dvr_gas_all",
+   "threads": 1,
+   "est_hours": 0.05,
+   "depends_on": [
+    "sp_scan_wb97xd3bj",
+    "sp_scan_m062x",
+    "sp_scan_dfmp2",
+    "sp_scan_pbe0",
+    "sp_scan_camb3lyp"
+   ],
+   "command": "{python} dft/revision/dvr.py --job {id} --out {root}/out/{id} --scan {root}/out/scan_gas_up --scan {root}/out/scan_gas_down --scan {root}/out/scan_gas_neutral --sp {root}/out/sp_scan_wb97xd3bj --sp {root}/out/sp_scan_m062x --sp {root}/out/sp_scan_dfmp2 --sp {root}/out/sp_scan_pbe0 --sp {root}/out/sp_scan_camb3lyp --selftest",
+   "host_hint": "msi"
+  }
+ ]
+}

@@ -1,0 +1,28 @@
+# Dummy jobs for testing dft/revision/jobqueue.py (no chemistry; sleep/exit only).
+#   python dft/revision/jobqueue.py run --jobs dft/revision/tests/queue_dummy_jobs.yaml --root <dir> --slots 2 --threads 3 --poll 1
+# Expected end state: a b e f g done (g after one retry), c failed (exit 3), d blocked (depends on c).
+defaults:
+  threads: 1
+  est_hours: 0.001
+jobs:
+  - id: a
+    command: sleep 3; echo "a THREADS=$THREADS OMP=$OMP_NUM_THREADS PYSCF_TMPDIR=$PYSCF_TMPDIR"
+  - id: b
+    threads: 2
+    depends_on: [a]
+    command: '[ "$THREADS" = 2 ] && [ "$OPENBLAS_NUM_THREADS" = 2 ] && touch {scratch}/x && sleep 2'
+  - id: c
+    command: echo "c fails on purpose"; exit 3
+  - id: d
+    depends_on: [c]
+    command: echo "d must never run"; exit 9
+  - id: e
+    threads: 2
+    est_hours: 0.01
+    command: sleep 20; echo "e survived the runner crash"
+  - id: f
+    depends_on: [b, e]
+    command: test -d "$PYSCF_TMPDIR" && [ "$QUEUE_JOB_ID" = f ] && echo "f ok in $(pwd)"
+  - id: g
+    retries: 1
+    command: 'if [ -f {root}/g.marker ]; then echo "g second attempt ok"; else touch {root}/g.marker; exit 4; fi'

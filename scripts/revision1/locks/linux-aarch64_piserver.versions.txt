@@ -1,0 +1,20 @@
+# written by dft/revision/setup_env.sh on piserver at 2026-11-20T20:15:22+05:30
+machine: aarch64  platform: linux-aarch64  cpu: 
+micromamba: 2.10.0
+_openmp_mutex                4.5            20_gnu
+geometric                    1.1.1          pyhd8ed1ab_0
+h5py                         3.16.0         nompi_py311hdc4c4e1_105
+libblas                      3.11.0         12_haddc8a3_openblas
+libcint                      6.1.3          h104910e_2
+libopenblas                  0.3.34         pthreads_h4148b7d_2
+libxc-c                      7.1.2          cpu_h5d3ac1d_2
+numpy                        2.4.6          py311hecca567_0
+pyscf                        2.14.0         py311h6b91cb6_102
+pyscf-dispersion             1.5.0          py311hdb1e40f_0
+python                       3.11.16        h94ad73b_2_cpython
+scipy                        1.17.1         py311had2d2e4_1
+xcfun                        2.1.1          h13f8785_9
+pyscf 2.14.0 from <run-dir>/env/lib/python3.11/site-packages/pyscf/__init__.py
+libxc 7.1.2
+numpy blas blas 3.9.0
+pyscf max threads 4

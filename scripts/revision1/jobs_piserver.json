@@ -1,0 +1,76 @@
+{
+  "_about": [
+    "Gas-phase jobs of the BTPC revision for piserver (plan section 5 items 5-6), split out of jobs_main.json on 21 Nov 2026 (review finding 3) so that msi and piserver run at the same time with all cores.",
+    "Only gas-phase work: piserver is about 3.35x slower than msi per gas step (measured 20 Nov: SCF cycle 3.46x, gradient 3.16x) and no PCM optimisation or Hessian is placed there.",
+    "Nothing here depends on msi jobs and nothing on msi depends on these; copy {root}/out/ back to the Pi as each job finishes (piserver has no backup).",
+    "Run from the repository copy on piserver (needs dft/, molecules/, data/r2/molecules/btpc/results/btpc_gas/hessian.npy for the seed and the soft-mode reference):",
+    "  cd <run-dir>/repo; MAX_MEMORY_MB=12000 setsid nohup <run-dir>/env/bin/python dft/revision/jobqueue.py run --jobs dft/revision/jobs_piserver.json --root <run-dir>/queue_pi --slots 1 --threads 4 > <run-dir>/queue_pi.out 2>&1 &",
+    "Power is marginal until the 27 W supply arrives: check vcgencmd get_throttled after each job (project notes, not deposited).",
+    "est_hours = piserver wall hours (msi estimate x 3.35); est_hours_msi for reference. Total mid 139 h (low 90, high 222) against about 203 h to the Sun 29 Nov freeze; scan_tors_d3 is last and is the first cut (plan section 5: 'the D3(BJ) half of item 6')."
+  ],
+  "defaults": {
+    "threads": 4,
+    "retries": 1
+  },
+  "jobs": [
+    {
+      "id": "opt_d3_gas",
+      "item": "5 (B3LYP-D3(BJ) gas re-optimisation, seeded with the stored gas Hessian, FMO at the minimum)",
+      "est_hours": 17.4,
+      "est_range_hours": [
+        9.4,
+        26.1
+      ],
+      "cost": "20-60 gas evaluations x 7.3 min (msi) + final analysis",
+      "host_hint": "piserver (gas only)",
+      "command": "{python} dft/revision/opt_d3.py --job {id} --out {root}/out/{id} --model gas --disp d3bj --seed-hessian auto",
+      "est_hours_msi": 5.2
+    },
+    {
+      "id": "softmode_d3_gas",
+      "item": "5 (soft-mode check at the D3(BJ) gas minimum; 21 gas gradients)",
+      "depends_on": [
+        "opt_d3_gas"
+      ],
+      "est_hours": 8.7,
+      "est_range_hours": [
+        7.7,
+        9.7
+      ],
+      "cost": "x0 SCF + 20 gas gradients x 7.3 min (msi)",
+      "host_hint": "piserver (gas only)",
+      "command": "{python} dft/revision/softmode_check.py --job {id} --out {root}/out/{id} --geom {root}/out/opt_d3_gas --model gas --disp d3bj --ref-hessian auto --nmodes 10 --step 0.02",
+      "est_hours_msi": 2.6
+    },
+    {
+      "id": "scan_tors_b3lyp",
+      "item": "6 (relaxed gas scan of C1-O1...N4-C12, -180 to -60 deg in 15 deg steps, B3LYP)",
+      "est_hours": 56.6,
+      "est_range_hours": [
+        36.5,
+        93.1
+      ],
+      "cost": "9 points x 10-25 gas evaluations x 7.3 min (msi)",
+      "host_hint": "piserver (gas only)",
+      "command": "{python} dft/revision/conf_scan.py --job {id} --out {root}/out/{id} --disp none --start stored --grid=-180:-60:15",
+      "est_hours_msi": 16.9
+    },
+    {
+      "id": "scan_tors_d3",
+      "item": "6 (the same scan with B3LYP-D3(BJ), from the D3(BJ) gas minimum; cut first if time is short)",
+      "depends_on": [
+        "opt_d3_gas"
+      ],
+      "priority": "last; cut first if time is short",
+      "est_hours": 56.6,
+      "est_range_hours": [
+        36.5,
+        93.1
+      ],
+      "cost": "9 points x 10-25 gas evaluations x 7.3 min (msi)",
+      "host_hint": "piserver (gas only)",
+      "command": "{python} dft/revision/conf_scan.py --job {id} --out {root}/out/{id} --disp d3bj --start {root}/out/opt_d3_gas --grid=-180:-60:15",
+      "est_hours_msi": 16.9
+    }
+  ]
+}

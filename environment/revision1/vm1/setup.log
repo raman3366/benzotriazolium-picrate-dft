@@ -1,0 +1,37 @@
+[setup_env 2026-11-20 20:04:53 UTC] downloading micromamba 2.10.0-0 (linux-64)
+[setup_env 2026-11-20 20:04:53 UTC] creating <run-dir>/env from the pinned specs: python=3.11.16 pyscf=2.14.0=*02 geometric=1.1.1 numpy=2.4.6 scipy=1.17.1 h5py=3.16.0=nompi_* pyscf-dispersion=1.5.0 pyyaml psutil
+ok 3.11.16
+# written by dft/revision/setup_env.sh on <vm-1> at 2026-11-20T20:05:01+00:00
+machine: x86_64  platform: linux-64  cpu: AMD EPYC 7B13
+micromamba: 2.10.0
+_openmp_mutex                4.5            20_gnu
+_x86_64-microarch-level      3              3_x86_64_v3
+geometric                    1.1.1          pyhd8ed1ab_0
+h5py                         3.16.0         nompi_py311h73d0c7d_105
+libblas                      3.11.0         12_h4a7cf45_openblas
+libcint                      6.1.3          h64ba90f_2
+libopenblas                  0.3.34         pthreads_hf13c14d_2
+libxc-c                      7.1.2          cpu_hed2233d_2
+numpy                        2.4.6          py311h2e04523_0
+pyscf                        2.14.0         py311h990ede3_1302
+pyscf-dispersion             1.5.0          py311h5df2867_0
+python                       3.11.16        h5f976f7_2_cpython
+scipy                        1.17.1         py311hbe70eeb_1
+xcfun                        2.1.1          h60e68e0_9
+pyscf 2.14.0 from <run-dir>/env/lib/python3.11/site-packages/pyscf/__init__.py
+libxc 7.1.2
+numpy blas blas 3.9.0
+pyscf max threads 32
+dispersion check b3lyp-d3bj   E = -75.31316120  disp = None  Edisp = -5.739e-04
+dispersion check wb97x-d3bj   E = -75.34250100  disp = None  Edisp = -5.698e-04
+curl: (22) The requested URL returned error: 404
+[setup_env 2026-11-20 20:05:06 UTC] Multiwfn 2026.9.13 not downloadable
+1a7e610374d305c5470f8e5d11a3017a81a8c4fac356c4208c5da65fa4c98b20  <run-dir>/downloads/Multiwfn_2026.11.13_bin_Linux_noGUI.zip
+  RDG_maxrho=  0.1 // When calculate reduced density gradien
+  aug2D=  6.0 // Default extension distance(in Bohr) for cal
+  nthreads=  4 // How many threads are used in parallel mode
+[setup_env 2026-11-20 20:05:07 UTC] done: python <run-dir>/env/bin/python
+
+real	0m14.134s
+user	1m47.049s
+sys	0m7.230s

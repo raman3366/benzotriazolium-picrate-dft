@@ -1,0 +1,27 @@
+{
+ "_about": [
+  "Option A convergence check for the BTPC revision on GCP VM <vm-2> (t2d-standard-32), 23 Nov 2026.",
+  "Run from ~/r007/repo with: ~/r007/env/bin/python dft/revision/jobqueue.py run --jobs dft/revision/jobs_vm2.json --root ~/r007/queue --slots 2 --threads 32",
+  "Same commands as cc_salt_631gd / cc_neutral_631gd_f065 in jobs_vm.json except --fno-fracs 0.8 and 16 threads each (the VM has 32 cores)."
+ ],
+ "defaults": {
+  "threads": 4,
+  "retries": 1
+ },
+ "jobs": [
+  {
+   "id": "cc_salt_631gd_f080",
+   "threads": 16,
+   "est_hours": 4.0,
+   "command": "export MAX_MEMORY_MB=40000; {python} dft/revision/cc_correction.py --job {id} --out {root}/out/{id} --xyz {repo}/molecules/btpc/results/btpc_pcm/opt.xyz --labels salt --solvent water --basis '6-31g*' --fno-fracs 0.8",
+   "note": "23 Nov 2026: user 'Go for an 80% run now'; FNO 80 % of the virtuals (222 of 277), completes the 6-31G* 50/65/80 series in IEF-PCM water (PTE reference as the DF-MP2 numbers)"
+  },
+  {
+   "id": "cc_neutral_631gd_f080",
+   "threads": 16,
+   "est_hours": 4.0,
+   "command": "export MAX_MEMORY_MB=40000; {python} dft/revision/cc_correction.py --job {id} --out {root}/out/{id} --xyz {root}/out/sp_neutral_pcm/geoms/neutral_pcm.xyz --labels neutral --solvent water --basis '6-31g*' --fno-fracs 0.8",
+   "note": "23 Nov 2026: user 'Go for an 80% run now'; FNO 80 % of the virtuals (222 of 277), completes the 6-31G* 50/65/80 series in IEF-PCM water (PTE reference as the DF-MP2 numbers)"
+  }
+ ]
+}
