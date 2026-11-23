@@ -6,26 +6,30 @@ rebuilt by symmetry from the crystal structure and optimised at B3LYP/6-311++G(d
 an IEF-PCM continuum for water. The deposit holds both optimisations, both finite-difference Hessians, the
 wavefunctions, the frontier-orbital, electrostatic-potential, NCI, ELF and LOL analyses, the run logs, and the
 register of every number in the associated article (`analysis/facts.json`) with the scripts that rebuild it and the
-tables.
+tables. It also holds the calculations added during the revision of the article: a second crystal form of the salt
+(P2₁/n, COD 2230422) treated in the same way, and 57 further jobs on proton transfer, the location of the LUMO,
+dispersion, the inter-ion torsion and excited states ("Revision calculations" below; `docs/revision.md`).
 
 > **Status: private build v0.1.0, not a release.** The rendered figures (`figures/`) and the DFT supplementary
-> information (`si/`) are added at release v1.0.0, together with the Zenodo DOI cited in the article. Nothing here is
-> final before v1.0.0.
+> information (`si/`) are added at release v1.0.0, together with the Zenodo DOI cited in the article, and so are the
+> revised facts register and tables. Nothing here is final before v1.0.0.
 
 ## Contents
 
 | Folder | Contents |
 |---|---|
-| `structure/` | Citation and checksum of the crystal structure (not redistributed), the ion-pair specification, and the checksum of the rebuilt starting geometry |
-| `cases/` | One JSON file per calculation: atom labels and order, fragments, the watched hydrogen bond, ELF/LOL planes, solvent |
+| `structure/` | Citation and checksum of the crystal structure (not redistributed), the ion-pair specification, and the checksum of the rebuilt starting geometry; `structure/btpcz/`: the same for the second form, with its starting geometry |
+| `cases/` | One JSON file per calculation: atom labels and order, fragments, the watched hydrogen bond, ELF/LOL planes, solvent (`btpc_*`: the published form; `btpcz_*`: the second form) |
 | `calculations/btpc_gas/`, `calculations/btpc_pcm/` | Per model: `geometry/` (start, optimised, trajectory), `wavefunction/` (Molden, PySCF checkpoint), `frequencies/` (Hessian, harmonic analysis), `orbitals/`, `multiwfn/` (inputs, settings and outputs), `grids/` (cubes and grids, xz-compressed), `run/` (logs and stage records) |
+| `calculations/btpcz_gas/`, `calculations/btpcz_pcm/` | The second crystal form (revision), in the same layout |
+| `calculations/revision1/` | The 57 revision jobs: one folder per job with its record (`result.json`), logs and output files, and the job-queue records (`README.md` there lists every job) |
 | `analysis/` | `facts.json` (1007 numbers, each with unit, source file and note), `facts.md` (the same as a readable dossier), `derived/` (MO fragment shares, crystal hydrogen bonds), `literature_claims.jsonl` (the five literature values the scripts parse) |
 | `tables/` | Every table of the article and its SI as Markdown (`tbl*.md`, made by `scripts/tables/make_tables.py`) with CSV copies; `INDEX.md` lists the facts keys and files behind each table |
 | `figures/` | Rendered figures of the article and SI (added at v1.0.0); every figure is made by a script in `scripts/figures/` |
 | `si/` | The DFT supplementary information as PDF (added at v1.0.0) |
-| `scripts/` | DFT pipeline (`dft/`, `run_case.sh`, `setup_linux.sh`), analysis, tables, figures, `paths.py`, `reproduce.sh`, `unpack_grids.sh` |
-| `environment/` | Pinned software environments and the Multiwfn and ParaView details |
-| `docs/` | `protocol.md`, `data_dictionary.md` (formats, units, atom indexing), `provenance.md` (what was changed for deposit), `REPRODUCE.md` |
+| `scripts/` | DFT pipeline (`dft/`, `run_case.sh`, `setup_linux.sh`), analysis, tables, figures, `paths.py`, `reproduce.sh`, `unpack_grids.sh`; `revision1/`: the scripts, job lists and environment installer of the revision calculations |
+| `environment/` | Pinned software environments and the Multiwfn and ParaView details; `revision1/`: the environment locks of the revision calculations |
+| `docs/` | `protocol.md`, `data_dictionary.md` (formats, units, atom indexing), `provenance.md` (what was changed for deposit), `REPRODUCE.md`, `revision.md` (the revision calculations) |
 
 `SHA256SUMS` lists the SHA-256 of every file; `CHANGELOG.md` lists the versions.
 
@@ -53,6 +57,30 @@ tables.
 `docs/protocol.md` gives every setting; `docs/data_dictionary.md` gives the formats and units (energies in Ha,
 coordinates in Å, cube grids in Bohr, wavenumbers in cm⁻¹, orbital energies in eV, atom indices 0-based in the JSON
 files and 1-based in the Multiwfn inputs).
+
+## Revision calculations (November 2026)
+
+During the revision of the article further calculations were run with PySCF 2.14.0 at the level of theory above
+unless stated otherwise (`docs/revision.md` gives the details, `calculations/revision1/README.md` the job list):
+
+- **The second crystal form**, P2₁/n (Zeng, Li and Wang, *Acta Cryst.* E67 (2011) o1464; COD 2230422), whose
+  asymmetric unit is itself an N6–H6···O1 hydrogen-bonded ion pair: optimisations in the gas phase and in IEF-PCM
+  water, finite-difference Hessians, frontier orbitals, Multiwfn analyses and charges (`calculations/btpcz_gas/`,
+  `calculations/btpcz_pcm/`, `structure/btpcz/`).
+- **The location of the LUMO** at both published minima: permittivity series (ε = 1 to 78.3553), ΔSCF N+1/N−1
+  states, Hirshfeld and CM5 charges, PBE0 and CAM-B3LYP.
+- **Dispersion:** B3LYP-D3(BJ) re-optimisations in both models with soft-mode Hessian checks.
+- **Proton transfer** along N4–H4N···O1: relaxed scans, optimisations started from the neutral form, single points
+  with ωB97X-D3(BJ), M06-2X, PBE0, CAM-B3LYP and DF-MP2/SCS-MP2, one-dimensional proton vibrational levels, and a
+  CCSD(T) correction to the DF-MP2 salt–neutral energy difference with frozen natural orbitals.
+- **The inter-ion torsion** C1–O1···N4–C12: relaxed scans with B3LYP and B3LYP-D3(BJ).
+- **Excited states:** TD-DFT (Tamm–Dancoff) with B3LYP and CAM-B3LYP for the ion pair and the free ions.
+
+The jobs ran through a small job queue on two 32-vCPU cloud VMs (55 and 2 jobs, 21–23 Nov 2026) in an environment
+installed from the explicit conda lock in `environment/revision1/`. Every job folder holds the job's record
+(`result.json`: inputs with SHA-256, settings, software versions, script SHA-256, results) and its logs. The PySCF
+checkpoints of these jobs are not deposited. The scripts are in `scripts/revision1/`; `docs/revision.md` shows
+how to run one job again.
 
 ## Provenance and known limitations
 

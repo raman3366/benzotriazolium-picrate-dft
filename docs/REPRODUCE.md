@@ -82,7 +82,8 @@ SHA-256 `17065c7a…5349b5`):
    cross-references numbered 1–7 and S1–S10). The check of the main-table order against the built manuscript is
    skipped, because the manuscript build is not deposited. With pandoc 3.1.3 on the PATH, `reproduce.sh` builds
    the same tables without the pandoc checks and says so.
-4. **Checksums**: `sha256sum -c SHA256SUMS` reports OK for all 282 files, before and after the rebuild.
+4. **Checksums**: `sha256sum -c SHA256SUMS` reports OK for all 282 files, before and after the rebuild (1048 files
+   since the revision calculations were added on 23 Nov 2026; the gate gave the same results then).
 
 The register in the project workspace held the same 1007 values; four text values differ only by the substitutions
 listed in docs/provenance.md (rules F1, F4, F5, F6).
@@ -102,6 +103,14 @@ Without it they fall back to DejaVu Sans, and some figures stop with "text outsi
 Checked on 16 Nov 2026 with the font in place: `fig_descriptors.py` (PNG pixel-identical to the figure of the
 article), `fig_scheme.py`, `fig_hbond_trajectory.py`, `figS_trajectory_full.py` and `figS_mo_composition.py` run
 without error. The 3-D figures need PyVista with off-screen rendering. The deposited figures come with v1.0.0.
+
+## Revision calculations
+
+`sha256sum -c SHA256SUMS` covers the files of the revision calculations (`docs/revision.md`) as well, and
+`scripts/unpack_grids.sh` unpacks and checks the grids of the second crystal form with the others (44 in all).
+`structure/btpcz/README.md` shows how to rebuild the second form's starting geometry and case files from the COD
+CIF; `docs/revision.md` shows how to run one revision job again. The facts register and the tables above do not
+yet include the revision results (they come with v1.0.0).
 
 ## Level B: full recomputation (Linux x86-64)
 

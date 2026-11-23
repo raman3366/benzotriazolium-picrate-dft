@@ -24,6 +24,15 @@ authors:
     given-names: "S."
     affiliation: "PG and Research Department of Zoology, Thiagarajar College (Autonomous), Madurai 625009, Tamil Nadu, India"
 repository-code: "https://github.com/raman3366/benzotriazolium-picrate-dft"
+abstract: >-
+  Data and scripts for a density functional study of the benzotriazolium picrate ion pair (CCDC 835950): the
+  N4–H4N···O1 ion pair optimised at B3LYP/6-311++G(d,p) in the gas phase and in IEF-PCM water, with Hessians,
+  wavefunctions, Multiwfn analyses, run logs, the register of every number in the associated article and the
+  scripts that rebuild it. Also the calculations of the revision of the article (November 2026): a second crystal
+  form (P2₁/n, COD 2230422) treated with the same protocol; the location of the LUMO against the permittivity,
+  ΔSCF states and Hirshfeld/CM5 charges; B3LYP-D3(BJ) minima; proton-transfer and inter-ion torsion scans with
+  other functionals, DF-MP2, a CCSD(T) correction and proton vibrational levels; and TD-DFT excited states, each job
+  with its record, logs, scripts and environment lock.
 # CC BY 4.0 for the dataset as a whole (data and documentation); the code in scripts/ is MIT (LICENSE).
 # The DOI (identifiers), the version and the article (preferred-citation) are added at release.
 license: CC-BY-4.0
@@ -39,6 +48,10 @@ keywords:
   - "Hessian"
   - "Multiwfn"
   - "noncovalent interactions"
+  - "proton transfer"
+  - "TD-DFT"
+  - "CCSD(T)"
+  - "polymorph"
 references:
   - type: article
     title: "Synthesis, structural, thermal and nonlinear optical characterization of benzotriazolinium picrate crystals"
@@ -71,3 +84,17 @@ references:
     publisher:
       name: "Cambridge Crystallographic Data Centre"
     doi: "10.5517/ccx1w4y"
+  - type: article
+    title: "Benzotriazolium picrate"
+    authors:
+      - family-names: "Zeng"
+        given-names: "B."
+      - family-names: "Li"
+        given-names: "J."
+      - family-names: "Wang"
+        given-names: "G.-d."
+    journal: "Acta Crystallographica Section E"
+    volume: 67
+    start: o1464
+    year: 2011
+    doi: "10.1107/S1600536811018307"

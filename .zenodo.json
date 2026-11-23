@@ -1,7 +1,7 @@
 {
   "title": "Benzotriazolium picrate (BTPC): B3LYP/6-311++G(d,p) data on the N4–H4N···O1 ion pair in the gas phase and in IEF-PCM water (geometries, Hessians, wavefunctions, wavefunction analyses and scripts)",
   "upload_type": "dataset",
-  "description": "<p>Data and scripts for a density functional study of the benzotriazolium picrate ion pair (BTPC; CCDC 835950). The ion pair held together by the charge-assisted N4–H4N···O1 hydrogen bond was rebuilt by symmetry from the crystal structure and optimised at B3LYP/6-311++G(d,p) with PySCF 2.14.0 and geomeTRIC 1.1.1, once in the gas phase and once in an IEF-PCM continuum for water.</p><p>Contents: the specification and builder of the ion pair; one settings file per calculation; starting, optimised and trajectory geometries; finite-difference Hessians and harmonic analyses; PySCF checkpoint and Molden wavefunctions; frontier-orbital, molecular electrostatic potential, NCI, ELF and LOL outputs from Multiwfn 2026.9.13 with their grids (xz-compressed); run logs; the register of every number in the associated paper (facts.json) with the scripts that rebuild it; the tables and figures of the paper; and the pinned software environments. The crystal structure itself (Dhanabal et al., Optik 2013) is not redistributed; obtain it from the CCDC.</p><p>Code (scripts/): MIT License. Data and documentation: CC BY 4.0 (see LICENSE and LICENSE-DATA).</p>",
+  "description": "<p>Data and scripts for a density functional study of the benzotriazolium picrate ion pair (BTPC; CCDC 835950). The ion pair held together by the charge-assisted N4–H4N···O1 hydrogen bond was rebuilt by symmetry from the crystal structure and optimised at B3LYP/6-311++G(d,p) with PySCF 2.14.0 and geomeTRIC 1.1.1, once in the gas phase and once in an IEF-PCM continuum for water.</p><p>Contents: the specification and builder of the ion pair; one settings file per calculation; starting, optimised and trajectory geometries; finite-difference Hessians and harmonic analyses; PySCF checkpoint and Molden wavefunctions; frontier-orbital, molecular electrostatic potential, NCI, ELF and LOL outputs from Multiwfn 2026.9.13 with their grids (xz-compressed); run logs; the register of every number in the associated paper (facts.json) with the scripts that rebuild it; the tables and figures of the paper; and the pinned software environments. The crystal structure itself (Dhanabal et al., Optik 2013) is not redistributed; obtain it from the CCDC.</p><p>Revision calculations (November 2026): a second crystal form of the salt (P2₁/n, COD 2230422; Zeng, Li and Wang, Acta Cryst. E 2011) treated with the same protocol (optimisations in the gas phase and in IEF-PCM water, finite-difference Hessians, frontier orbitals, Multiwfn analyses and charges); the location of the LUMO against the permittivity of the continuum, with ΔSCF states and Hirshfeld and CM5 charges; B3LYP-D3(BJ) minima with soft-mode Hessian checks; relaxed scans of the proton coordinate and of the inter-ion torsion, single points with ωB97X-D3(BJ), M06-2X, PBE0, CAM-B3LYP and DF-MP2, a CCSD(T) correction with frozen natural orbitals and one-dimensional proton vibrational levels; and TD-DFT excited states. Each of the 57 jobs comes with its record (inputs with checksums, settings, software versions, results), logs and output files, together with the scripts, the job lists and the explicit conda lock of the environment.</p><p>Code (scripts/): MIT License. Data and documentation: CC BY 4.0 (see LICENSE and LICENSE-DATA).</p>",
   "creators": [
     {
       "name": "Lasalle, B. Sahaya Infant",
@@ -42,7 +42,11 @@
     "B3LYP",
     "Hessian",
     "Multiwfn",
-    "noncovalent interactions"
+    "noncovalent interactions",
+    "proton transfer",
+    "TD-DFT",
+    "CCSD(T)",
+    "polymorph"
   ],
   "related_identifiers": [
     {
@@ -53,6 +57,12 @@
     },
     {
       "identifier": "10.1016/j.ijleo.2012.06.018",
+      "relation": "references",
+      "scheme": "doi",
+      "resource_type": "publication-article"
+    },
+    {
+      "identifier": "10.1107/S1600536811018307",
       "relation": "references",
       "scheme": "doi",
       "resource_type": "publication-article"

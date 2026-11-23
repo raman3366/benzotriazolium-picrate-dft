@@ -162,3 +162,41 @@ Comments that mention internal review rounds (for example "QA r4-m3", "audit/res
 | `calculations/btpc_pcm/grids/rdg.cube` | `8151552393fbf00babc6c41458e80cf49bde1e00437c58a7f378045557afe553` |
 | `calculations/btpc_pcm/grids/rdg_scatter.txt` | `61870a4ede9565cf8f7cf2794c6c3afd13715a7a83cf4b8a1890a544dbe9d202` |
 | `calculations/btpc_pcm/grids/sl2r.cube` | `375e980097c0cdb82a07a15475de827193bcdf88c275b9c58aa9305d83cbb473` |
+
+## Revision calculations (added 23 Nov 2026)
+
+The calculations of the revision of the article (`docs/revision.md`) were copied on 23 Nov 2026 from the project's
+archive of the two compute VMs: the queue folders (job outputs, per-job logs, runner records), the pipeline results
+of the second crystal form, the environment records of each VM, and the project folder of the revision scripts.
+They were copied by an explicit allowlist; results were not edited.
+
+| Project path | Here |
+|---|---|
+| `<run-dir>/queue/out/<job>/` of either VM | `calculations/revision1/<job>/` |
+| `<run-dir>/queue/logs/<job>.log` | `calculations/revision1/<job>/queue.log` |
+| `<run-dir>/queue/status.json`, `runner.log`, `runner.out` | `calculations/revision1/runner/vm1/`, `vm2/` |
+| `<run-dir>/env.lock.txt`, `env.versions.txt`, the installer log | `environment/revision1/vm1/`, `vm2/` (`setup.log`) |
+| `molecules/btpcz/results/<case>/<file>` | `calculations/<case>/<group>/<file>`, grouped as above; `softmode_check.json` in `frequencies/` |
+| `molecules/btpcz/cases/<case>.json` | `cases/<case>.json` |
+| `molecules/btpcz/input/btpcz_cluster.xyz` | `structure/btpcz/btpcz_cluster.xyz` |
+| `molecules/btpcz/input/2230422.cif`, `README.md` | not deposited; `structure/btpcz/README.md` gives the source, checksum and specification |
+| `dft/revision/` | `scripts/revision1/` (edits in `scripts/revision1/CHANGES.md`) |
+
+Not deposited: the `chk/` folders of the revision jobs (222 PySCF checkpoints and 20 geomeTRIC constraint files,
+746 MiB), the per-job exit-code files (the codes are in `status.json`), empty lock files, a copy
+of `sp_neutral_pcm/geoms/neutral_pcm.xyz` placed on the second VM (byte-identical), and for the second crystal form
+`opt.chk` (2 files, 31 MiB) and the pipeline pictures (15 files, 7.7 MiB), as for the published cases. The grids of
+the second form were xz-compressed like the others; their SHA-256 before compression are in `docs/grids.sha256`.
+
+Changes to the deposited copies (text files; counted replacements):
+
+| Rule | Files | What changed | Count |
+|---|---|---|---:|
+| D1 | 239 files in `calculations/revision1/`, 2 in `environment/revision1/` | Host name of the first compute VM (its domain names the cloud project) replaced by `<vm-1>` | 445 |
+| D2 | 9 files in `calculations/revision1/`, 2 in `environment/revision1/` | Host name of the second compute VM replaced by `<vm-2>` | 13 |
+| D3 | 344 files in `calculations/revision1/`, 9 in `calculations/btpcz_*/`, 4 in `environment/revision1/` | Absolute path of the working folder on the compute VMs (home folder of the VM user) replaced by `<run-dir>` | 4170 |
+| D4 | `calculations/revision1/c0_prep/queue.log` | User and group of the VM user in `ls -l` output replaced by `<user>` | 2 |
+| L3 | `calculations/btpcz_gas/wavefunction/final.chk`, `calculations/btpcz_pcm/wavefunction/final.chk` | As rule L3 above: the absolute path of the `opt.xyz` in the `mol` record replaced by `molecules/btpcz/results/<case>/opt.xyz`, padded with JSON whitespace to the same length; offsets and object lengths unchanged | 4 |
+
+The command `$HOME/r007/...` recorded for the host-preparation job `c0_prep` is kept as written (`r007` is the name
+of the working folder, not a path of any machine).
