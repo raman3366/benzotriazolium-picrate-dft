@@ -1,0 +1,1684 @@
+{
+  "job": "sp_scan_pbe0",
+  "script": "dft/revision/singlepoints.py",
+  "argv": [
+    "dft/revision/singlepoints.py",
+    "--job",
+    "sp_scan_pbe0",
+    "--out",
+    "<run-dir>/queue/out/sp_scan_pbe0",
+    "--scan",
+    "<run-dir>/queue/out/scan_gas_up",
+    "--scan",
+    "<run-dir>/queue/out/scan_gas_down",
+    "--scan",
+    "<run-dir>/queue/out/scan_gas_neutral",
+    "--methods",
+    "pbe0"
+  ],
+  "smoke": false,
+  "status": "done",
+  "started": "2026-11-22T03:45:45+05:30",
+  "restarts": 0,
+  "last_start": "2026-11-22T03:45:45+05:30",
+  "finished": "2026-11-22T05:06:30+05:30",
+  "host": {
+    "hostname": "<vm-1>",
+    "machine": "x86_64",
+    "cpu": "AMD EPYC 7B13",
+    "cpu_count": 32,
+    "ram_mb": 128799
+  },
+  "threads": 4,
+  "max_memory_mb": 8000,
+  "scratch": "<run-dir>/scratch/sp_scan_pbe0",
+  "software": {
+    "python": "3.11.16",
+    "pyscf": "2.14.0",
+    "numpy": "2.4.6",
+    "executable": "<run-dir>/env/bin/python",
+    "prefix": "<run-dir>/env",
+    "scipy": "1.17.1",
+    "h5py": "3.16.0",
+    "geometric": "1.1.1",
+    "libxc": "7.1.2",
+    "pyscf-dispersion": "1.5.0",
+    "conda_builds": {
+      "pyscf": "2.14.0 py311h990ede3_1302",
+      "pyscf-dispersion": "1.5.0 py311h5df2867_0",
+      "libxc-c": "7.1.2 cpu_hed2233d_2",
+      "libcint": "6.1.3 h64ba90f_2",
+      "libopenblas": "0.3.34 pthreads_hf13c14d_2",
+      "libblas": "3.11.0 12_h4a7cf45_openblas",
+      "numpy": "2.4.6 py311h2e04523_0",
+      "scipy": "1.17.1 py311hbe70eeb_1",
+      "geometric": "1.1.1 pyhd8ed1ab_0",
+      "python": "3.11.16 h5f976f7_2_cpython",
+      "_x86_64-microarch-level": "3 3_x86_64_v3"
+    }
+  },
+  "script_sha256": {
+    "singlepoints.py": "320ef254e22886e2ba446ece761f953cc1a75bb8e2748c45f929a2ccc526d114",
+    "rev_common.py": "fba929added9222d92adeca239e64fcb87eaaeefe6511ad436c2624eba72515a",
+    "proton_scan.py": "40700af2261d997133f57a35785309db744535ad3cd5022f207a2a260b800185"
+  },
+  "settings": {
+    "basis": "6-311++g(d,p)",
+    "grid_level": 4,
+    "grid_check_level": 5,
+    "pcm_lebedev_order": 29,
+    "solvent": null,
+    "eps": null,
+    "pcm_method": null,
+    "conv_tol": 1e-10,
+    "max_cycle": 150,
+    "density_fit": true,
+    "dft_auxbasis": "PySCF default (aug-cc-pVTZ-JKFIT)",
+    "mp2_auxbasis": "aug-cc-pvtz-ri",
+    "mp2_frozen_core": "pyscf.data.elements.chemcore",
+    "scs_mp2": [
+      1.2,
+      0.3333333333333333
+    ],
+    "case": "btpc_gas",
+    "methods": [
+      "pbe0"
+    ],
+    "select": "lowest",
+    "geometries": [
+      {
+        "label": "up_1.700",
+        "source": "scan scan_gas_up",
+        "path": "<run-dir>/queue/out/scan_gas_up/points/up_1.700.xyz",
+        "r_target_A": 1.7,
+        "chain": "up",
+        "E_b3lyp_Ha": -1317.2073392391617,
+        "chk": "<run-dir>/queue/out/scan_gas_up/chk/up_1.700.chk",
+        "scan_dir": "<run-dir>/queue/out/scan_gas_up",
+        "r_NH_A": 1.05917,
+        "r_HO_A": 1.7,
+        "r_NO_A": 2.58145,
+        "NHO_deg": 137.429,
+        "delta_A": -0.64083,
+        "local": "geoms/up_1.700.xyz"
+      },
+      {
+        "label": "up_1.600",
+        "source": "scan scan_gas_up",
+        "path": "<run-dir>/queue/out/scan_gas_up/points/up_1.600.xyz",
+        "r_target_A": 1.6,
+        "chain": "up",
+        "E_b3lyp_Ha": -1317.207831485072,
+        "chk": "<run-dir>/queue/out/scan_gas_up/chk/up_1.600.chk",
+        "scan_dir": "<run-dir>/queue/out/scan_gas_up",
+        "r_NH_A": 1.07141,
+        "r_HO_A": 1.6,
+        "r_NO_A": 2.54079,
+        "NHO_deg": 143.26567,
+        "delta_A": -0.52859,
+        "local": "geoms/up_1.600.xyz"
+      },
+      {
+        "label": "up_1.520",
+        "source": "scan scan_gas_up",
+        "path": "<run-dir>/queue/out/scan_gas_up/points/up_1.520.xyz",
+        "r_target_A": 1.52,
+        "chain": "up",
+        "E_b3lyp_Ha": -1317.2081214020482,
+        "chk": "<run-dir>/queue/out/scan_gas_up/chk/up_1.520.chk",
+        "scan_dir": "<run-dir>/queue/out/scan_gas_up",
+        "r_NH_A": 1.08648,
+        "r_HO_A": 1.52,
+        "r_NO_A": 2.50913,
+        "NHO_deg": 148.1274,
+        "delta_A": -0.43352,
+        "local": "geoms/up_1.520.xyz"
+      },
+      {
+        "label": "up_1.460",
+        "source": "scan scan_gas_up",
+        "path": "<run-dir>/queue/out/scan_gas_up/points/up_1.460.xyz",
+        "r_target_A": 1.46,
+        "chain": "up",
+        "E_b3lyp_Ha": -1317.2082190150186,
+        "chk": "<run-dir>/queue/out/scan_gas_up/chk/up_1.460.chk",
+        "scan_dir": "<run-dir>/queue/out/scan_gas_up",
+        "r_NH_A": 1.10192,
+        "r_HO_A": 1.46,
+        "r_NO_A": 2.48862,
+        "NHO_deg": 152.24411,
+        "delta_A": -0.35808,
+        "local": "geoms/up_1.460.xyz"
+      },
+      {
+        "label": "min",
+        "source": "scan scan_gas_up",
+        "path": "<run-dir>/queue/out/scan_gas_up/points/min.xyz",
+        "r_target_A": null,
+        "chain": "min",
+        "E_b3lyp_Ha": -1317.2082309381503,
+        "chk": "<run-dir>/queue/out/scan_gas_up/chk/min.chk",
+        "scan_dir": "<run-dir>/queue/out/scan_gas_up",
+        "r_NH_A": 1.10934,
+        "r_HO_A": 1.43697,
+        "r_NO_A": 2.47823,
+        "NHO_deg": 153.21491,
+        "delta_A": -0.32763,
+        "local": "geoms/min.xyz"
+      },
+      {
+        "label": "down_1.400",
+        "source": "scan scan_gas_down",
+        "path": "<run-dir>/queue/out/scan_gas_down/points/down_1.400.xyz",
+        "r_target_A": 1.4,
+        "chain": "down",
+        "E_b3lyp_Ha": -1317.2082035768676,
+        "chk": "<run-dir>/queue/out/scan_gas_down/chk/down_1.400.chk",
+        "scan_dir": "<run-dir>/queue/out/scan_gas_down",
+        "r_NH_A": 1.12348,
+        "r_HO_A": 1.4,
+        "r_NO_A": 2.46346,
+        "NHO_deg": 154.8044,
+        "delta_A": -0.27652,
+        "local": "geoms/down_1.400.xyz"
+      },
+      {
+        "label": "down_1.340",
+        "source": "scan scan_gas_down",
+        "path": "<run-dir>/queue/out/scan_gas_down/points/down_1.340.xyz",
+        "r_target_A": 1.34,
+        "chain": "down",
+        "E_b3lyp_Ha": -1317.2080471618306,
+        "chk": "<run-dir>/queue/out/scan_gas_down/chk/down_1.340.chk",
+        "scan_dir": "<run-dir>/queue/out/scan_gas_down",
+        "r_NH_A": 1.1523,
+        "r_HO_A": 1.34,
+        "r_NO_A": 2.44274,
+        "NHO_deg": 157.04292,
+        "delta_A": -0.1877,
+        "local": "geoms/down_1.340.xyz"
+      },
+      {
+        "label": "neutral_1.280",
+        "source": "scan scan_gas_neutral",
+        "path": "<run-dir>/queue/out/scan_gas_neutral/points/neutral_1.280.xyz",
+        "r_target_A": 1.28,
+        "chain": "neutral",
+        "E_b3lyp_Ha": -1317.2078277695273,
+        "chk": "<run-dir>/queue/out/scan_gas_neutral/chk/neutral_1.280.chk",
+        "scan_dir": "<run-dir>/queue/out/scan_gas_neutral",
+        "r_NH_A": 1.19315,
+        "r_HO_A": 1.28,
+        "r_NO_A": 2.43024,
+        "NHO_deg": 158.60875,
+        "delta_A": -0.08685,
+        "local": "geoms/neutral_1.280.xyz"
+      },
+      {
+        "label": "down_1.230",
+        "source": "scan scan_gas_down",
+        "path": "<run-dir>/queue/out/scan_gas_down/points/down_1.230.xyz",
+        "r_target_A": 1.23,
+        "chain": "down",
+        "E_b3lyp_Ha": -1317.2077288267333,
+        "chk": "<run-dir>/queue/out/scan_gas_down/chk/down_1.230.chk",
+        "scan_dir": "<run-dir>/queue/out/scan_gas_down",
+        "r_NH_A": 1.2412,
+        "r_HO_A": 1.23,
+        "r_NO_A": 2.42935,
+        "NHO_deg": 158.88,
+        "delta_A": 0.0112,
+        "local": "geoms/down_1.230.xyz"
+      },
+      {
+        "label": "down_1.180",
+        "source": "scan scan_gas_down",
+        "path": "<run-dir>/queue/out/scan_gas_down/points/down_1.180.xyz",
+        "r_target_A": 1.18,
+        "chain": "down",
+        "E_b3lyp_Ha": -1317.2078990911464,
+        "chk": "<run-dir>/queue/out/scan_gas_down/chk/down_1.180.chk",
+        "scan_dir": "<run-dir>/queue/out/scan_gas_down",
+        "r_NH_A": 1.3074,
+        "r_HO_A": 1.18,
+        "r_NO_A": 2.44202,
+        "NHO_deg": 158.04983,
+        "delta_A": 0.1274,
+        "local": "geoms/down_1.180.xyz"
+      },
+      {
+        "label": "down_1.130",
+        "source": "scan scan_gas_down",
+        "path": "<run-dir>/queue/out/scan_gas_down/points/down_1.130.xyz",
+        "r_target_A": 1.13,
+        "chain": "down",
+        "E_b3lyp_Ha": -1317.208549345935,
+        "chk": "<run-dir>/queue/out/scan_gas_down/chk/down_1.130.chk",
+        "scan_dir": "<run-dir>/queue/out/scan_gas_down",
+        "r_NH_A": 1.40359,
+        "r_HO_A": 1.13,
+        "r_NO_A": 2.47548,
+        "NHO_deg": 155.26305,
+        "delta_A": 0.27359,
+        "local": "geoms/down_1.130.xyz"
+      },
+      {
+        "label": "down_1.080",
+        "source": "scan scan_gas_down",
+        "path": "<run-dir>/queue/out/scan_gas_down/points/down_1.080.xyz",
+        "r_target_A": 1.08,
+        "chain": "down",
+        "E_b3lyp_Ha": -1317.2097629495788,
+        "chk": "<run-dir>/queue/out/scan_gas_down/chk/down_1.080.chk",
+        "scan_dir": "<run-dir>/queue/out/scan_gas_down",
+        "r_NH_A": 1.54458,
+        "r_HO_A": 1.08,
+        "r_NO_A": 2.53526,
+        "NHO_deg": 149.5253,
+        "delta_A": 0.46458,
+        "local": "geoms/down_1.080.xyz"
+      },
+      {
+        "label": "neutral_1.030",
+        "source": "scan scan_gas_neutral",
+        "path": "<run-dir>/queue/out/scan_gas_neutral/points/neutral_1.030.xyz",
+        "r_target_A": 1.03,
+        "chain": "neutral",
+        "E_b3lyp_Ha": -1317.211209302885,
+        "chk": "<run-dir>/queue/out/scan_gas_neutral/chk/neutral_1.030.chk",
+        "scan_dir": "<run-dir>/queue/out/scan_gas_neutral",
+        "r_NH_A": 1.76385,
+        "r_HO_A": 1.03,
+        "r_NO_A": 2.63235,
+        "NHO_deg": 139.36068,
+        "delta_A": 0.73385,
+        "local": "geoms/neutral_1.030.xyz"
+      },
+      {
+        "label": "neutral_0.980",
+        "source": "scan scan_gas_neutral",
+        "path": "<run-dir>/queue/out/scan_gas_neutral/points/neutral_0.980.xyz",
+        "r_target_A": 0.98,
+        "chain": "neutral",
+        "E_b3lyp_Ha": -1317.2114865613066,
+        "chk": "<run-dir>/queue/out/scan_gas_neutral/chk/neutral_0.980.chk",
+        "scan_dir": "<run-dir>/queue/out/scan_gas_neutral",
+        "r_NH_A": 1.95074,
+        "r_HO_A": 0.98,
+        "r_NO_A": 2.71432,
+        "NHO_deg": 132.88067,
+        "delta_A": 0.97074,
+        "local": "geoms/neutral_0.980.xyz"
+      }
+    ]
+  },
+  "inputs": {
+    "case": {
+      "path": "molecules/btpc/cases/btpc_gas.json",
+      "sha256": "2bfe9b766a4937b7bc9179ec861e86d5d3aac512a1687588a16f26ffff25aebc"
+    }
+  },
+  "items": {
+    "up_1.700|pbe0": {
+      "geometry": "up_1.700",
+      "method": "pbe0",
+      "kind": "dft",
+      "xc": "pbe0",
+      "grid_level": 4,
+      "E_Ha": -1315.7728317703422,
+      "scf_cycles": 12,
+      "scf_wall_s": 341.9,
+      "guess": "<run-dir>/queue/out/scan_gas_up/chk/up_1.700.chk",
+      "newton_fallback": false,
+      "scf_settings": {
+        "method": "DFRKS",
+        "xc": "pbe0",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/up_1.700_pbe0.chk",
+      "charges": {
+        "mulliken": {
+          "picrate": -0.9248,
+          "cation_core": 0.2599,
+          "H": 0.6649,
+          "picrate_plus_H": -0.2599,
+          "cation_with_H": 0.9248
+        },
+        "lowdin": {
+          "picrate": -0.81911,
+          "cation_core": 0.66955,
+          "H": 0.14956,
+          "picrate_plus_H": -0.66955,
+          "cation_with_H": 0.81911
+        }
+      },
+      "HOMO_eV": -6.812013479982758,
+      "LUMO_eV": -3.3483340255652303,
+      "gap_eV": 3.463679454417527,
+      "frontier_composition_mulliken_pct": {
+        "HOMO-1": {
+          "anion": 98.77,
+          "cation": 1.23
+        },
+        "HOMO": {
+          "anion": 99.69,
+          "cation": 0.31
+        },
+        "LUMO": {
+          "anion": 0.19,
+          "cation": 99.81
+        },
+        "LUMO+1": {
+          "anion": 99.61,
+          "cation": 0.39
+        }
+      },
+      "dipole_debye": [
+        12.3552,
+        -11.4925,
+        4.9361
+      ],
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_mo": 602,
+      "r_HO_A": 1.7,
+      "wall_s": 342.3,
+      "peak_rss_mb": 6173.9,
+      "status": "done",
+      "at": "2026-11-22T03:51:27+05:30"
+    },
+    "up_1.600|pbe0": {
+      "geometry": "up_1.600",
+      "method": "pbe0",
+      "kind": "dft",
+      "xc": "pbe0",
+      "grid_level": 4,
+      "E_Ha": -1315.7734508747226,
+      "scf_cycles": 13,
+      "scf_wall_s": 341.4,
+      "guess": "<run-dir>/queue/out/sp_scan_pbe0/chk/up_1.700_pbe0.chk",
+      "newton_fallback": false,
+      "scf_settings": {
+        "method": "DFRKS",
+        "xc": "pbe0",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/up_1.600_pbe0.chk",
+      "charges": {
+        "mulliken": {
+          "picrate": -0.9233,
+          "cation_core": 0.21157,
+          "H": 0.71173,
+          "picrate_plus_H": -0.21157,
+          "cation_with_H": 0.9233
+        },
+        "lowdin": {
+          "picrate": -0.79459,
+          "cation_core": 0.65276,
+          "H": 0.14183,
+          "picrate_plus_H": -0.65276,
+          "cation_with_H": 0.79459
+        }
+      },
+      "HOMO_eV": -6.859992172391494,
+      "LUMO_eV": -3.299284908629422,
+      "gap_eV": 3.560707263762072,
+      "frontier_composition_mulliken_pct": {
+        "HOMO-1": {
+          "anion": 98.36,
+          "cation": 1.64
+        },
+        "HOMO": {
+          "anion": 99.64,
+          "cation": 0.36
+        },
+        "LUMO": {
+          "anion": 0.23,
+          "cation": 99.77
+        },
+        "LUMO+1": {
+          "anion": 99.6,
+          "cation": 0.4
+        }
+      },
+      "dipole_debye": [
+        12.1701,
+        -11.3639,
+        4.7223
+      ],
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_mo": 602,
+      "r_HO_A": 1.6,
+      "wall_s": 341.7,
+      "peak_rss_mb": 6187.4,
+      "status": "done",
+      "at": "2026-11-22T03:57:09+05:30"
+    },
+    "up_1.520|pbe0": {
+      "geometry": "up_1.520",
+      "method": "pbe0",
+      "kind": "dft",
+      "xc": "pbe0",
+      "grid_level": 4,
+      "E_Ha": -1315.7738911965303,
+      "scf_cycles": 13,
+      "scf_wall_s": 370.3,
+      "guess": "<run-dir>/queue/out/sp_scan_pbe0/chk/up_1.600_pbe0.chk",
+      "newton_fallback": false,
+      "scf_settings": {
+        "method": "DFRKS",
+        "xc": "pbe0",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/up_1.520_pbe0.chk",
+      "charges": {
+        "mulliken": {
+          "picrate": -0.91783,
+          "cation_core": 0.16041,
+          "H": 0.75742,
+          "picrate_plus_H": -0.16041,
+          "cation_with_H": 0.91783
+        },
+        "lowdin": {
+          "picrate": -0.76539,
+          "cation_core": 0.63281,
+          "H": 0.13257,
+          "picrate_plus_H": -0.63282,
+          "cation_with_H": 0.76538
+        }
+      },
+      "HOMO_eV": -6.914411592551263,
+      "LUMO_eV": -3.2397200022313744,
+      "gap_eV": 3.6746915903198882,
+      "frontier_composition_mulliken_pct": {
+        "HOMO-1": {
+          "anion": 98.01,
+          "cation": 1.99
+        },
+        "HOMO": {
+          "anion": 99.56,
+          "cation": 0.44
+        },
+        "LUMO": {
+          "anion": 0.28,
+          "cation": 99.72
+        },
+        "LUMO+1": {
+          "anion": 99.6,
+          "cation": 0.4
+        }
+      },
+      "dipole_debye": [
+        11.9428,
+        -11.1392,
+        4.5317
+      ],
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_mo": 602,
+      "r_HO_A": 1.52,
+      "wall_s": 370.6,
+      "peak_rss_mb": 6214.1,
+      "status": "done",
+      "at": "2026-11-22T04:03:20+05:30"
+    },
+    "up_1.460|pbe0": {
+      "geometry": "up_1.460",
+      "method": "pbe0",
+      "kind": "dft",
+      "xc": "pbe0",
+      "grid_level": 4,
+      "E_Ha": -1315.7741321325334,
+      "scf_cycles": 13,
+      "scf_wall_s": 361.7,
+      "guess": "<run-dir>/queue/out/sp_scan_pbe0/chk/up_1.520_pbe0.chk",
+      "newton_fallback": false,
+      "scf_settings": {
+        "method": "DFRKS",
+        "xc": "pbe0",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/up_1.460_pbe0.chk",
+      "charges": {
+        "mulliken": {
+          "picrate": -0.90528,
+          "cation_core": 0.11617,
+          "H": 0.78911,
+          "picrate_plus_H": -0.11617,
+          "cation_with_H": 0.90528
+        },
+        "lowdin": {
+          "picrate": -0.73662,
+          "cation_core": 0.61308,
+          "H": 0.12354,
+          "picrate_plus_H": -0.61308,
+          "cation_with_H": 0.73662
+        }
+      },
+      "HOMO_eV": -6.9659625583568685,
+      "LUMO_eV": -3.1811881418247796,
+      "gap_eV": 3.784774416532089,
+      "frontier_composition_mulliken_pct": {
+        "HOMO-1": {
+          "anion": 97.81,
+          "cation": 2.19
+        },
+        "HOMO": {
+          "anion": 99.46,
+          "cation": 0.54
+        },
+        "LUMO": {
+          "anion": 0.32,
+          "cation": 99.68
+        },
+        "LUMO+1": {
+          "anion": 99.59,
+          "cation": 0.41
+        }
+      },
+      "dipole_debye": [
+        11.7214,
+        -10.8516,
+        4.332
+      ],
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_mo": 602,
+      "r_HO_A": 1.46,
+      "wall_s": 361.9,
+      "peak_rss_mb": 6214.1,
+      "status": "done",
+      "at": "2026-11-22T04:09:21+05:30"
+    },
+    "min|pbe0": {
+      "geometry": "min",
+      "method": "pbe0",
+      "kind": "dft",
+      "xc": "pbe0",
+      "grid_level": 4,
+      "E_Ha": -1315.7742288744093,
+      "scf_cycles": 10,
+      "scf_wall_s": 285.1,
+      "guess": "<run-dir>/queue/out/sp_scan_pbe0/chk/up_1.460_pbe0.chk",
+      "newton_fallback": false,
+      "scf_settings": {
+        "method": "DFRKS",
+        "xc": "pbe0",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/min_pbe0.chk",
+      "charges": {
+        "mulliken": {
+          "picrate": -0.90328,
+          "cation_core": 0.09884,
+          "H": 0.80445,
+          "picrate_plus_H": -0.09883,
+          "cation_with_H": 0.90329
+        },
+        "lowdin": {
+          "picrate": -0.72367,
+          "cation_core": 0.60363,
+          "H": 0.12005,
+          "picrate_plus_H": -0.60362,
+          "cation_with_H": 0.72368
+        }
+      },
+      "HOMO_eV": -6.992890062336907,
+      "LUMO_eV": -3.1515605429052873,
+      "gap_eV": 3.841329519431621,
+      "frontier_composition_mulliken_pct": {
+        "HOMO-1": {
+          "anion": 97.78,
+          "cation": 2.22
+        },
+        "HOMO": {
+          "anion": 99.41,
+          "cation": 0.59
+        },
+        "LUMO": {
+          "anion": 0.35,
+          "cation": 99.65
+        },
+        "LUMO+1": {
+          "anion": 99.59,
+          "cation": 0.41
+        }
+      },
+      "dipole_debye": [
+        11.5945,
+        -10.7352,
+        4.2472
+      ],
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_mo": 602,
+      "r_HO_A": 1.43697,
+      "wall_s": 285.4,
+      "peak_rss_mb": 6214.1,
+      "status": "done",
+      "at": "2026-11-22T04:14:07+05:30"
+    },
+    "down_1.400|pbe0": {
+      "geometry": "down_1.400",
+      "method": "pbe0",
+      "kind": "dft",
+      "xc": "pbe0",
+      "grid_level": 4,
+      "E_Ha": -1315.774330193935,
+      "scf_cycles": 11,
+      "scf_wall_s": 314.8,
+      "guess": "<run-dir>/queue/out/sp_scan_pbe0/chk/min_pbe0.chk",
+      "newton_fallback": false,
+      "scf_settings": {
+        "method": "DFRKS",
+        "xc": "pbe0",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/down_1.400_pbe0.chk",
+      "charges": {
+        "mulliken": {
+          "picrate": -0.90039,
+          "cation_core": 0.07103,
+          "H": 0.82935,
+          "picrate_plus_H": -0.07104,
+          "cation_with_H": 0.90038
+        },
+        "lowdin": {
+          "picrate": -0.70075,
+          "cation_core": 0.58634,
+          "H": 0.1144,
+          "picrate_plus_H": -0.58635,
+          "cation_with_H": 0.70074
+        }
+      },
+      "HOMO_eV": -7.0398073268872325,
+      "LUMO_eV": -3.1004131421599563,
+      "gap_eV": 3.939394184727276,
+      "frontier_composition_mulliken_pct": {
+        "HOMO-1": {
+          "anion": 97.82,
+          "cation": 2.18
+        },
+        "HOMO": {
+          "anion": 99.31,
+          "cation": 0.69
+        },
+        "LUMO": {
+          "anion": 0.42,
+          "cation": 99.58
+        },
+        "LUMO+1": {
+          "anion": 99.59,
+          "cation": 0.41
+        }
+      },
+      "dipole_debye": [
+        11.3775,
+        -10.5384,
+        4.1347
+      ],
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_mo": 602,
+      "r_HO_A": 1.4,
+      "wall_s": 315.1,
+      "peak_rss_mb": 6214.1,
+      "status": "done",
+      "at": "2026-11-22T04:19:22+05:30"
+    },
+    "down_1.340|pbe0": {
+      "geometry": "down_1.340",
+      "method": "pbe0",
+      "kind": "dft",
+      "xc": "pbe0",
+      "grid_level": 4,
+      "E_Ha": -1315.774402141711,
+      "scf_cycles": 12,
+      "scf_wall_s": 332.9,
+      "guess": "<run-dir>/queue/out/sp_scan_pbe0/chk/down_1.400_pbe0.chk",
+      "newton_fallback": false,
+      "scf_settings": {
+        "method": "DFRKS",
+        "xc": "pbe0",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/down_1.340_pbe0.chk",
+      "charges": {
+        "mulliken": {
+          "picrate": -0.89071,
+          "cation_core": 0.0278,
+          "H": 0.86291,
+          "picrate_plus_H": -0.0278,
+          "cation_with_H": 0.89071
+        },
+        "lowdin": {
+          "picrate": -0.65654,
+          "cation_core": 0.55173,
+          "H": 0.10481,
+          "picrate_plus_H": -0.55173,
+          "cation_with_H": 0.65654
+        }
+      },
+      "HOMO_eV": -7.131264141865977,
+      "LUMO_eV": -3.00208673649725,
+      "gap_eV": 4.1291774053687265,
+      "frontier_composition_mulliken_pct": {
+        "HOMO-1": {
+          "anion": 98.29,
+          "cation": 1.71
+        },
+        "HOMO": {
+          "anion": 99.14,
+          "cation": 0.86
+        },
+        "LUMO": {
+          "anion": 0.66,
+          "cation": 99.34
+        },
+        "LUMO+1": {
+          "anion": 99.49,
+          "cation": 0.51
+        }
+      },
+      "dipole_debye": [
+        10.9535,
+        -10.1048,
+        3.9333
+      ],
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_mo": 602,
+      "r_HO_A": 1.34,
+      "wall_s": 333.2,
+      "peak_rss_mb": 6214.1,
+      "status": "done",
+      "at": "2026-11-22T04:24:55+05:30"
+    },
+    "neutral_1.280|pbe0": {
+      "geometry": "neutral_1.280",
+      "method": "pbe0",
+      "kind": "dft",
+      "xc": "pbe0",
+      "grid_level": 4,
+      "E_Ha": -1315.7744098263333,
+      "scf_cycles": 12,
+      "scf_wall_s": 326.6,
+      "guess": "<run-dir>/queue/out/sp_scan_pbe0/chk/down_1.340_pbe0.chk",
+      "newton_fallback": false,
+      "scf_settings": {
+        "method": "DFRKS",
+        "xc": "pbe0",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/neutral_1.280_pbe0.chk",
+      "charges": {
+        "mulliken": {
+          "picrate": -0.87233,
+          "cation_core": -0.01564,
+          "H": 0.88797,
+          "picrate_plus_H": 0.01564,
+          "cation_with_H": 0.87233
+        },
+        "lowdin": {
+          "picrate": -0.60245,
+          "cation_core": 0.50498,
+          "H": 0.09747,
+          "picrate_plus_H": -0.50498,
+          "cation_with_H": 0.60245
+        }
+      },
+      "HOMO_eV": -7.2503072500683166,
+      "LUMO_eV": -2.8775458976193704,
+      "gap_eV": 4.372761352448946,
+      "frontier_composition_mulliken_pct": {
+        "HOMO-1": {
+          "anion": 97.26,
+          "cation": 2.74
+        },
+        "HOMO": {
+          "anion": 98.85,
+          "cation": 1.15
+        },
+        "LUMO": {
+          "anion": 2.19,
+          "cation": 97.81
+        },
+        "LUMO+1": {
+          "anion": 98.36,
+          "cation": 1.64
+        }
+      },
+      "dipole_debye": [
+        10.4691,
+        -9.4495,
+        3.6579
+      ],
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_mo": 602,
+      "r_HO_A": 1.28,
+      "wall_s": 326.8,
+      "peak_rss_mb": 6214.1,
+      "status": "done",
+      "at": "2026-11-22T04:30:22+05:30"
+    },
+    "down_1.230|pbe0": {
+      "geometry": "down_1.230",
+      "method": "pbe0",
+      "kind": "dft",
+      "xc": "pbe0",
+      "grid_level": 4,
+      "E_Ha": -1315.7744490257955,
+      "scf_cycles": 13,
+      "scf_wall_s": 357.3,
+      "guess": "<run-dir>/queue/out/sp_scan_pbe0/chk/neutral_1.280_pbe0.chk",
+      "newton_fallback": false,
+      "scf_settings": {
+        "method": "DFRKS",
+        "xc": "pbe0",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/down_1.230_pbe0.chk",
+      "charges": {
+        "mulliken": {
+          "picrate": -0.85257,
+          "cation_core": -0.04916,
+          "H": 0.90173,
+          "picrate_plus_H": 0.04916,
+          "cation_with_H": 0.85257
+        },
+        "lowdin": {
+          "picrate": -0.54877,
+          "cation_core": 0.45327,
+          "H": 0.0955,
+          "picrate_plus_H": -0.45327,
+          "cation_with_H": 0.54877
+        }
+      },
+      "HOMO_eV": -7.375309429865547,
+      "LUMO_eV": -2.8224023690124618,
+      "gap_eV": 4.552907060853086,
+      "frontier_composition_mulliken_pct": {
+        "HOMO-1": {
+          "anion": 44.72,
+          "cation": 55.28
+        },
+        "HOMO": {
+          "anion": 98.56,
+          "cation": 1.44
+        },
+        "LUMO": {
+          "anion": 96.58,
+          "cation": 3.42
+        },
+        "LUMO+1": {
+          "anion": 6.2,
+          "cation": 93.8
+        }
+      },
+      "dipole_debye": [
+        9.9005,
+        -8.8868,
+        3.3382
+      ],
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_mo": 602,
+      "r_HO_A": 1.23,
+      "wall_s": 357.7,
+      "peak_rss_mb": 6214.1,
+      "status": "done",
+      "at": "2026-11-22T04:36:20+05:30"
+    },
+    "down_1.180|pbe0": {
+      "geometry": "down_1.180",
+      "method": "pbe0",
+      "kind": "dft",
+      "xc": "pbe0",
+      "grid_level": 4,
+      "E_Ha": -1315.7746581608526,
+      "scf_cycles": 12,
+      "scf_wall_s": 333.4,
+      "guess": "<run-dir>/queue/out/sp_scan_pbe0/chk/down_1.230_pbe0.chk",
+      "newton_fallback": false,
+      "scf_settings": {
+        "method": "DFRKS",
+        "xc": "pbe0",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/down_1.180_pbe0.chk",
+      "charges": {
+        "mulliken": {
+          "picrate": -0.8313,
+          "cation_core": -0.07553,
+          "H": 0.90683,
+          "picrate_plus_H": 0.07553,
+          "cation_with_H": 0.8313
+        },
+        "lowdin": {
+          "picrate": -0.48742,
+          "cation_core": 0.38797,
+          "H": 0.09945,
+          "picrate_plus_H": -0.38797,
+          "cation_with_H": 0.48742
+        }
+      },
+      "HOMO_eV": -7.528590987410014,
+      "LUMO_eV": -2.8920439561170066,
+      "gap_eV": 4.6365470312930075,
+      "frontier_composition_mulliken_pct": {
+        "HOMO-1": {
+          "anion": 1.93,
+          "cation": 98.07
+        },
+        "HOMO": {
+          "anion": 98.24,
+          "cation": 1.76
+        },
+        "LUMO": {
+          "anion": 99.49,
+          "cation": 0.51
+        },
+        "LUMO+1": {
+          "anion": 92.03,
+          "cation": 7.97
+        }
+      },
+      "dipole_debye": [
+        9.2462,
+        -8.1909,
+        3.046
+      ],
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_mo": 602,
+      "r_HO_A": 1.18,
+      "wall_s": 333.6,
+      "peak_rss_mb": 6214.1,
+      "status": "done",
+      "at": "2026-11-22T04:41:53+05:30"
+    },
+    "down_1.130|pbe0": {
+      "geometry": "down_1.130",
+      "method": "pbe0",
+      "kind": "dft",
+      "xc": "pbe0",
+      "grid_level": 4,
+      "E_Ha": -1315.7751856825976,
+      "scf_cycles": 13,
+      "scf_wall_s": 346.9,
+      "guess": "<run-dir>/queue/out/sp_scan_pbe0/chk/down_1.180_pbe0.chk",
+      "newton_fallback": false,
+      "scf_settings": {
+        "method": "DFRKS",
+        "xc": "pbe0",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/down_1.130_pbe0.chk",
+      "charges": {
+        "mulliken": {
+          "picrate": -0.80832,
+          "cation_core": -0.09389,
+          "H": 0.90221,
+          "picrate_plus_H": 0.09389,
+          "cation_with_H": 0.80832
+        },
+        "lowdin": {
+          "picrate": -0.41825,
+          "cation_core": 0.30613,
+          "H": 0.11211,
+          "picrate_plus_H": -0.30614,
+          "cation_with_H": 0.41824
+        }
+      },
+      "HOMO_eV": -7.714895905334346,
+      "LUMO_eV": -2.9870719249773185,
+      "gap_eV": 4.7278239803570274,
+      "frontier_composition_mulliken_pct": {
+        "HOMO-1": {
+          "anion": 1.2,
+          "cation": 98.8
+        },
+        "HOMO": {
+          "anion": 97.48,
+          "cation": 2.52
+        },
+        "LUMO": {
+          "anion": 99.62,
+          "cation": 0.38
+        },
+        "LUMO+1": {
+          "anion": 98.84,
+          "cation": 1.16
+        }
+      },
+      "dipole_debye": [
+        8.4347,
+        -7.3934,
+        2.6876
+      ],
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_mo": 602,
+      "r_HO_A": 1.13,
+      "wall_s": 347.1,
+      "peak_rss_mb": 6214.1,
+      "status": "done",
+      "at": "2026-11-22T04:47:40+05:30"
+    },
+    "down_1.080|pbe0": {
+      "geometry": "down_1.080",
+      "method": "pbe0",
+      "kind": "dft",
+      "xc": "pbe0",
+      "grid_level": 4,
+      "E_Ha": -1315.7761104894307,
+      "scf_cycles": 14,
+      "scf_wall_s": 381.3,
+      "guess": "<run-dir>/queue/out/sp_scan_pbe0/chk/down_1.130_pbe0.chk",
+      "newton_fallback": false,
+      "scf_settings": {
+        "method": "DFRKS",
+        "xc": "pbe0",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/down_1.080_pbe0.chk",
+      "charges": {
+        "mulliken": {
+          "picrate": -0.78386,
+          "cation_core": -0.0944,
+          "H": 0.87826,
+          "picrate_plus_H": 0.0944,
+          "cation_with_H": 0.78386
+        },
+        "lowdin": {
+          "picrate": -0.34218,
+          "cation_core": 0.21244,
+          "H": 0.12973,
+          "picrate_plus_H": -0.21245,
+          "cation_with_H": 0.34217
+        }
+      },
+      "HOMO_eV": -7.831973882148667,
+      "LUMO_eV": -3.128288688071956,
+      "gap_eV": 4.703685194076711,
+      "frontier_composition_mulliken_pct": {
+        "HOMO-1": {
+          "anion": 92.14,
+          "cation": 7.86
+        },
+        "HOMO": {
+          "anion": 6.33,
+          "cation": 93.67
+        },
+        "LUMO": {
+          "anion": 99.66,
+          "cation": 0.34
+        },
+        "LUMO+1": {
+          "anion": 99.36,
+          "cation": 0.64
+        }
+      },
+      "dipole_debye": [
+        7.4168,
+        -6.5401,
+        2.3685
+      ],
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_mo": 602,
+      "r_HO_A": 1.08,
+      "wall_s": 381.6,
+      "peak_rss_mb": 6214.1,
+      "status": "done",
+      "at": "2026-11-22T04:54:02+05:30"
+    },
+    "neutral_1.030|pbe0": {
+      "geometry": "neutral_1.030",
+      "method": "pbe0",
+      "kind": "dft",
+      "xc": "pbe0",
+      "grid_level": 4,
+      "E_Ha": -1315.7771382043002,
+      "scf_cycles": 16,
+      "scf_wall_s": 413.9,
+      "guess": "<run-dir>/queue/out/sp_scan_pbe0/chk/down_1.080_pbe0.chk",
+      "newton_fallback": false,
+      "scf_settings": {
+        "method": "DFRKS",
+        "xc": "pbe0",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/neutral_1.030_pbe0.chk",
+      "charges": {
+        "mulliken": {
+          "picrate": -0.726,
+          "cation_core": -0.06151,
+          "H": 0.78751,
+          "picrate_plus_H": 0.06151,
+          "cation_with_H": 0.726
+        },
+        "lowdin": {
+          "picrate": -0.25918,
+          "cation_core": 0.11922,
+          "H": 0.13996,
+          "picrate_plus_H": -0.11922,
+          "cation_with_H": 0.25918
+        }
+      },
+      "HOMO_eV": -7.630275166927604,
+      "LUMO_eV": -3.3196565903171384,
+      "gap_eV": 4.310618576610467,
+      "frontier_composition_mulliken_pct": {
+        "HOMO-1": {
+          "anion": 0.08,
+          "cation": 99.92
+        },
+        "HOMO": {
+          "anion": 0.24,
+          "cation": 99.76
+        },
+        "LUMO": {
+          "anion": 99.84,
+          "cation": 0.16
+        },
+        "LUMO+1": {
+          "anion": 99.75,
+          "cation": 0.25
+        }
+      },
+      "dipole_debye": [
+        6.0809,
+        -5.6939,
+        2.1915
+      ],
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_mo": 602,
+      "r_HO_A": 1.03,
+      "wall_s": 414.2,
+      "peak_rss_mb": 6214.1,
+      "status": "done",
+      "at": "2026-11-22T05:00:56+05:30"
+    },
+    "neutral_0.980|pbe0": {
+      "geometry": "neutral_0.980",
+      "method": "pbe0",
+      "kind": "dft",
+      "xc": "pbe0",
+      "grid_level": 4,
+      "E_Ha": -1315.7772236515325,
+      "scf_cycles": 12,
+      "scf_wall_s": 333.8,
+      "guess": "<run-dir>/queue/out/sp_scan_pbe0/chk/neutral_1.030_pbe0.chk",
+      "newton_fallback": false,
+      "scf_settings": {
+        "method": "DFRKS",
+        "xc": "pbe0",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/neutral_0.980_pbe0.chk",
+      "charges": {
+        "mulliken": {
+          "picrate": -0.63993,
+          "cation_core": -0.03046,
+          "H": 0.67039,
+          "picrate_plus_H": 0.03046,
+          "cation_with_H": 0.63993
+        },
+        "lowdin": {
+          "picrate": -0.19126,
+          "cation_core": 0.07513,
+          "H": 0.11612,
+          "picrate_plus_H": -0.07514,
+          "cation_with_H": 0.19125
+        }
+      },
+      "HOMO_eV": -7.490714901456329,
+      "LUMO_eV": -3.4406497166981302,
+      "gap_eV": 4.050065184758198,
+      "frontier_composition_mulliken_pct": {
+        "HOMO-1": {
+          "anion": 0.05,
+          "cation": 99.95
+        },
+        "HOMO": {
+          "anion": 0.08,
+          "cation": 99.92
+        },
+        "LUMO": {
+          "anion": 99.87,
+          "cation": 0.13
+        },
+        "LUMO+1": {
+          "anion": 99.82,
+          "cation": 0.18
+        }
+      },
+      "dipole_debye": [
+        5.3014,
+        -4.968,
+        1.8651
+      ],
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_mo": 602,
+      "r_HO_A": 0.98,
+      "wall_s": 334.0,
+      "peak_rss_mb": 6214.1,
+      "status": "done",
+      "at": "2026-11-22T05:06:30+05:30"
+    }
+  },
+  "timings": {
+    "up_1.700|pbe0": 342.3,
+    "up_1.600|pbe0": 341.7,
+    "up_1.520|pbe0": 370.6,
+    "up_1.460|pbe0": 361.9,
+    "min|pbe0": 285.4,
+    "down_1.400|pbe0": 315.1,
+    "down_1.340|pbe0": 333.2,
+    "neutral_1.280|pbe0": 326.8,
+    "down_1.230|pbe0": 357.7,
+    "down_1.180|pbe0": 333.6,
+    "down_1.130|pbe0": 347.1,
+    "down_1.080|pbe0": 381.6,
+    "neutral_1.030|pbe0": 414.2,
+    "neutral_0.980|pbe0": 334.0
+  },
+  "error": null,
+  "summary": {
+    "reference_geometry": "min",
+    "E_ref_Ha": {
+      "b3lyp_scan": -1317.2082309381503,
+      "pbe0": -1315.7742288744093
+    },
+    "columns": [
+      "b3lyp_scan",
+      "pbe0"
+    ],
+    "rows": [
+      {
+        "geometry": "up_1.700",
+        "r_HO_A": 1.7,
+        "r_NH_A": 1.05917,
+        "r_NO_A": 2.58145,
+        "b3lyp_scan": 0.56,
+        "pbe0": 0.877
+      },
+      {
+        "geometry": "up_1.600",
+        "r_HO_A": 1.6,
+        "r_NH_A": 1.07141,
+        "r_NO_A": 2.54079,
+        "b3lyp_scan": 0.251,
+        "pbe0": 0.488
+      },
+      {
+        "geometry": "up_1.520",
+        "r_HO_A": 1.52,
+        "r_NH_A": 1.08648,
+        "r_NO_A": 2.50913,
+        "b3lyp_scan": 0.069,
+        "pbe0": 0.212
+      },
+      {
+        "geometry": "up_1.460",
+        "r_HO_A": 1.46,
+        "r_NH_A": 1.10192,
+        "r_NO_A": 2.48862,
+        "b3lyp_scan": 0.007,
+        "pbe0": 0.061
+      },
+      {
+        "geometry": "min",
+        "r_HO_A": 1.43697,
+        "r_NH_A": 1.10934,
+        "r_NO_A": 2.47823,
+        "b3lyp_scan": 0.0,
+        "pbe0": 0.0
+      },
+      {
+        "geometry": "down_1.400",
+        "r_HO_A": 1.4,
+        "r_NH_A": 1.12348,
+        "r_NO_A": 2.46346,
+        "b3lyp_scan": 0.017,
+        "pbe0": -0.064
+      },
+      {
+        "geometry": "down_1.340",
+        "r_HO_A": 1.34,
+        "r_NH_A": 1.1523,
+        "r_NO_A": 2.44274,
+        "b3lyp_scan": 0.115,
+        "pbe0": -0.109
+      },
+      {
+        "geometry": "neutral_1.280",
+        "r_HO_A": 1.28,
+        "r_NH_A": 1.19315,
+        "r_NO_A": 2.43024,
+        "b3lyp_scan": 0.253,
+        "pbe0": -0.114
+      },
+      {
+        "geometry": "down_1.230",
+        "r_HO_A": 1.23,
+        "r_NH_A": 1.2412,
+        "r_NO_A": 2.42935,
+        "b3lyp_scan": 0.315,
+        "pbe0": -0.138
+      },
+      {
+        "geometry": "down_1.180",
+        "r_HO_A": 1.18,
+        "r_NH_A": 1.3074,
+        "r_NO_A": 2.44202,
+        "b3lyp_scan": 0.208,
+        "pbe0": -0.269
+      },
+      {
+        "geometry": "down_1.130",
+        "r_HO_A": 1.13,
+        "r_NH_A": 1.40359,
+        "r_NO_A": 2.47548,
+        "b3lyp_scan": -0.2,
+        "pbe0": -0.6
+      },
+      {
+        "geometry": "down_1.080",
+        "r_HO_A": 1.08,
+        "r_NH_A": 1.54458,
+        "r_NO_A": 2.53526,
+        "b3lyp_scan": -0.961,
+        "pbe0": -1.181
+      },
+      {
+        "geometry": "neutral_1.030",
+        "r_HO_A": 1.03,
+        "r_NH_A": 1.76385,
+        "r_NO_A": 2.63235,
+        "b3lyp_scan": -1.869,
+        "pbe0": -1.826
+      },
+      {
+        "geometry": "neutral_0.980",
+        "r_HO_A": 0.98,
+        "r_NH_A": 1.95074,
+        "r_NO_A": 2.71432,
+        "b3lyp_scan": -2.043,
+        "pbe0": -1.879
+      }
+    ]
+  },
+  "peak_rss_mb": 6214.1
+}

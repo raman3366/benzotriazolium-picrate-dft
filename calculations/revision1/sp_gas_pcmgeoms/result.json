@@ -1,0 +1,272 @@
+{
+  "job": "sp_gas_pcmgeoms",
+  "script": "dft/revision/singlepoints.py",
+  "argv": [
+    "dft/revision/singlepoints.py",
+    "--job",
+    "sp_gas_pcmgeoms",
+    "--out",
+    "<run-dir>/queue/out/sp_gas_pcmgeoms",
+    "--xyz",
+    "<run-dir>/repo/molecules/btpc/results/btpc_pcm/opt.xyz",
+    "--xyz",
+    "<run-dir>/queue/out/sp_neutral_pcm/geoms/neutral_pcm.xyz",
+    "--methods",
+    "dfmp2",
+    "--mp2-aux",
+    "aug-cc-pvtz-ri"
+  ],
+  "smoke": false,
+  "status": "done",
+  "started": "2026-11-22T16:23:50+05:30",
+  "restarts": 0,
+  "last_start": "2026-11-22T16:23:50+05:30",
+  "finished": "2026-11-22T16:30:53+05:30",
+  "host": {
+    "hostname": "<vm-1>",
+    "machine": "x86_64",
+    "cpu": "AMD EPYC 7B13",
+    "cpu_count": 32,
+    "ram_mb": 128799
+  },
+  "threads": 4,
+  "max_memory_mb": 16000,
+  "scratch": "<run-dir>/scratch/sp_gas_pcmgeoms",
+  "software": {
+    "python": "3.11.16",
+    "pyscf": "2.14.0",
+    "numpy": "2.4.6",
+    "executable": "<run-dir>/env/bin/python",
+    "prefix": "<run-dir>/env",
+    "scipy": "1.17.1",
+    "h5py": "3.16.0",
+    "geometric": "1.1.1",
+    "libxc": "7.1.2",
+    "pyscf-dispersion": "1.5.0",
+    "conda_builds": {
+      "pyscf": "2.14.0 py311h990ede3_1302",
+      "pyscf-dispersion": "1.5.0 py311h5df2867_0",
+      "libxc-c": "7.1.2 cpu_hed2233d_2",
+      "libcint": "6.1.3 h64ba90f_2",
+      "libopenblas": "0.3.34 pthreads_hf13c14d_2",
+      "libblas": "3.11.0 12_h4a7cf45_openblas",
+      "numpy": "2.4.6 py311h2e04523_0",
+      "scipy": "1.17.1 py311hbe70eeb_1",
+      "geometric": "1.1.1 pyhd8ed1ab_0",
+      "python": "3.11.16 h5f976f7_2_cpython",
+      "_x86_64-microarch-level": "3 3_x86_64_v3"
+    }
+  },
+  "script_sha256": {
+    "singlepoints.py": "8eddc675d38d9808ddca7ee1a4c01bc10ccecf0c345f7d1b9e8ccbb6a062f381",
+    "rev_common.py": "fba929added9222d92adeca239e64fcb87eaaeefe6511ad436c2624eba72515a",
+    "proton_scan.py": "40700af2261d997133f57a35785309db744535ad3cd5022f207a2a260b800185"
+  },
+  "settings": {
+    "basis": "6-311++g(d,p)",
+    "grid_level": 4,
+    "grid_check_level": 5,
+    "pcm_lebedev_order": 29,
+    "solvent": null,
+    "eps": null,
+    "pcm_method": null,
+    "conv_tol": 1e-10,
+    "max_cycle": 150,
+    "density_fit": true,
+    "dft_auxbasis": "PySCF default (aug-cc-pVTZ-JKFIT)",
+    "mp2_auxbasis": "aug-cc-pvtz-ri",
+    "mp2_frozen_core": "pyscf.data.elements.chemcore",
+    "scs_mp2": [
+      1.2,
+      0.3333333333333333
+    ],
+    "case": "btpc_gas",
+    "methods": [
+      "dfmp2"
+    ],
+    "select": "lowest",
+    "geometries": [
+      {
+        "label": "opt",
+        "source": "xyz",
+        "path": "<run-dir>/repo/molecules/btpc/results/btpc_pcm/opt.xyz",
+        "r_target_A": null,
+        "chain": "xyz",
+        "E_b3lyp_Ha": null,
+        "chk": null,
+        "r_NH_A": 1.05258,
+        "r_HO_A": 1.63529,
+        "r_NO_A": 2.67182,
+        "NHO_deg": 167.16381,
+        "delta_A": -0.58272,
+        "local": "geoms/opt.xyz"
+      },
+      {
+        "label": "neutral_pcm",
+        "source": "xyz",
+        "path": "<run-dir>/queue/out/sp_neutral_pcm/geoms/neutral_pcm.xyz",
+        "r_target_A": null,
+        "chain": "xyz",
+        "E_b3lyp_Ha": null,
+        "chk": null,
+        "r_NH_A": 1.54098,
+        "r_HO_A": 1.05021,
+        "r_NO_A": 2.57325,
+        "NHO_deg": 166.25467,
+        "delta_A": 0.49077,
+        "local": "geoms/neutral_pcm.xyz"
+      }
+    ]
+  },
+  "inputs": {
+    "case": {
+      "path": "molecules/btpc/cases/btpc_gas.json",
+      "sha256": "2bfe9b766a4937b7bc9179ec861e86d5d3aac512a1687588a16f26ffff25aebc"
+    }
+  },
+  "items": {
+    "opt|dfmp2": {
+      "geometry": "opt",
+      "method": "dfmp2",
+      "kind": "mp2",
+      "E_HF_Ha": -1309.6850003989766,
+      "E_corr_Ha": -4.135645492510799,
+      "E_corr_os_Ha": -2.977426221279572,
+      "E_corr_ss_Ha": -1.1582192712312271,
+      "E_Ha": -1313.8206458914874,
+      "E_SCS_MP2_Ha": -1313.6439849549226,
+      "frozen_core_orbitals": 25,
+      "mp2_auxbasis": "aug-cc-pvtz-ri",
+      "n_aux_mp2": 3018,
+      "hf_auxbasis": "PySCF default JK-fit",
+      "hf_scf_cycles": 16,
+      "hf_wall_s": 139.9,
+      "mp2_wall_s": 55.7,
+      "guess": "minao",
+      "newton_fallback": false,
+      "HF_HOMO_eV": -8.850772470090584,
+      "HF_LUMO_eV": -0.02744339687264472,
+      "scf_settings": {
+        "method": "DFRHF",
+        "xc": null,
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": null,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 16000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "C": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "H": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/opt_dfmp2.chk",
+      "n_aux": 2968,
+      "n_mo": 603,
+      "r_HO_A": 1.63529,
+      "wall_s": 195.8,
+      "peak_rss_mb": 12903.2,
+      "status": "done",
+      "at": "2026-11-22T16:27:06+05:30"
+    },
+    "neutral_pcm|dfmp2": {
+      "geometry": "neutral_pcm",
+      "method": "dfmp2",
+      "kind": "mp2",
+      "E_HF_Ha": -1309.693948650075,
+      "E_corr_Ha": -4.14884682286282,
+      "E_corr_os_Ha": -2.985967233073953,
+      "E_corr_ss_Ha": -1.1628795897888677,
+      "E_Ha": -1313.842795472938,
+      "E_SCS_MP2_Ha": -1313.6647358596933,
+      "frozen_core_orbitals": 25,
+      "mp2_auxbasis": "aug-cc-pvtz-ri",
+      "n_aux_mp2": 3018,
+      "hf_auxbasis": "PySCF default JK-fit",
+      "hf_scf_cycles": 22,
+      "hf_wall_s": 171.6,
+      "mp2_wall_s": 55.1,
+      "guess": "<run-dir>/queue/out/sp_gas_pcmgeoms/chk/opt_dfmp2.chk",
+      "newton_fallback": false,
+      "HF_HOMO_eV": -9.819457735742777,
+      "HF_LUMO_eV": 0.42245075514056085,
+      "scf_settings": {
+        "method": "DFRHF",
+        "xc": null,
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": null,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 16000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "C": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "H": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/neutral_pcm_dfmp2.chk",
+      "n_aux": 2968,
+      "n_mo": 603,
+      "r_HO_A": 1.05021,
+      "wall_s": 226.7,
+      "peak_rss_mb": 12903.2,
+      "status": "done",
+      "at": "2026-11-22T16:30:53+05:30"
+    }
+  },
+  "timings": {
+    "opt|dfmp2": 195.8,
+    "neutral_pcm|dfmp2": 226.7
+  },
+  "error": null,
+  "summary": {
+    "reference_geometry": "lowest per method",
+    "E_ref_Ha": {
+      "dfmp2": -1313.842795472938,
+      "scs-mp2": -1313.6647358596933
+    },
+    "columns": [
+      "dfmp2",
+      "scs-mp2"
+    ],
+    "rows": [
+      {
+        "geometry": "opt",
+        "r_HO_A": 1.63529,
+        "r_NH_A": 1.05258,
+        "r_NO_A": 2.67182,
+        "dfmp2": 13.899,
+        "scs-mp2": 13.021
+      },
+      {
+        "geometry": "neutral_pcm",
+        "r_HO_A": 1.05021,
+        "r_NH_A": 1.54098,
+        "r_NO_A": 2.57325,
+        "dfmp2": 0.0,
+        "scs-mp2": 0.0
+      }
+    ]
+  },
+  "peak_rss_mb": 12903.2
+}

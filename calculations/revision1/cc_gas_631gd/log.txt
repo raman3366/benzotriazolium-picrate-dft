@@ -1,0 +1,19 @@
+[2026-11-22 07:47:49 PM IST] job cc_gas_631gd (dft/revision/cc_correction.py) on <vm-1>: threads 6, max_memory 22000 MB, scratch <run-dir>/scratch/cc_gas_631gd, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 07:47:49 PM IST] 2 geometries (salt, neutral); basis 6-31g*; gas phase; FNO fractions of the virtual space 0.5
+[2026-11-22 07:48:35 PM IST] salt: E_HF = -1309.3379008522 Ha (16 cycles), nao 366; RI basis {'H': 'cc-pvdz-ri', 'O': 'cc-pvdz-ri', 'C': 'cc-pvdz-ri', 'N': 'cc-pvdz-ri'}; full-space MP2 for the NOs
+[2026-11-22 07:49:34 PM IST] salt: MP2 full space (RI) -3.77376798 Ha (59 s), 64 occ x 277 vir; NO sets [138]
+[2026-11-22 07:49:34 PM IST] salt|f0.500: FNO-CCSD(T) with 138 of 277 virtual NOs (93.04 % of the NO occupation, smallest kept 3.74e-03)
+[2026-11-22 07:49:52 PM IST]   DF-CCSD space: 64 occ x 138 vir, naux 1512; MP2 (same space, RI) -3.05130111 Ha; |F_offdiag| max oo/vv/ov 2.7e-07/1.8e-07/2.4e-07
+[2026-11-22 08:38:03 PM IST]   CCSD -3.04994511 Ha (2902 s); T1 0.0153, D1 0.0705, D2 0.2038
+[2026-11-22 11:42:26 PM IST]   (T) -0.10342430 Ha (11062 s); delta = CCSD(T) - MP2 = -0.10206830 Ha
+[2026-11-22 11:42:26 PM IST] salt|f0.500: delta_CCSD 0.00135600, delta_T -0.10342430, delta -0.10206830 Ha (with scaled (T) -0.12655642); MP2 truncation -0.722467 Ha (3.88 h)
+[2026-11-22 11:42:26 PM IST] salt: all fractions done (3.91 h)
+[2026-11-22 11:43:07 PM IST] neutral: E_HF = -1309.3461350299 Ha (16 cycles), nao 366; RI basis {'H': 'cc-pvdz-ri', 'O': 'cc-pvdz-ri', 'C': 'cc-pvdz-ri', 'N': 'cc-pvdz-ri'}; full-space MP2 for the NOs
+[2026-11-22 11:43:56 PM IST] neutral: MP2 full space (RI) -3.78405198 Ha (49 s), 64 occ x 277 vir; NO sets [138]
+[2026-11-22 11:43:56 PM IST] neutral|f0.500: FNO-CCSD(T) with 138 of 277 virtual NOs (93.05 % of the NO occupation, smallest kept 3.73e-03)
+[2026-11-22 11:44:14 PM IST]   DF-CCSD space: 64 occ x 138 vir, naux 1512; MP2 (same space, RI) -3.05874243 Ha; |F_offdiag| max oo/vv/ov 4.1e-07/1.6e-07/2.3e-07
+[2026-11-23 12:34:42 AM IST]   CCSD -3.05549287 Ha (3038 s); T1 0.0151, D1 0.0694, D2 0.2063
+[2026-11-23 04:59:57 AM IST]   (T) -0.10417846 Ha (15915 s); delta = CCSD(T) - MP2 = -0.10092889 Ha
+[2026-11-23 04:59:58 AM IST] neutral|f0.500: delta_CCSD 0.00324956, delta_T -0.10417846, delta -0.10092889 Ha (with scaled (T) -0.12563239); MP2 truncation -0.725310 Ha (5.27 h)
+[2026-11-23 04:59:58 AM IST] neutral: all fractions done (5.29 h)
+[2026-11-23 04:59:58 AM IST] job cc_gas_631gd finished (peak RSS 9746 MB)

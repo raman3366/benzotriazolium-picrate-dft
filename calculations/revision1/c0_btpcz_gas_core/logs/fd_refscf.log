@@ -1,0 +1,8 @@
+
+===== 2026-11-21T08:02:23  $ <run-dir>/env/bin/python <run-dir>/repo/dft/revision/c0_case.py --internal-refscf btpcz_gas <run-dir>/queue/out/c0_btpcz_gas_core/fd/ref.json
+
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+converged SCF energy = -1317.21139739422
+[c0 refscf] btpcz_gas: SCF E = -1317.2113973942 Ha (135 s); 606 basis functions, 33 atoms

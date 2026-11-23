@@ -1,0 +1,537 @@
+#INFO: **** input file is <run-dir>/repo/dft/revision/cc_correction.py ****
+"""
+Coupled-cluster correction to the DF-MP2 energies of the BTPC ion pair (revision; added 22 Nov 2026).
+
+Why: in the IEF-PCM water model the hybrid functionals keep the salt (N4-H...O1) below the neutral pair (N4...H-O1)
+while DF-MP2 and SCS-MP2 reverse the order (sp_min_pcm, sp_neutral_pcm).  CCSD(T) decides between them.
+
+Composite (focal-point) scheme:  E[CCSD(T)] ~ E[DF-MP2 / 6-311++G(d,p)] + delta,
+  delta = E_corr[CCSD(T)] - E_corr[MP2], both in a smaller basis (--basis) and in the same space of frozen natural
+  orbitals (FNO): the virtual natural orbitals of the full-space MP2 density, kept until --fno-pct of the virtual
+  occupation sum, semicanonicalised (PySCF mp.make_fno).  MP2 and CCSD(T) share the orbitals, the frozen core
+  (PySCF chemcore: 1s of C, N, O), the density-fitted integrals (RI auxiliary basis from
+  df.make_auxbasis(mol, mp2fit=True)) and the reference, so the FNO truncation and the DF error largely cancel in
+  delta and cancel further in the difference between two geometries.
+Reference: density-fitted RHF (PySCF default JK-fit basis), conv_tol 1e-10; with --solvent water it is IEF-PCM HF
+(eps 78.3553, Lebedev 29) and the reaction field stays frozen at the HF density for MP2 and CCSD(T), as for the DF-MP2
+numbers of singlepoints.py (PTE scheme): the correlation energies are computed with the solvent-polarised HF orbitals
+and Fock matrix.
+
+Per geometry and FNO size (item '<label>|f<frac>'): E_HF, E_corr MP2 in the full space (same RI integrals), the FNO
+size and kept occupation, E_corr MP2 in the FNO space (from the CCSD initial amplitudes, RI integrals), E_corr CCSD, E(T),
+delta_CCSD = E_CCSD - E_MP2(FNO), delta_T = E(T), delta = delta_CCSD + delta_T, the truncation estimates
+dMP2 = MP2(full) - MP2(FNO) and (T) scaled by MP2(full)/MP2(FNO), the T1/D1/D2 diagnostics and |E(T)|/|E_CCSD|, and checks
+(Fock off-diagonal norm in the semicanonical basis, CCSD convergence).  Summary: one entry per finished geometry and FNO size; the salt-minus-neutral
+difference of delta is formed in the analysis (separate jobs per geometry run in parallel).
+
+Usage:
+  python dft/revision/cc_correction.py --job ID --out DIR --xyz FILE [--xyz FILE ...] --labels a[,b]
+         [--solvent water] [--basis 6-31g*] [--fno-fracs 0.5,0.65,0.8] [--case btpc_gas]
+Production truncation: --fno-fracs gives fixed numbers of virtual NOs (fraction x total virtuals, identical for both
+geometries, since they have the same atoms and basis), run from the smallest; the series shows whether the
+salt-minus-neutral difference of delta has converged.  (The selftest found that 0.99 of the occupation sum moves the
+absolute delta by 1.6-3 kcal/mol in 6-31G* for small molecules, so a single aggressive threshold is not enough.)
+  python dft/revision/cc_correction.py --job ID --out DIR --selftest
+--selftest: water dimer and formamide-water, 6-31G*, gas and IEF-PCM: (1) FNO keeping all virtual NOs reproduces
+plain CCSD(T) and MP2 (no truncation) to 1e-7 Ha; (2) the CCSD initial-amplitude MP2 equals the full-space DF-MP2
+with the same RI basis; (3) the delta error of keeping 0.99 of the occupation sum (--fno-pct), with and without
+the scaled (T).  Exit 1 on a failed check.
+Restart: finished (geometry, FNO size) items are skipped; a restart redoes the SCF (from its checkpoint) and the
+full-space MP2 for that geometry.
+"""
+import sys, pathlib, argparse, time, gc
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import rev_common as rc          # first: pins the thread pools
+import numpy as np
+
+
+def parser():
+    p = rc.add_common_args(argparse.ArgumentParser(description=__doc__.split('\n')[1]))
+    p.add_argument('--xyz', action='append', default=[], help='geometry (XYZ, Angstrom); repeatable')
+    p.add_argument('--labels', default='', help='comma list, one label per --xyz')
+    p.add_argument('--case', default='btpc_gas', help='case for charge and spin (default btpc_gas: 0, 0)')
+    p.add_argument('--solvent', default=None, help='gas (default) | water | <eps>')
+    p.add_argument('--basis', default='6-31g*')
+    p.add_argument('--fno-pct', type=float, default=0.99, help='kept fraction of the virtual NO occupation sum (selftest)')
+    p.add_argument('--fno-fracs', default='0.5,0.65,0.8',
+                   help='production: comma list of kept fractions of the virtual space (fixed NO counts, the same for '
+                        'every geometry), run in this order; one item per geometry and fraction')
+    p.add_argument('--conv-tol', type=float, default=1e-8, help='CCSD energy convergence (Ha)')
+    p.add_argument('--selftest', action='store_true')
+    return p
+
+
+def make_ref(mol, eps, conv_tol=1e-10, chk=None, guess=None, log=print):
+    from pyscf import scf
+    mf = scf.RHF(mol).density_fit()
+    mf.conv_tol = conv_tol; mf.max_cycle = rc.MAX_CYCLE
+    if chk:
+        mf.chkfile = str(chk)
+    if eps is not None:
+        mf = mf.PCM()
+        mf.with_solvent.method = rc.PCM_METHOD; mf.with_solvent.eps = eps
+        mf.with_solvent.lebedev_order = rc.PCM_LEBEDEV_ORDER
+    rc.run_scf(mf, chk_guess=guess, log=log)
+    return mf
+
+
+def ri_df(mol):
+    """One RI auxiliary basis per geometry (df.make_auxbasis(mp2fit=True)), shared by the full-space MP2 and every
+    CC step, so that MP2(full) - MP2(FNO) measures the truncation alone.  Returns the DF object and the basis spec."""
+    from pyscf import df
+    aux = df.make_auxbasis(mol, mp2fit=True)
+    return df.DF(mol, auxbasis=aux), aux
+
+
+def full_mp2(mf, nfc, rdf):
+    """Full-space DF-MP2 with t2 kept (for the natural orbitals), on the shared RI basis."""
+    from pyscf import mp
+    pt = mp.MP2(mf, frozen=nfc)
+    pt.with_df = rdf
+    pt.max_memory = mf.mol.max_memory
+    pt.kernel(with_t2=True)
+    return pt
+
+
+def no_sets(pt, nfc, nvir_list=(), pct=None):
+    """Frozen lists and semicanonical NO coefficients for each requested number of kept virtual NOs (and for a
+    kept fraction of the occupation sum if pct is given), built while t2 exists.  Returns (occupations, sets);
+    sets[k] = (frozen, coeff, kept occupation fraction, smallest kept occupation)."""
+    dm = pt.make_rdm1(with_frozen=False)
+    n = np.sort(np.linalg.eigvalsh(dm[pt.nocc:, pt.nocc:]))[::-1]
+    nvir = pt.nmo - pt.nocc
+    sets = {}
+    for k in list(nvir_list) + ([None] if pct is not None else []):
+        frozen, coeff = pt.make_fno(pct_occ=pct, nvir_act=k) if k is None else pt.make_fno(nvir_act=k)
+        kk = nvir - (len(frozen) - nfc)
+        sets['pct' if k is None else kk] = (frozen, coeff, float(n[:kk].sum() / n.sum()), float(n[kk - 1]))
+    return n, sets
+
+
+def cc_in_space(mf, frozen, coeff, rdf, conv_tol=1e-8, log=print):
+    """DF-CCSD(T) and MP2 (CCSD initial amplitudes) in the space given by frozen/coeff, on the shared RI basis."""
+    from pyscf import cc
+    mol = mf.mol
+    out = {}
+    mycc = cc.CCSD(mf, frozen=frozen, mo_coeff=coeff)
+    out['cc_class'] = f'{type(mycc).__module__}.{type(mycc).__name__}'
+    if 'dfccsd' not in out['cc_class']:
+        raise RuntimeError(f'expected DF-CCSD, got {out["cc_class"]}')
+    mycc.with_df = rdf
+    mycc.max_memory = mol.max_memory
+    mycc.conv_tol = conv_tol; mycc.conv_tol_normt = 1e-6; mycc.max_cycle = 100
+    t = time.time()
+    eris = mycc.ao2mo()
+    nocc_a = eris.nocc
+    f = eris.fock
+    off = f - np.diag(np.diag(f))
+    out['fock_offdiag_max'] = {'oo': float(np.abs(off[:nocc_a, :nocc_a]).max()),
+                               'vv': float(np.abs(off[nocc_a:, nocc_a:]).max()),
+                               'ov': float(np.abs(off[:nocc_a, nocc_a:]).max())}
+    out['naux_cc'] = int(eris.naux) if hasattr(eris, 'naux') else None
+    out['n_active_occ'] = int(nocc_a); out['n_active_vir'] = int(f.shape[0] - nocc_a)
+    e_mp2 = float(mycc.init_amps(eris)[0])            # amplitudes not kept: kernel rebuilds the same guess
+    out['E_corr_mp2_active_Ha'] = e_mp2
+    log(f"  DF-CCSD space: {nocc_a} occ x {out['n_active_vir']} vir, naux {out['naux_cc']}; MP2 (same space, RI) "
+        f"{e_mp2:.8f} Ha; |F_offdiag| max oo/vv/ov {out['fock_offdiag_max']['oo']:.1e}/"
+        f"{out['fock_offdiag_max']['vv']:.1e}/{out['fock_offdiag_max']['ov']:.1e}")
+    mycc.kernel(eris=eris)
+    if not mycc.converged:
+        raise RuntimeError('CCSD did not converge')
+    out['E_corr_ccsd_Ha'] = float(mycc.e_corr); out['wall_ccsd_s'] = round(time.time() - t, 1)
+    out['diagnostics'] = {'T1': float(mycc.get_t1_diagnostic()), 'D1': float(mycc.get_d1_diagnostic()),
+                          'D2': float(mycc.get_d2_diagnostic())}
+    log(f"  CCSD {mycc.e_corr:.8f} Ha ({out['wall_ccsd_s']:.0f} s); T1 {out['diagnostics']['T1']:.4f}, "
+        f"D1 {out['diagnostics']['D1']:.4f}, D2 {out['diagnostics']['D2']:.4f}")
+    t = time.time()
+    et = float(mycc.ccsd_t(eris=eris))
+    out['E_T_Ha'] = et; out['wall_t_s'] = round(time.time() - t, 1)
+    out['diagnostics']['T_over_ccsd'] = abs(et) / abs(out['E_corr_ccsd_Ha'])
+    out['delta_ccsd_Ha'] = out['E_corr_ccsd_Ha'] - e_mp2
+    out['delta_T_Ha'] = et
+    out['delta_Ha'] = out['delta_ccsd_Ha'] + et
+    log(f"  (T) {et:.8f} Ha ({out['wall_t_s']:.0f} s); delta = CCSD(T) - MP2 = {out['delta_Ha']:.8f} Ha")
+    del eris, mycc; gc.collect()
+    return out
+
+
+def add_truncation_estimates(rec, e_mp2_full):
+    """Standard FNO truncation estimates from the shared-RI MP2: dMP2 = MP2(full) - MP2(FNO), and (T) scaled by
+    MP2(full)/MP2(FNO).  delta itself needs no correction for the CCSD part to the extent CCSD tracks MP2."""
+    rec['E_corr_mp2_full_ri_Ha'] = float(e_mp2_full)
+    rec['dMP2_truncation_Ha'] = float(e_mp2_full - rec['E_corr_mp2_active_Ha'])
+    rec['T_scaled_Ha'] = rec['E_T_Ha'] * e_mp2_full / rec['E_corr_mp2_active_Ha']
+    rec['delta_T_scaled_Ha'] = rec['delta_ccsd_Ha'] + rec['T_scaled_Ha']
+    return rec
+
+
+def selftest(job, args):
+    from pyscf.data import elements
+    mols = {
+        'water_dimer': 'O -1.551 -0.115 0.000; H -1.934 0.763 0.000; H -0.600 0.041 0.000; '
+                       'O 1.351 0.111 0.000; H 1.680 -0.374 -0.759; H 1.680 -0.374 0.759',
+        'formamide_water': 'C 0.000 0.418 0.000; O 1.204 0.418 0.000; N -0.680 1.590 0.000; H -0.512 -0.562 0.000; '
+                           'H -0.190 2.470 0.000; H -1.690 1.560 0.000; O 2.050 2.900 0.000; H 1.680 2.000 0.000; '
+                           'H 2.990 2.780 0.000'}
+    ok = True
+    res = {}
+    for name, atom in mols.items():
+        for eps in (None, 78.3553):
+            tag = f"{name}_{'pcm' if eps else 'gas'}"
+            mol = rc.build_mol([(a.split()[0], tuple(float(x) for x in a.split()[1:])) for a in atom.split(';')],
+                               0, 0, basis='6-31g*', verbose=0)
+            mf = make_ref(mol, eps, log=job.log)
+            nfc = int(elements.chemcore(mol))
+            rdf, aux = ri_df(mol)
+            pt = full_mp2(mf, nfc, rdf)
+            nvir = pt.nmo - pt.nocc
+            n, sets = no_sets(pt, nfc, [nvir], pct=0.99)
+            pt.t2 = None
+            job.log(f'{tag}: E_HF {mf.e_tot:.10f}, MP2 full (RI) {pt.e_corr:.10f}')
+            a = cc_in_space(mf, nfc, mf.mo_coeff, rdf, conv_tol=1e-10, log=job.log)
+            b = cc_in_space(mf, sets[nvir][0], sets[nvir][1], rdf, conv_tol=1e-10, log=job.log)
+            c = add_truncation_estimates(cc_in_space(mf, sets['pct'][0], sets['pct'][1], rdf, conv_tol=1e-10,
+                                                     log=job.log), pt.e_corr)
+            chk = {'plain_vs_fno100_ccsd': abs(a['E_corr_ccsd_Ha'] - b['E_corr_ccsd_Ha']),
+                   'plain_vs_fno100_T': abs(a['E_T_Ha'] - b['E_T_Ha']),
+                   'plain_vs_fno100_mp2': abs(a['E_corr_mp2_active_Ha'] - b['E_corr_mp2_active_Ha']),
+                   'cc_init_mp2_vs_full_dfmp2_same_ri': abs(a['E_corr_mp2_active_Ha'] - pt.e_corr)}
+            passed = all(v < 1e-7 for v in chk.values())
+            ok &= passed
+            res[tag] = {'checks_Ha': chk, 'passed': passed, 'delta_plain_Ha': a['delta_Ha'], 'delta_fno099_Ha': c['delta_Ha'],
+                        'delta_fno099_Tscaled_Ha': c['delta_T_scaled_Ha'],
+                        'delta_error_fno099_kcal': (c['delta_Ha'] - a['delta_Ha']) * rc.HARTREE_KCAL,
+                        'delta_error_fno099_Tscaled_kcal': (c['delta_T_scaled_Ha'] - a['delta_Ha']) * rc.HARTREE_KCAL,
+                        'nvir_kept_fno099': c['n_active_vir'], 'nvir_total': nvir, 'diagnostics_plain': a['diagnostics']}
+            job.log(f"{tag}: {'PASS' if passed else 'FAIL'} {chk}; delta plain {a['delta_Ha']:.8f}, FNO 0.99 "
+                    f"{c['delta_Ha']:.8f} ({res[tag]['delta_error_fno099_kcal']:+.4f} kcal/mol; with scaled (T) "
+                    f"{res[tag]['delta_error_fno099_Tscaled_kcal']:+.4f}), {c['n_active_vir']}/{nvir} vir")
+    job.r['selftest'] = res; job.save()
+    return ok
+
+
+def run(job, args):
+    if args.selftest:
+        return selftest(job, args)
+    case = rc.load_case(args.case)
+    eps = rc.solvent_eps(args.solvent)
+    labels = [s.strip() for s in args.labels.split(',') if s.strip()]
+    if not args.xyz or len(labels) != len(args.xyz):
+        raise SystemExit('give one label per --xyz')
+    job.r['settings'].update({'basis': args.basis, 'solvent': args.solvent if eps else None, 'eps': eps,
+                              'pcm_method': rc.PCM_METHOD if eps else None,
+                              'pcm_lebedev_order': rc.PCM_LEBEDEV_ORDER if eps else None,
+                              'reference': 'DF-RHF (PySCF default JK-fit), conv_tol 1e-10' + (', IEF-PCM, reaction field frozen at HF (PTE)' if eps else ''),
+                              'correlation': 'DF-CCSD(T) and MP2 in the FNO space; RI basis df.make_auxbasis(mp2fit=True); frozen core chemcore',
+                              'cc_conv_tol': args.conv_tol, 'charge': case['charge'],
+                              'spin': case['spin']})
+    (job.out / 'pyscf').mkdir(exist_ok=True)
+    for lab, x in zip(labels, args.xyz):
+        job.input_file(f'xyz_{lab}', x)
+    job.save()
+    job.log(f"{len(labels)} geometries ({', '.join(labels)}); basis {args.basis}; "
+            f"{'IEF-PCM eps ' + str(eps) if eps else 'gas phase'}; FNO fractions of the virtual space {args.fno_fracs}")
+    from pyscf.data import elements
+    fracs = [float(v) for v in args.fno_fracs.split(',') if v.strip()]
+    job.r['settings']['fno_fracs'] = fracs
+    job.save()
+    for lab, x in zip(labels, args.xyz):
+        keys = [f'{lab}|f{fr:.3f}' for fr in fracs]
+        if all(job.done(k) for k in keys):
+            continue
+        t0 = time.time()
+        mol = rc.build_mol(str(x), case['charge'], case['spin'], basis=args.basis, verbose=4,
+                           output=job.out / 'pyscf' / f'{lab}.log')
+        chk = job.chk_dir / f'{lab}.chk'
+        mf = make_ref(mol, eps, chk=chk, guess=chk if chk.exists() else None, log=job.log)
+        nfc = int(elements.chemcore(mol))
+        rdf, aux = ri_df(mol)
+        job.log(f"{lab}: E_HF = {mf.e_tot:.10f} Ha ({mf._cycles} cycles), nao {mol.nao}; RI basis {aux}; "
+                f"full-space MP2 for the NOs")
+        t = time.time()
+        pt = full_mp2(mf, nfc, rdf)
+        nvir_total = pt.nmo - pt.nocc
+        ks = {fr: max(1, int(round(fr * nvir_total))) for fr in fracs}
+        n, sets = no_sets(pt, nfc, sorted(set(ks.values())))
+        e_mp2_full = float(pt.e_corr); nocc_act = int(pt.nocc)
+        pt.t2 = None; del pt; gc.collect()                 # t2 released before any CCSD
+        job.log(f"{lab}: MP2 full space (RI) {e_mp2_full:.8f} Ha ({time.time() - t:.0f} s), {nocc_act} occ x "
+                f"{nvir_total} vir; NO sets {sorted(set(ks.values()))}")
+        aux_rec = {'scf_jk': str(getattr(getattr(mf, 'with_df', None), 'auxbasis', None)), 'ri': aux}
+        for fr, key in zip(fracs, keys):
+            if job.done(key):
+                continue
+            k = ks[fr]
+            frozen, coeff, occ_kept, occ_min = sets[k]
+            job.put(key, {'geometry': lab, 'frac': fr, 'nvir_act': k}, status='running')
+            t = time.time()
+            job.log(f"{key}: FNO-CCSD(T) with {k} of {nvir_total} virtual NOs ({100 * occ_kept:.2f} % of the NO "
+                    f"occupation, smallest kept {occ_min:.2e})")
+            rec = {'geometry': lab, 'xyz': str(x), 'frac': fr, 'E_HF_Ha': float(mf.e_tot), 'n_frozen_core': nfc,
+                   'nao': int(mol.nao), 'nvir_total': int(nvir_total), 'nvir_kept': int(k),
+                   'no_occ_kept_frac': occ_kept, 'no_occ_smallest_kept': occ_min, 'no_occ_sum': float(n.sum()),
+                   'auxbasis': aux_rec}
+            rec.update(cc_in_space(mf, frozen, coeff, rdf, conv_tol=args.conv_tol, log=job.log))
+            add_truncation_estimates(rec, e_mp2_full)
+            rec.update({'wall_s': round(time.time() - t, 1), 'peak_rss_mb': round(rc.peak_rss_mb(), 1)})
+            job.put(key, rec)
+            job.r['timings'][key] = rec['wall_s']; job.save()
+            job.log(f"{key}: delta_CCSD {rec['delta_ccsd_Ha']:.8f}, delta_T {rec['delta_T_Ha']:.8f}, delta "
+                    f"{rec['delta_Ha']:.8f} Ha (with scaled (T) {rec['delta_T_scaled_Ha']:.8f}); MP2 truncation "
+                    f"{rec['dMP2_truncation_Ha']:.6f} Ha ({rec['wall_s'] / 3600:.2f} h)")
+        del mf, sets; gc.collect()
+        job.log(f"{lab}: all fractions done ({(time.time() - t0) / 3600:.2f} h)")
+    fields = ('geometry', 'frac', 'nvir_kept', 'nvir_total', 'no_occ_kept_frac', 'delta_ccsd_Ha', 'delta_T_Ha',
+              'delta_Ha', 'delta_T_scaled_Ha', 'dMP2_truncation_Ha', 'E_HF_Ha', 'E_corr_mp2_full_ri_Ha',
+              'E_corr_mp2_active_Ha', 'E_corr_ccsd_Ha', 'E_T_Ha', 'diagnostics', 'wall_s')
+    job.r['summary'] = {k: {f: job.get(k).get(f) for f in fields} for k in job.r['items']
+                        if '|f' in k and job.done(k)}
+    job.save()
+    return True
+
+
+if __name__ == '__main__':
+    rc.install_sigterm_handler()
+    rc.main_wrapper(parser, run, __file__)
+#INFO: ******************** input file end ********************
+
+
+System: uname_result(system='Linux', node='<vm-1>', release='7.0.0-1017-gcp', version='#19~24.04.1-Ubuntu SMP PREEMPT Thu Oct 29 22:34:06 UTC 2026', machine='x86_64')  Threads 8
+Python 3.11.16 (main, Sep  2 2026, 23:39:52) [GCC 15.3.0]
+numpy 2.4.6  scipy 1.17.1  h5py 3.16.0
+Date: Sun Nov 22 12:25:22 2026
+PySCF version 2.14.0
+PySCF path  <run-dir>/env/lib/python3.11/site-packages/pyscf
+
+[ENV] PYSCF_TMPDIR <run-dir>/scratch/cc_neutral_631ppgd
+[CONFIG] conf_file None
+[INPUT] verbose = 4
+[INPUT] num. atoms = 33
+[INPUT] num. electrons = 178
+[INPUT] charge = 0
+[INPUT] spin (= nelec alpha-beta = 2S) = 0
+[INPUT] symmetry False subgroup None
+[INPUT] Mole.unit = angstrom
+[INPUT] Symbol           X                Y                Z      unit          X                Y                Z       unit  Magmom
+[INPUT]  1 O     -0.889008940000  -0.484612280000  -1.167267060000 AA   -1.679983418890  -0.915784485801  -2.205815057626 Bohr   0.0
+[INPUT]  2 N      0.542630150000   1.834836880000  -0.017144780000 AA    1.025422370432   3.467339186451  -0.032398938666 Bohr   0.0
+[INPUT]  3 O      1.367704300000   1.150541690000  -0.609834880000 AA    2.584586546390   2.174208688994  -1.152420904407 Bohr   0.0
+[INPUT]  4 C     -0.825265280000   1.868604590000  -0.551988700000 AA   -1.559525359313   3.531150910205  -1.043107466855 Bohr   0.0
+[INPUT]  5 C     -1.398047450000   0.713932290000  -1.157618020000 AA   -2.641926789647   1.349136499584  -2.187581014661 Bohr   0.0
+[INPUT]  6 C     -2.674065360000   0.931807470000  -1.750858700000 AA   -5.053251169586   1.760860919124  -3.308643425812 Bohr   0.0
+[INPUT]  7 C     -3.344944230000   2.135621040000  -1.695912740000 AA   -6.321028496644   4.035738871459  -3.204810609761 Bohr   0.0
+[INPUT]  8 O      0.790041520000   2.522690370000   0.965326150000 AA    1.492962099835   4.767193896378   1.824202044381 Bohr   0.0
+[INPUT]  9 C     -2.734859790000   3.210230540000  -1.059006370000 AA   -5.168135992186   6.066456517315  -2.001232003470 Bohr   0.0
+[INPUT] 10 C     -1.479241930000   3.085438630000  -0.482040730000 AA   -2.795362119673   5.830633984853  -0.910924960585 Bohr   0.0
+[INPUT] 11 N     -3.353638960000  -0.175560510000  -2.439602640000 AA   -6.337459155071  -0.331761282189  -4.610180842366 Bohr   0.0
+[INPUT] 12 N     -3.423676180000   4.497353360000  -1.004822740000 AA   -6.469810319397   8.498766135792  -1.898839782335 Bohr   0.0
+[INPUT] 13 O     -4.522411410000   4.585372150000  -1.545005890000 AA   -8.546118987508   8.665097542708  -2.919637992940 Bohr   0.0
+[INPUT] 14 O     -2.869938140000   5.423485390000  -0.419865370000 AA   -5.423397079044  10.248902027680  -0.793430558489 Bohr   0.0
+[INPUT] 15 O     -4.560865580000  -0.293829150000  -2.257768750000 AA   -8.618786837156  -0.555256620914  -4.266564590102 Bohr   0.0
+[INPUT] 16 O     -2.689486260000  -0.894671520000  -3.171701440000 AA   -5.082392447181  -1.690684144248  -5.993647070489 Bohr   0.0
+[INPUT] 17 H     -1.002520880000   3.929351240000  -0.003619720000 AA   -1.894489897358   7.425397690820  -0.006840279448 Bohr   0.0
+[INPUT] 18 H     -4.324073020000   2.236658660000  -2.142811630000 AA   -8.171313750421   4.226672301537  -4.049327117233 Bohr   0.0
+[INPUT] 19 N      0.661319410000  -1.457935230000   0.641250780000 AA    1.249712565759  -2.755098292055   1.211788351364 Bohr   0.0
+[INPUT] 20 N      1.081315450000  -2.208454570000   2.595052680000 AA    2.043390054761  -4.173374295844   4.903938844019 Bohr   0.0
+[INPUT] 21 C      2.155406620000  -2.605314660000   1.852447630000 AA    4.073128198874  -4.923331175714   3.500618680800 Bohr   0.0
+[INPUT] 22 C      1.871645210000  -2.107416400000   0.567993450000 AA    3.536896849254  -3.982439826417   1.073352061047 Bohr   0.0
+[INPUT] 23 N      0.202989370000  -1.528471950000   1.855982840000 AA    0.383594315498  -2.888393374580   3.507299259492 Bohr   0.0
+[INPUT] 24 C      2.757402330000  -2.316179300000  -0.502257240000 AA    5.210735218938  -4.376944532387  -0.949128627680 Bohr   0.0
+[INPUT] 25 C      3.908335590000  -3.029277310000  -0.225654690000 AA    7.385683867990  -5.724504471259  -0.426425562824 Bohr   0.0
+[INPUT] 26 C      4.185333630000  -3.526878630000   1.074132220000 AA    7.909134300632  -6.664834685281   2.029815717371 Bohr   0.0
+[INPUT] 27 C      3.322140670000  -3.328776970000   2.136404960000 AA    6.277936013579  -6.290476803060   4.037220265562 Bohr   0.0
+[INPUT] 28 H      2.542636870000  -1.935060450000  -1.492679890000 AA    4.804887318521  -3.656734284978  -2.820756183746 Bohr   0.0
+[INPUT] 29 H      3.532013430000  -3.708447220000   3.128114820000 AA    6.674538050986  -7.007949593205   5.911280295993 Bohr   0.0
+[INPUT] 30 H      4.623126650000  -3.216842920000  -1.018200200000 AA    8.736443207678  -6.078952104546  -1.924119517977 Bohr   0.0
+[INPUT] 31 H      5.103391350000  -4.079768890000   1.235708180000 AA    9.644011957974  -7.709645853621   2.335150030085 Bohr   0.0
+[INPUT] 32 H     -0.181472920000  -0.752407270000  -0.438825420000 AA   -0.342934117825  -1.421843674432  -0.829259860297 Bohr   0.0
+[INPUT] 33 H      0.888839160000  -2.363094970000   3.577350020000 AA    1.679662581188  -4.465602299637   6.760211789507 Bohr   0.0
+
+nuclear repulsion = 2119.39013570002
+number of shells = 224
+number of NR pGTOs = 831
+number of NR cGTOs = 490
+basis = 6-31+g**
+ecp = {}
+CPU time:         1.35
+
+
+******** <class 'pyscf.solvent._attach_solvent.PCMDFRHF'> ********
+method = PCMDFRHF
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-10
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/cc_neutral_631ppgd/chk/neutral.chk
+max_memory 22000 MB (current use 129 MB)
+******** <class 'pyscf.solvent.pcm.PCM'> (In testing) ********
+
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+
+lebedev_order = 29 (302 grids per sphere)
+eps = 78.3553
+frozen = False
+Set gradient conv threshold to 1e-05
+Initial guess from minao.
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 22000
+Default auxbasis heavy-aug-cc-pvdz-jkfit is used for N 6-31+g**
+Default auxbasis heavy-aug-cc-pvdz-jkfit is used for O 6-31+g**
+Default auxbasis heavy-aug-cc-pvdz-jkfit is used for C 6-31+g**
+Default auxbasis heavy-aug-cc-pvdz-jkfit is used for H 6-31+g**
+PCM E_diel = -0.000619691911368623
+Solvent Energy = -0.000619691911368623
+init E= -1317.30629537049
+
+WARN: 1 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.207389572399992  LUMO = -0.0403205921659166  gap/eV = 4.54618
+PCM E_diel = -0.11418433142829
+Solvent Energy = -0.11418433142829
+cycle= 1 E= -1308.51005206542  delta_E=  8.8  |g|= 2.03  |ddm|= 69.8
+  HOMO = -0.368903528407299  LUMO = -0.0872574881742031  gap/eV = 7.66398
+PCM E_diel = -0.0313126688256408
+Solvent Energy = -0.0313126688256408
+cycle= 2 E= -1308.9920958506  delta_E= -0.482  |g|= 1.59  |ddm|= 46.1
+  HOMO = -0.347793032085995  LUMO = -0.0035428671089874  gap/eV = 9.36752
+PCM E_diel = -0.0486887351872771
+Solvent Energy = -0.0486887351872771
+cycle= 3 E= -1309.44032070692  delta_E= -0.448  |g|= 0.16  |ddm|= 15.8
+  HOMO = -0.331793975900585  LUMO = 0.022241961727532  gap/eV = 9.63381
+PCM E_diel = -0.0477402071820942
+Solvent Energy = -0.0477402071820942
+cycle= 4 E= -1309.45071483108  delta_E= -0.0104  |g|= 0.0505  |ddm|= 6.87
+  HOMO = -0.335418849555588  LUMO = 0.0194299099695629  gap/eV = 9.65593
+PCM E_diel = -0.0476047360803057
+Solvent Energy = -0.0476047360803057
+cycle= 5 E= -1309.45195701592  delta_E= -0.00124  |g|= 0.017  |ddm|=    1
+  HOMO = -0.335696351133598  LUMO = 0.019905101158725  gap/eV = 9.67641
+PCM E_diel = -0.0475912695828422
+Solvent Energy = -0.0475912695828422
+cycle= 6 E= -1309.45216425079  delta_E= -0.000207  |g|= 0.00828  |ddm|= 0.443
+  HOMO = -0.335457568059922  LUMO = 0.020590123670673  gap/eV = 9.68855
+PCM E_diel = -0.0475624674544388
+Solvent Energy = -0.0475624674544388
+cycle= 7 E= -1309.45221634932  delta_E= -5.21e-05  |g|= 0.00343  |ddm|= 0.216
+  HOMO = -0.335551557330447  LUMO = 0.0208487672629078  gap/eV = 9.69815
+PCM E_diel = -0.047586664062089
+Solvent Energy = -0.047586664062089
+cycle= 8 E= -1309.45222665835  delta_E= -1.03e-05  |g|= 0.00139  |ddm|= 0.0721
+  HOMO = -0.335598824008014  LUMO = 0.0208640532033776  gap/eV = 9.69985
+PCM E_diel = -0.0475884902935292
+Solvent Energy = -0.0475884902935292
+cycle= 9 E= -1309.45222870951  delta_E= -2.05e-06  |g|= 0.000698  |ddm|= 0.0317
+  HOMO = -0.33558678915989  LUMO = 0.0208739199426967  gap/eV = 9.69979
+PCM E_diel = -0.0475923925910389
+Solvent Energy = -0.0475923925910389
+cycle= 10 E= -1309.45222924529  delta_E= -5.36e-07  |g|= 0.000284  |ddm|= 0.0204
+  HOMO = -0.335594601800303  LUMO = 0.0208775997032423  gap/eV = 9.70010
+PCM E_diel = -0.0475964750775269
+Solvent Energy = -0.0475964750775269
+cycle= 11 E= -1309.45222934843  delta_E= -1.03e-07  |g|= 0.000123  |ddm|= 0.00961
+  HOMO = -0.335596725040828  LUMO = 0.0208728057053821  gap/eV = 9.70003
+PCM E_diel = -0.0475970133188239
+Solvent Energy = -0.0475970133188239
+cycle= 12 E= -1309.45222936545  delta_E= -1.7e-08  |g|= 6.28e-05  |ddm|= 0.00414
+  HOMO = -0.335593801908904  LUMO = 0.0208709862898635  gap/eV = 9.69990
+PCM E_diel = -0.0475970119404893
+Solvent Energy = -0.0475970119404893
+cycle= 13 E= -1309.45222936968  delta_E= -4.22e-09  |g|= 2.37e-05  |ddm|= 0.00192
+  HOMO = -0.335593961497275  LUMO = 0.0208723121606943  gap/eV = 9.69994
+PCM E_diel = -0.0475971385367694
+Solvent Energy = -0.0475971385367694
+cycle= 14 E= -1309.45222937015  delta_E= -4.77e-10  |g|= 1.04e-05  |ddm|= 0.000561
+  HOMO = -0.335594164308015  LUMO = 0.0208722373691361  gap/eV = 9.69994
+PCM E_diel = -0.0475970208305432
+Solvent Energy = -0.0475970208305432
+cycle= 15 E= -1309.45222937024  delta_E= -8.82e-11  |g|= 4.74e-06  |ddm|= 0.00027
+  HOMO = -0.335593852963619  LUMO = 0.0208720789391117  gap/eV = 9.69993
+PCM E_diel = -0.047596933437526
+Solvent Energy = -0.047596933437526
+Extra cycle  E= -1309.45222937026  delta_E= -2.18e-11  |g|= 3.23e-06  |ddm|= 9.61e-05
+converged SCF energy = -1309.45222937026
+Default auxbasis heavyaug-cc-pvdz-ri is used for N 6-31+g**
+Default auxbasis heavyaug-cc-pvdz-ri is used for O 6-31+g**
+Default auxbasis heavyaug-cc-pvdz-ri is used for C 6-31+g**
+Default auxbasis heavyaug-cc-pvdz-ri is used for H 6-31+g**
+
+******** <class 'pyscf.mp.dfmp2.DFRMP2'> ********
+nocc = 64, nmo = 464
+frozen orbitals 25
+max_memory 22000 MB (current use 3000 MB)
+mem_avail = 18578.28  mem_blk = 1.92  auxlen = 1912
+
+E(DFRMP2) = -1313.32153761536  E_corr = -3.86930824510091
+E(SCS-DFRMP2) = -1313.14854594288  E_corr = -3.69631657261341
+E_corr(same-spin) = -1.0925230632781
+E_corr(oppo-spin) = -2.77678518182281
+PCM E_diel = -0.047596933437526
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = auxmol.basis = {'N': 'heavyaug-cc-pvdz-ri', 'O': 'heavyaug-cc-pvdz-ri', 'C': 'heavyaug-cc-pvdz-ri', 'H': 'heavyaug-cc-pvdz-ri'}
+max_memory = 22000
+PCM E_diel = -0.047596933437526
+Solvent Energy = -0.047596933437526
+Init t2, MP2 energy = -1313.02460516522  E_corr(MP2) -3.57237579495939
+
+******** <class 'pyscf.cc.dfccsd.RCCSD'> ********
+CC2 = 0
+CCSD nocc = 64, nmo = 264
+frozen orbitals [  0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17
+  18  19  20  21  22  23  24 289 290 291 292 293 294 295 296 297 298 299
+ 300 301 302 303 304 305 306 307 308 309 310 311 312 313 314 315 316 317
+ 318 319 320 321 322 323 324 325 326 327 328 329 330 331 332 333 334 335
+ 336 337 338 339 340 341 342 343 344 345 346 347 348 349 350 351 352 353
+ 354 355 356 357 358 359 360 361 362 363 364 365 366 367 368 369 370 371
+ 372 373 374 375 376 377 378 379 380 381 382 383 384 385 386 387 388 389
+ 390 391 392 393 394 395 396 397 398 399 400 401 402 403 404 405 406 407
+ 408 409 410 411 412 413 414 415 416 417 418 419 420 421 422 423 424 425
+ 426 427 428 429 430 431 432 433 434 435 436 437 438 439 440 441 442 443
+ 444 445 446 447 448 449 450 451 452 453 454 455 456 457 458 459 460 461
+ 462 463 464 465 466 467 468 469 470 471 472 473 474 475 476 477 478 479
+ 480 481 482 483 484 485 486 487 488]
+max_cycle = 100
+direct = 0
+conv_tol = 1e-08
+conv_tol_normt = 1e-06
+diis_space = 6
+diis_start_cycle = 0
+diis_start_energy_diff = 1e+09
+max_memory 22000 MB (current use 4882 MB)
+PCM E_diel = -0.047596933437526
+Solvent Energy = -0.047596933437526
+Init t2, MP2 energy = -1313.02460516522  E_corr(MP2) -3.57237579495939
+Init E_corr(RCCSD) = -3.57237579496424
+cycle = 1  E_corr(RCCSD) = -3.43348583695702  dE = 0.138889958  norm(t1,t2) = 0.191981
+cycle = 2  E_corr(RCCSD) = -3.57389680616214  dE = -0.140410969  norm(t1,t2) = 0.0709973
+cycle = 3  E_corr(RCCSD) = -3.56214721324743  dE = 0.0117495929  norm(t1,t2) = 0.0418282
+cycle = 4  E_corr(RCCSD) = -3.57601755965709  dE = -0.0138703464  norm(t1,t2) = 0.0152328
+cycle = 5  E_corr(RCCSD) = -3.57883864226009  dE = -0.0028210826  norm(t1,t2) = 0.00599734
+cycle = 6  E_corr(RCCSD) = -3.57823057777192  dE = 0.000608064488  norm(t1,t2) = 0.00239806
+cycle = 7  E_corr(RCCSD) = -3.577618480946  dE = 0.000612096826  norm(t1,t2) = 0.00105554
+cycle = 8  E_corr(RCCSD) = -3.57758911643063  dE = 2.93645154e-05  norm(t1,t2) = 0.000548727
+cycle = 9  E_corr(RCCSD) = -3.5776957675276  dE = -0.000106651097  norm(t1,t2) = 0.000239835
+cycle = 10  E_corr(RCCSD) = -3.57768515516982  dE = 1.06123578e-05  norm(t1,t2) = 0.00013688
+cycle = 11  E_corr(RCCSD) = -3.5776915903393  dE = -6.43516948e-06  norm(t1,t2) = 6.07714e-05
+cycle = 12  E_corr(RCCSD) = -3.57769740081331  dE = -5.81047401e-06  norm(t1,t2) = 3.29709e-05
+cycle = 13  E_corr(RCCSD) = -3.57769920800345  dE = -1.80719014e-06  norm(t1,t2) = 2.07321e-05
+cycle = 14  E_corr(RCCSD) = -3.57769908582418  dE = 1.22179273e-07  norm(t1,t2) = 1.07814e-05
+cycle = 15  E_corr(RCCSD) = -3.57769894155295  dE = 1.44271231e-07  norm(t1,t2) = 6.72688e-06
+cycle = 16  E_corr(RCCSD) = -3.57769885568363  dE = 8.58693143e-08  norm(t1,t2) = 3.42812e-06
+cycle = 17  E_corr(RCCSD) = -3.57769869890201  dE = 1.56781626e-07  norm(t1,t2) = 1.6023e-06
+cycle = 18  E_corr(RCCSD) = -3.57769867561292  dE = 2.32890929e-08  norm(t1,t2) = 9.62165e-07
+cycle = 19  E_corr(RCCSD) = -3.57769865143911  dE = 2.41738101e-08  norm(t1,t2) = 5.23395e-07
+cycle = 20  E_corr(RCCSD) = -3.5776986349692  dE = 1.6469909e-08  norm(t1,t2) = 2.55633e-07
+cycle = 21  E_corr(RCCSD) = -3.57769864098558  dE = -6.01638872e-09  norm(t1,t2) = 1.46938e-07
+RCCSD converged
+E(RCCSD) = -1313.029928011249  E_corr = -3.577698640985585
+RCCSD(T) correction = -0.144695151118249

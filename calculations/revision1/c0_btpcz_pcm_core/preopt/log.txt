@@ -1,0 +1,24 @@
+[2026-11-21 03:14:12 AM IST] job c0_btpcz_pcm_core_preopt (dft/revision/opt_d3.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/c0_btpcz_pcm_core/preopt, smoke False, restart #0; PySCF 2.14.0
+[2026-11-21 03:21:20 AM IST] opt step 0: E = -1316.6636297093 Ha  dE None  grad rms/max 1.19e-01/2.47e-01
+[2026-11-21 03:27:03 AM IST] opt step 1: E = -1316.8396120920 Ha  dE -1.76e-01  grad rms/max 9.23e-03/2.05e-02  step rms/max 9.25e-02/2.05e-01 A
+[2026-11-21 03:32:24 AM IST] opt step 2: E = -1316.8394260231 Ha  dE +1.86e-04  grad rms/max 5.98e-03/1.57e-02  step rms/max 5.75e-02/1.37e-01 A
+[2026-11-21 03:37:47 AM IST] opt step 3: E = -1316.8421149626 Ha  dE -2.69e-03  grad rms/max 2.72e-03/7.38e-03  step rms/max 3.15e-02/1.07e-01 A
+[2026-11-21 03:43:09 AM IST] opt step 4: E = -1316.8411951958 Ha  dE +9.20e-04  grad rms/max 4.51e-03/1.28e-02  step rms/max 3.78e-02/1.17e-01 A
+[2026-11-21 03:48:11 AM IST] opt step 5: E = -1316.8427416916 Ha  dE -1.55e-03  grad rms/max 1.72e-03/5.48e-03  step rms/max 1.92e-02/5.95e-02 A
+[2026-11-21 03:53:11 AM IST] opt step 6: E = -1316.8424841626 Ha  dE +2.58e-04  grad rms/max 2.68e-03/7.10e-03  step rms/max 2.53e-02/5.94e-02 A
+[2026-11-21 03:58:12 AM IST] opt step 7: E = -1316.8429530522 Ha  dE -4.69e-04  grad rms/max 1.18e-03/3.72e-03  step rms/max 1.25e-02/3.11e-02 A
+[2026-11-21 04:03:15 AM IST] opt step 8: E = -1316.8428087281 Ha  dE +1.44e-04  grad rms/max 2.06e-03/4.01e-03  step rms/max 1.58e-02/4.14e-02 A
+[2026-11-21 04:07:58 AM IST] opt step 9: E = -1316.8430949751 Ha  dE -2.86e-04  grad rms/max 7.80e-04/1.98e-03  step rms/max 8.00e-03/2.34e-02 A
+[2026-11-21 04:13:00 AM IST] opt step 10: E = -1316.8430849604 Ha  dE +1.00e-05  grad rms/max 1.16e-03/4.35e-03  step rms/max 9.87e-03/2.63e-02 A
+[2026-11-21 04:17:44 AM IST] opt step 11: E = -1316.8431730271 Ha  dE -8.81e-05  grad rms/max 3.26e-04/6.76e-04  step rms/max 4.55e-03/9.27e-03 A
+[2026-11-21 04:22:24 AM IST] opt step 12: E = -1316.8431851502 Ha  dE -1.21e-05  grad rms/max 4.47e-04/1.18e-03  step rms/max 7.25e-03/1.62e-02 A
+[2026-11-21 04:27:04 AM IST] opt step 13: E = -1316.8432095743 Ha  dE -2.44e-05  grad rms/max 2.48e-04/4.80e-04  step rms/max 7.57e-03/1.48e-02 A
+[2026-11-21 04:31:44 AM IST] opt step 14: E = -1316.8432262333 Ha  dE -1.67e-05  grad rms/max 3.49e-04/1.20e-03  step rms/max 1.03e-02/2.28e-02 A
+[2026-11-21 04:36:23 AM IST] opt step 15: E = -1316.8432444932 Ha  dE -1.83e-05  grad rms/max 1.88e-04/4.12e-04  step rms/max 1.42e-02/2.97e-02 A
+[2026-11-21 04:41:01 AM IST] opt step 16: E = -1316.8432492947 Ha  dE -4.80e-06  grad rms/max 2.18e-04/4.32e-04  step rms/max 1.78e-02/3.71e-02 A
+[2026-11-21 04:45:21 AM IST] opt step 17: E = -1316.8432553452 Ha  dE -6.05e-06  grad rms/max 1.26e-04/4.21e-04  step rms/max 2.90e-03/5.81e-03 A
+[2026-11-21 04:49:38 AM IST] opt step 18: E = -1316.8432576385 Ha  dE -2.29e-06  grad rms/max 9.65e-05/3.52e-04  step rms/max 2.53e-03/6.58e-03 A
+[2026-11-21 04:53:57 AM IST] opt step 19: E = -1316.8432592169 Ha  dE -1.58e-06  grad rms/max 5.10e-05/1.57e-04  step rms/max 4.08e-03/8.71e-03 A
+[2026-11-21 04:58:16 AM IST] opt step 20: E = -1316.8432596602 Ha  dE -4.43e-07  grad rms/max 7.66e-05/2.05e-04  step rms/max 4.64e-03/8.33e-03 A
+[2026-11-21 04:58:16 AM IST] optimisation CONVERGED after 21 evaluations, E(opt.xyz) = -1316.8432596602 Ha, RMSD vs start 0.179 A
+[2026-11-21 04:58:16 AM IST] job c0_btpcz_pcm_core_preopt finished (peak RSS 7087 MB)

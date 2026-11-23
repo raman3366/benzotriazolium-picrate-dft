@@ -1,0 +1,21 @@
+
+===== queue: start sp_gas_pcmgeoms attempt 1 at 2026-11-22T16:23:49+05:30 =====
+$ export MAX_MEMORY_MB=16000; <run-dir>/env/bin/python dft/revision/singlepoints.py --job sp_gas_pcmgeoms --out <run-dir>/queue/out/sp_gas_pcmgeoms --xyz <run-dir>/repo/molecules/btpc/results/btpc_pcm/opt.xyz --xyz <run-dir>/queue/out/sp_neutral_pcm/geoms/neutral_pcm.xyz --methods dfmp2 --mp2-aux aug-cc-pvtz-ri
+[2026-11-22 04:23:50 PM IST] job sp_gas_pcmgeoms (dft/revision/singlepoints.py) on <vm-1>: threads 4, max_memory 16000 MB, scratch <run-dir>/scratch/sp_gas_pcmgeoms, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 04:23:50 PM IST] 2 geometries x 1 methods (dfmp2); gas phase; basis 6-311++g(d,p), grid 4
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 04:27:06 PM IST] opt|dfmp2: E = -1313.8206458915 Ha (196 s, E_HF -1309.68500040, E_corr -4.13564549)
+WARN: Large deviations found between the input molecule and the molecule from chkfile
+Initial guess density matrix may have large error.
+[2026-11-22 04:27:06 PM IST] initial density from <run-dir>/queue/out/sp_gas_pcmgeoms/chk/opt_dfmp2.chk
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 04:30:53 PM IST] neutral_pcm|dfmp2: E = -1313.8427954729 Ha (227 s, E_HF -1309.69394865, E_corr -4.14884682)
+[2026-11-22 04:30:53 PM IST]   Relative energies (kcal/mol) per method; zero = the lowest geometry.
+[2026-11-22 04:30:53 PM IST]   
+[2026-11-22 04:30:53 PM IST]   | geometry | r(H...O) A | r(N-H) A | dfmp2 | scs-mp2 |
+[2026-11-22 04:30:53 PM IST]   |---|---|---|---|---|
+[2026-11-22 04:30:53 PM IST]   | opt | 1.635 | 1.053 | 13.90 | 13.02 |
+[2026-11-22 04:30:53 PM IST]   | neutral_pcm | 1.050 | 1.541 | 0.00 | 0.00 |
+[2026-11-22 04:30:53 PM IST] job sp_gas_pcmgeoms finished (peak RSS 12903 MB)

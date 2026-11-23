@@ -1,0 +1,34 @@
+[2026-11-22 04:22:15 PM IST] job scan_tors_d3_up60 (dft/revision/conf_scan.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/scan_tors_d3_up60, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 04:31:07 PM IST] start: E = -1317.2813047047 Ha, torsion -90.0 deg, grad rms/max 1.9e-04/7.4e-04
+[2026-11-22 04:34:38 PM IST] p-60.0 step 0: E = -1317.2813047039  torsion -90.00  grad rms/max 1.9e-04/7.4e-04
+[2026-11-22 04:42:00 PM IST] p-60.0 step 1: E = -1317.2767462565  torsion -65.41  grad rms/max 5.5e-03/2.1e-02
+[2026-11-22 04:49:54 PM IST] p-60.0 step 2: E = -1317.2768703755  torsion -60.77  grad rms/max 5.3e-03/1.6e-02
+[2026-11-22 04:57:33 PM IST] p-60.0 step 3: E = -1317.2781056794  torsion -60.43  grad rms/max 3.7e-03/1.2e-02
+[2026-11-22 05:04:51 PM IST] p-60.0 step 4: E = -1317.2780602208  torsion -59.97  grad rms/max 3.8e-03/1.0e-02
+[2026-11-22 05:11:47 PM IST] p-60.0 step 5: E = -1317.2788185993  torsion -60.02  grad rms/max 2.4e-03/7.8e-03
+[2026-11-22 05:19:09 PM IST] p-60.0 step 6: E = -1317.2788921030  torsion -59.83  grad rms/max 2.5e-03/6.8e-03
+[2026-11-22 05:26:13 PM IST] p-60.0 step 7: E = -1317.2791953324  torsion -60.10  grad rms/max 2.0e-03/5.8e-03
+[2026-11-22 05:33:12 PM IST] p-60.0 step 8: E = -1317.2793264107  torsion -60.09  grad rms/max 1.9e-03/6.1e-03
+[2026-11-22 05:39:05 PM IST] p-60.0 step 9: E = -1317.2794717828  torsion -60.02  grad rms/max 1.7e-03/5.6e-03
+[2026-11-22 05:44:50 PM IST] p-60.0 step 10: E = -1317.2796301841  torsion -60.01  grad rms/max 1.5e-03/4.5e-03
+[2026-11-22 05:50:46 PM IST] p-60.0 step 11: E = -1317.2798081554  torsion -60.07  grad rms/max 1.3e-03/3.8e-03
+[2026-11-22 05:57:29 PM IST] p-60.0 step 12: E = -1317.2800256587  torsion -60.04  grad rms/max 1.2e-03/3.7e-03
+[2026-11-22 06:04:38 PM IST] p-60.0 step 13: E = -1317.2802317776  torsion -59.97  grad rms/max 1.3e-03/3.4e-03
+[2026-11-22 06:12:25 PM IST] p-60.0 step 14: E = -1317.2803440992  torsion -59.89  grad rms/max 1.4e-03/3.3e-03
+[2026-11-22 06:19:57 PM IST] p-60.0 step 15: E = -1317.2804592832  torsion -59.88  grad rms/max 1.2e-03/4.5e-03
+[2026-11-22 06:27:15 PM IST] p-60.0 step 16: E = -1317.2804966526  torsion -59.96  grad rms/max 1.1e-03/2.4e-03
+[2026-11-22 06:32:47 PM IST] p-60.0 step 17: E = -1317.2805519511  torsion -60.02  grad rms/max 7.9e-04/2.6e-03
+[2026-11-22 06:39:15 PM IST] p-60.0 step 18: E = -1317.2805675808  torsion -60.00  grad rms/max 6.4e-04/2.0e-03
+[2026-11-22 06:45:17 PM IST] p-60.0 step 19: E = -1317.2805819347  torsion -60.00  grad rms/max 5.1e-04/1.8e-03
+[2026-11-22 06:51:23 PM IST] p-60.0 step 20: E = -1317.2805875093  torsion -60.00  grad rms/max 4.8e-04/1.9e-03
+[2026-11-22 06:57:21 PM IST] p-60.0 step 21: E = -1317.2805916484  torsion -60.01  grad rms/max 4.8e-04/1.8e-03
+[2026-11-22 07:03:32 PM IST] p-60.0 step 22: E = -1317.2805926544  torsion -60.00  grad rms/max 4.5e-04/1.5e-03
+[2026-11-22 07:09:20 PM IST] p-60.0 step 23: E = -1317.2805948871  torsion -60.00  grad rms/max 4.1e-04/1.5e-03
+[2026-11-22 07:15:08 PM IST] p-60.0 step 24: E = -1317.2805964226  torsion -60.01  grad rms/max 4.5e-04/1.7e-03
+[2026-11-22 07:21:56 PM IST] p-60.0 step 25: E = -1317.2805986400  torsion -60.01  grad rms/max 4.6e-04/1.8e-03
+[2026-11-22 07:28:36 PM IST] p-60.0 step 26: E = -1317.2806006911  torsion -60.02  grad rms/max 4.4e-04/1.6e-03
+[2026-11-22 07:34:51 PM IST] p-60.0 step 27: E = -1317.2806017538  torsion -60.01  grad rms/max 4.1e-04/1.5e-03
+[2026-11-22 07:41:22 PM IST] p-60.0 step 28: E = -1317.2806018595  torsion -60.01  grad rms/max 4.3e-04/1.6e-03
+[2026-11-22 07:47:46 PM IST] p-60.0 step 29: E = -1317.2806019827  torsion -60.00  grad rms/max 4.3e-04/1.6e-03
+[2026-11-22 07:47:46 PM IST] p-60.0: converged in 30 steps, E = -1317.2806019827 Ha (+0.44 kcal/mol vs start), torsion -60.00, N...O 2.477 A, proton transferred False
+[2026-11-22 07:47:47 PM IST] job scan_tors_d3_up60 finished (peak RSS 7682 MB)

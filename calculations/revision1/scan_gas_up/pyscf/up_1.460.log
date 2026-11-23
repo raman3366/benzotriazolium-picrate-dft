@@ -1,0 +1,3037 @@
+#INFO: **** input file is <run-dir>/repo/dft/revision/proton_scan.py ****
+"""
+Relaxed scan of the proton coordinate of the BTPC ion pair (revision item 2, R2's "proton-transfer equilibrium").
+
+The H4N...O1 distance (case 'proton' block: H, donor_N, acceptor_O) is held at each target value with a geomeTRIC
+'$set distance' constraint and every other coordinate is relaxed at the level of record (rev_common: B3LYP/
+6-311++G(d,p), density fitting, grid level 4; IEF-PCM water with Lebedev order 29 when --solvent/the case asks for
+it).  Each point then gets a tight single point (conv_tol 1e-10) at its optimised geometry for the energy, the
+Mulliken and Loewdin charges of the picrate (H4N counted separately), the frontier orbitals and the dipole.
+
+Chains (independent, so they can run as separate jobs in parallel):
+  up       from the stored minimum outward: grid points with r(H...O) > r0, ascending (toward 1.70 A)
+  down     from the stored minimum inward:  grid points with r(H...O) < r0, descending to --down-to
+  neutral  from a neutral start (H4N put on O1, O1-H 0.98 A along the O1->N4 line): grid points <= --neutral-to,
+           ascending; it overlaps 'down', so a jump between the two branches (hysteresis) shows up
+Each chain starting at the minimum also records the free minimum ('min', a single point at the start geometry).
+Default grid (A): 1.70 1.60 1.52 1.46 1.40 1.34 1.28 1.23 1.18 1.13 1.08 1.03 0.98 (finer near the gas minimum,
+r0 = 1.437 A, and through the transfer region, where r(N-H) = r(H...O) near 1.24 A).
+
+Usage:
+  python dft/revision/proton_scan.py --job ID --out DIR [--case btpc_gas] [--chains up,down,neutral]
+         [--solvent gas|water|<eps>] [--start XYZ] [--points 1.70,...] [--down-to 1.08] [--neutral-to 1.28]
+         [--xc b3lyp] [--disp d3bj] [--maxsteps 100] [--smoke]
+Outputs in DIR: result.json (one item per point), log.txt, profile.csv, scan.xyz (final geometries, by r),
+points/<label>.xyz, traj/<label>.xyz (every optimisation step), pyscf/<label>.log, chk/<label>.chk.
+Restart: finished points are skipped; an interrupted point resumes from the last geometry in traj/<label>.xyz
+with its own checkpoint as the SCF guess.  An optimisation that hits --maxsteps without meeting the criteria is
+accepted only on negligible forces (constraint-projected max/rms gradient below the Gaussian thresholds and
+|dE| < 1e-5 Ha over the last 5 steps, the rule used for btpc_pcm); otherwise the job fails, and a rerun continues
+from the last geometry.
+--smoke: STO-3G, grid 2, Lebedev 17, loose criteria, 3 steps per point, one point per chain; not for numbers.
+
+Also the shared optimisation helpers for neutral_start.py (relax, place_H, measure, analyse, kabsch_rmsd).
+"""
+import sys, pathlib, argparse, json, time, gc
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import rev_common as rc          # first: pins the thread pools
+import numpy as np
+
+DEFAULT_GRID = (1.70, 1.60, 1.52, 1.46, 1.40, 1.34, 1.28, 1.23, 1.18, 1.13, 1.08, 1.03, 0.98)
+# geomeTRIC defaults = Gaussian's default criteria (dft/optimize.py uses these for every published geometry)
+GAU = dict(convergence_energy=1e-6, convergence_grms=3e-4, convergence_gmax=4.5e-4,
+           convergence_drms=1.2e-3, convergence_dmax=1.8e-3)
+GAU_LOOSE = dict(convergence_energy=1e-6, convergence_grms=1.7e-3, convergence_gmax=2.5e-3,
+                 convergence_drms=6.7e-3, convergence_dmax=1.0e-2)
+ENFORCE_AU = 0.1      # geomeTRIC 'enforce': constraints held exactly once within 0.1 a.u. of the target
+NEGLIGIBLE = dict(gmax=4.5e-4, grms=3.0e-4, dE=1e-5, window=5)
+
+
+# ---------------------------------------------------------------- geometry helpers
+def proton_idx(case):
+    p = case.get('proton') or {}
+    if not {'H', 'donor_N', 'acceptor_O'} <= set(p):
+        raise SystemExit(f"case {case['name']} has no 'proton' block (H, donor_N, acceptor_O)")
+    return int(p['H']), int(p['donor_N']), int(p['acceptor_O'])
+
+
+def short_label(lab):
+    return lab.split('#')[0]
+
+
+def proton_labels(case):
+    H, N, O = proton_idx(case)
+    labs = case.get('cif_labels')
+    if not labs:
+        return {'H': f'atom{H}', 'N': f'atom{N}', 'O': f'atom{O}'}
+    return {'H': short_label(labs[H]), 'N': short_label(labs[N]), 'O': short_label(labs[O])}
+
+
+def measure(xyz, H, N, O):
+    """r(N-H), r(H...O), r(N...O) in A, the N-H...O angle in degrees, delta = r(N-H) - r(H...O)."""
+    xyz = np.asarray(xyz, float)
+    rNH = float(np.linalg.norm(xyz[H] - xyz[N])); rHO = float(np.linalg.norm(xyz[H] - xyz[O]))
+    rNO = float(np.linalg.norm(xyz[N] - xyz[O]))
+    v1, v2 = xyz[N] - xyz[H], xyz[O] - xyz[H]
+    ang = float(np.degrees(np.arccos(np.clip(np.dot(v1, v2) / np.linalg.norm(v1) / np.linalg.norm(v2), -1, 1))))
+    return {'r_NH_A': rNH, 'r_HO_A': rHO, 'r_NO_A': rNO, 'NHO_deg': ang, 'delta_A': rNH - rHO}
+
+
+def place_H(xyz, H, O, r, toward=None):
+    """Copy of xyz with H at distance r (A) from O: along the current O->H direction, or along O->toward."""
+    x = np.array(xyz, float)
+    d = (x[toward] if toward is not None else x[H]) - x[O]
+    x[H] = x[O] + r * d / np.linalg.norm(d)
+    return x
+
+
+def read_frames(path):
+    """All frames of a multi-frame XYZ file: list of (symbols, coords, comment)."""
+    lines = open(path).read().splitlines()
+    out, i = [], 0
+    while i < len(lines):
+        if not lines[i].strip():
+            i += 1; continue
+        n = int(lines[i]); comment = lines[i + 1] if i + 1 < len(lines) else ''
+        block = lines[i + 2:i + 2 + n]
+        if len(block) < n:
+            break                                   # truncated last frame (killed while writing)
+        try:
+            syms = [b.split()[0] for b in block]
+            xyz = np.array([[float(v) for v in b.split()[1:4]] for b in block])
+        except (ValueError, IndexError):
+            break
+        out.append((syms, xyz, comment)); i += 2 + n
+    return out
+
+
+def append_frame(path, syms, xyz, comment):
+    with open(path, 'a') as f:
+        f.write(f'{len(syms)}\n{comment}\n' + ''.join(f'{s:2s} {a:14.8f} {b:14.8f} {c:14.8f}\n'
+                                                       for s, (a, b, c) in zip(syms, xyz)))
+        f.flush()
+
+
+def kabsch_rmsd(A, B, idx=None, w=None):
+    """RMSD (A) between coordinate sets after optimal superposition (Kabsch) of the atoms idx (default all),
+    optionally mass-weighted.  Returns (rmsd, B aligned onto A)."""
+    A = np.asarray(A, float); B = np.asarray(B, float)
+    idx = np.arange(len(A)) if idx is None else np.asarray(idx)
+    w = np.ones(len(A)) if w is None else np.asarray(w, float)
+    wa = w[idx] / w[idx].sum()
+    ca, cb = (A[idx] * wa[:, None]).sum(0), (B[idx] * wa[:, None]).sum(0)
+    P, Q = B[idx] - cb, A[idx] - ca
+    U, S, Vt = np.linalg.svd((P * wa[:, None]).T @ Q)
+    d = np.sign(np.linalg.det(U @ Vt))
+    R = U @ np.diag([1, 1, d]) @ Vt
+    Bal = (B - cb) @ R + ca
+    rmsd = float(np.sqrt((wa * ((Bal[idx] - A[idx]) ** 2).sum(1)).sum()))
+    return rmsd, Bal
+
+
+def stored_minimum(case):
+    """molecules/<mol>/results/<case>/opt.xyz, the published (or pipeline) minimum of the case."""
+    p = rc.find_case_file(case['name']).parent.parent / 'results' / case['name'] / 'opt.xyz'
+    return p if p.exists() else None
+
+
+# ---------------------------------------------------------------- level of theory
+def level_of_theory(args, case_solvent):
+    """Settings of one run.  Production values are the defaults; --smoke reduces them."""
+    smoke = bool(args.smoke)
+    solvent = case_solvent
+    if getattr(args, 'solvent', None) is not None:
+        solvent = None if str(args.solvent).lower() in ('gas', 'none', '') else args.solvent
+    eps = rc.solvent_eps(solvent)
+    L = {'xc': args.xc, 'disp': args.disp, 'basis': 'sto-3g' if smoke else rc.BASIS,
+         'grid_level': 2 if smoke else rc.GRID_LEVEL,
+         'pcm_lebedev_order': (17 if smoke else rc.PCM_LEBEDEV_ORDER),
+         'solvent': solvent, 'eps': eps, 'pcm_method': rc.PCM_METHOD if eps is not None else None,
+         'density_fit': True, 'auxbasis': 'PySCF default (aug-cc-pVTZ-JKFIT for 6-311++G(d,p))',
+         'conv_tol_opt': 1e-6 if smoke else (rc.CONV_TOL_OPT_PCM if eps is not None else rc.CONV_TOL_OPT_GAS),
+         'conv_tol_sp': 1e-8 if smoke else rc.CONV_TOL_SP, 'max_cycle': rc.MAX_CYCLE,
+         'opt_engine': 'geomeTRIC (TRIC coordinates) via pyscf.geomopt.geometric_solver',
+         'opt_criteria': dict(GAU_LOOSE if smoke else GAU),
+         'opt_criteria_name': 'GAU_LOOSE (smoke)' if smoke else 'GAU (Gaussian defaults, as dft/optimize.py)',
+         'maxsteps': args.maxsteps or (3 if smoke else 100), 'constraint_enforce_au': ENFORCE_AU,
+         'accept_unconverged': smoke, 'negligible_force_rule': NEGLIGIBLE}
+    return L
+
+
+def make_mol_mf(case, syms, xyz, L, conv_tol, chkfile, output):
+    mol = rc.build_mol(list(zip(syms, [tuple(v) for v in xyz])), case['charge'], case['spin'], basis=L['basis'],
+                       basis_overrides=case.get('basis_overrides'), verbose=4, output=output)
+    mf = rc.make_mf(mol, xc=L['xc'], disp=L['disp'], solvent=L['eps'], conv_tol=conv_tol,
+                    grid_level=L['grid_level'], lebedev_order=L['pcm_lebedev_order'], chkfile=chkfile,
+                    max_cycle=L['max_cycle'])
+    return mol, mf
+
+
+def analyse(mf, case):
+    """Charges (Mulliken, Loewdin) of the picrate, of the cation core and of the transferring H; frontier orbitals
+    and their Mulliken composition on the case's fragments; dipole moment."""
+    H, N, O = proton_idx(case)
+    fr = rc.fragments(case)
+    anion = [a for a in fr.get('anion', []) if a != H]
+    cation = [a for a in fr.get('cation', []) if a != H]
+    pops = rc.fragment_populations(mf, {'picrate': anion, 'cation_core': cation, 'H': [H]})
+    charges = {}
+    for m, d in pops.items():
+        q = {k: round(v['charge'], 5) for k, v in d.items()}
+        q['picrate_plus_H'] = round(q['picrate'] + q['H'], 5)
+        q['cation_with_H'] = round(q['cation_core'] + q['H'], 5)
+        charges[m] = q
+    occ, e = mf.mo_occ, mf.mo_energy
+    n = int((occ > 0).sum())
+    out = {'charges': charges, 'HOMO_eV': float(e[n - 1] * rc.HARTREE_EV), 'LUMO_eV': float(e[n] * rc.HARTREE_EV),
+           'gap_eV': float((e[n] - e[n - 1]) * rc.HARTREE_EV)}
+    try:
+        comp = rc.fragment_composition(mf, fr, methods=('mulliken',))
+        out['frontier_composition_mulliken_pct'] = {k: v['mulliken'] for k, v in comp.items()}
+    except Exception as ex:                                  # pragma: no cover
+        out['frontier_composition_mulliken_pct'] = f'failed: {ex}'
+    try:
+        out['dipole_debye'] = [round(float(v), 4) for v in mf.dip_moment(unit='Debye', verbose=0)]
+    except Exception:
+        pass
+    return out
+
+
+def _project_constraint(g, xyz_bohr, pair):
+    """Cartesian gradient with the component along the constrained distance removed."""
+    if pair is None:
+        return g
+    i, j = pair
+    c = np.zeros_like(g)
+    e = xyz_bohr[i] - xyz_bohr[j]; e /= np.linalg.norm(e)
+    c[i], c[j] = e, -e
+    return g - (g * c).sum() / (c * c).sum() * c
+
+
+# ---------------------------------------------------------------- one (constrained) optimisation, restartable
+def relax(job, key, case, L, syms, start_xyz, constraint=None, guess_chk=None, extra=None):
+    """Optimise from start_xyz.  constraint = (i, j, r_A): distance i-j held at r_A (geomeTRIC '$set').
+    Stores job item `key` (status running while optimising, done at the end) and returns the record."""
+    from pyscf.geomopt import geometric_solver
+    H, N, O = proton_idx(case)
+    for sub in ('traj', 'points', 'pyscf'):
+        (job.out / sub).mkdir(exist_ok=True)
+    chk = job.chk_dir / f'{key}.chk'
+    traj = job.out / 'traj' / f'{key}.xyz'
+    prev = job.get(key) or {}
+    hist = list(prev.get('history', [])) if prev.get('status') == 'running' else []
+    rec = dict(extra or {})
+    rec.update({'key': key, 'constraint': None, 'history': hist,
+                'restarted_from_step': None, 'wall_s': prev.get('wall_s', 0.0) if hist else 0.0})
+    start = np.array(start_xyz, float)
+    if hist and traj.exists():
+        frames = read_frames(traj)
+        if frames:
+            start = frames[-1][1]
+            rec['restarted_from_step'] = len(hist)
+            job.log(f'{key}: resuming from step {len(hist)} (last frame of {traj.name})')
+    elif traj.exists():
+        traj.unlink()
+    if constraint is not None:
+        i, j, r = constraint
+        start = place_H(start, i, j, r) if i == H and j == O else start
+        rec['constraint'] = {'type': 'distance', 'atoms_0based': [i, j], 'target_A': r}
+    rec['start'] = measure(start, H, N, O)
+    mol, mf = make_mol_mf(case, syms, start, L, L['conv_tol_opt'], chk, job.out / 'pyscf' / f'{key}.log')
+    if 'scf_settings' not in job.r['settings']:
+        job.r['settings']['scf_settings'] = rc.settings_of(mf); job.save()
+    rec['scf_settings'] = rc.settings_of(mf)
+    job.put(key, rec, status='running')
+    g0 = chk if chk.exists() else guess_chk
+    t_all = time.time()
+    w = rc.run_scf(mf, chk_guess=g0, log=job.log)
+    job.log(f'{key}: start SCF E = {mf.e_tot:.8f} ({mf._cycles} cycles, {w:.0f} s); '
+            f"r(N-H) {rec['start']['r_NH_A']:.3f}, r(H...O) {rec['start']['r_HO_A']:.3f} A")
+    params = dict(L['opt_criteria'])
+    cons_file = None
+    if constraint is not None:
+        i, j, r = constraint
+        cons_file = job.chk_dir / f'{key}.constraints'
+        cons_file.write_text(f'$set\ndistance {i + 1} {j + 1} {r:.6f}\n')
+        params['enforce'] = L['constraint_enforce_au']
+    pair = (constraint[0], constraint[1]) if constraint is not None else None
+    t_step = [time.time()]
+
+    def cb(env):
+        m = env['mol']; e = float(env['energy']); g = np.asarray(env['gradients']).reshape(-1, 3)
+        xb = m.atom_coords(); xa = m.atom_coords(unit='Angstrom')
+        gp = _project_constraint(g, xb, pair)
+        meas = measure(xa, H, N, O)
+        now = time.time()
+        h = {'step': len(hist), 'E_Ha': e, 'gmax': float(np.abs(gp).max()), 'grms': float(np.sqrt((gp ** 2).mean())),
+             'r_NH_A': round(meas['r_NH_A'], 5), 'r_HO_A': round(meas['r_HO_A'], 5),
+             'r_NO_A': round(meas['r_NO_A'], 5), 'wall_s': round(now - t_step[0], 1)}
+        t_step[0] = now
+        hist.append(h)
+        append_frame(traj, syms, xa, f"step {h['step']} E = {e:.10f} Ha gmax {h['gmax']:.2e} grms {h['grms']:.2e} "
+                                     f"r_NH {h['r_NH_A']:.4f} r_HO {h['r_HO_A']:.4f}")
+        rec['wall_s'] = round(rec.get('wall_s', 0.0) + h['wall_s'], 1)
+        job.put(key, rec, status='running')
+        job.log(f"{key}: step {h['step']:3d} E = {e:.8f} gmax {h['gmax']:.2e} grms {h['grms']:.2e} "
+                f"r(N-H) {h['r_NH_A']:.3f} r(H...O) {h['r_HO_A']:.3f} r(N...O) {h['r_NO_A']:.3f} ({h['wall_s']:.0f} s)")
+
+    n0 = len(hist)
+    conv, mol_opt = geometric_solver.kernel(mf, assert_convergence=True,
+                                            constraints=str(cons_file) if cons_file else None,
+                                            callback=cb, maxsteps=L['maxsteps'], **params)
+    steps_now = len(hist) - n0
+    rec['opt_steps'] = len(hist)
+    if conv:
+        rec['converged'] = True
+        rec['converged_on'] = f"geomeTRIC criteria ({L['opt_criteria_name']})"
+    else:
+        tail = hist[-NEGLIGIBLE['window']:]
+        ok = (len(tail) == NEGLIGIBLE['window'] and tail[-1]['gmax'] <= NEGLIGIBLE['gmax']
+              and tail[-1]['grms'] <= NEGLIGIBLE['grms']
+              and max(t['E_Ha'] for t in tail) - min(t['E_Ha'] for t in tail) < NEGLIGIBLE['dE'])
+        if ok:
+            rec['converged'] = True
+            rec['converged_on'] = (f"negligible forces after {len(hist)} steps (max {tail[-1]['gmax']:.2e}, "
+                                   f"rms {tail[-1]['grms']:.2e} Ha/Bohr; Gaussian thresholds 4.5e-4 / 3.0e-4; "
+                                   f"|dE| < 1e-5 Ha over the last {NEGLIGIBLE['window']} steps)")
+        elif L['accept_unconverged']:
+            rec['converged'] = False
+            rec['converged_on'] = f'NOT converged (smoke: accepted after {steps_now} steps)'
+        else:
+            job.put(key, rec, status='running')
+            raise RuntimeError(f'{key}: optimisation not converged in {L["maxsteps"]} steps '
+                               f'(last gmax {hist[-1]["gmax"]:.2e}, grms {hist[-1]["grms"]:.2e}); '
+                               f'rerun the same command to continue from the last geometry')
+    xyz_f = mol_opt.atom_coords(unit='Angstrom')
+    mol.stdout.close()
+    del mf; gc.collect()
+
+    # tight single point at the optimised geometry
+    mol2, mf2 = make_mol_mf(case, syms, xyz_f, L, L['conv_tol_sp'], chk, job.out / 'pyscf' / f'{key}.log')
+    w2 = rc.run_scf(mf2, chk_guess=chk, log=None)
+    meas = measure(xyz_f, H, N, O)
+    rec.update(meas)
+    if constraint is not None:
+        rec['constraint']['final_A'] = meas['r_HO_A'] if constraint[:2] == (H, O) else None
+        rec['constraint']['deviation_A'] = (meas['r_HO_A'] - constraint[2]) if constraint[:2] == (H, O) else None
+    rec.update({'E_Ha': float(mf2.e_tot), 'E_opt_last_Ha': hist[-1]['E_Ha'] if hist else None,
+                'sp_scf_cycles': mf2._cycles, 'sp_wall_s': round(w2, 1),
+                'wall_s': round(rec.get('wall_s', 0.0) + w + w2, 1)})
+    if hasattr(mf2, 'with_solvent') and getattr(mf2.with_solvent, 'e', None) is not None:
+        rec['E_solvation_Ha'] = float(mf2.with_solvent.e)
+    rec.update(analyse(mf2, case))
+    rec.update(rc.runtime_sizes(mf2))
+    pt = job.out / 'points' / f'{key}.xyz'
+    rc.write_xyz(pt, syms, xyz_f, f"{key} E = {mf2.e_tot:.10f} Ha r_NH {meas['r_NH_A']:.4f} r_HO {meas['r_HO_A']:.4f}")
+    rec['xyz'] = str(pt.relative_to(job.out)); rec['chk'] = str(chk.relative_to(job.out))
+    rec['peak_rss_mb'] = round(rc.peak_rss_mb(), 1)
+    mol2.stdout.close()
+    del mf2; gc.collect()
+    job.r['timings'][key] = rec['wall_s']
+    job.put(key, rec)
+    q = rec['charges']
+    job.log(f"{key}: done in {len(hist)} steps ({time.time() - t_all:.0f} s this run): E = {rec['E_Ha']:.8f} Ha, "
+            f"r(N-H) {meas['r_NH_A']:.3f}, r(H...O) {meas['r_HO_A']:.3f}, r(N...O) {meas['r_NO_A']:.3f} A; "
+            f"q(picrate) Mulliken {q['mulliken']['picrate']:+.3f}, Loewdin {q['lowdin']['picrate']:+.3f}; "
+            f"{rec['converged_on']}")
+    return rec
+
+
+def single_point(job, key, case, L, syms, xyz, guess_chk=None, extra=None):
+    """Tight single point (the free minimum of a chain), stored as item `key`."""
+    H, N, O = proton_idx(case)
+    for sub in ('points', 'pyscf'):
+        (job.out / sub).mkdir(exist_ok=True)
+    chk = job.chk_dir / f'{key}.chk'
+    mol, mf = make_mol_mf(case, syms, xyz, L, L['conv_tol_sp'], chk, job.out / 'pyscf' / f'{key}.log')
+    if 'scf_settings' not in job.r['settings']:
+        job.r['settings']['scf_settings'] = rc.settings_of(mf); job.save()
+    rec = dict(extra or {}); rec.update({'key': key, 'constraint': None, 'opt_steps': 0, 'converged': True,
+                                          'converged_on': 'stored minimum (single point, no optimisation)',
+                                          'scf_settings': rc.settings_of(mf)})
+    job.put(key, rec, status='running')
+    w = rc.run_scf(mf, chk_guess=chk if chk.exists() else guess_chk, log=job.log)
+    rec.update(measure(xyz, H, N, O))
+    rec.update({'E_Ha': float(mf.e_tot), 'sp_scf_cycles': mf._cycles, 'sp_wall_s': round(w, 1), 'wall_s': round(w, 1)})
+    if hasattr(mf, 'with_solvent') and getattr(mf.with_solvent, 'e', None) is not None:
+        rec['E_solvation_Ha'] = float(mf.with_solvent.e)
+    rec.update(analyse(mf, case)); rec.update(rc.runtime_sizes(mf))
+    pt = job.out / 'points' / f'{key}.xyz'
+    rc.write_xyz(pt, syms, xyz, f"{key} E = {mf.e_tot:.10f} Ha (stored minimum)")
+    rec['xyz'] = str(pt.relative_to(job.out)); rec['chk'] = str(chk.relative_to(job.out))
+    mol.stdout.close()
+    del mf; gc.collect()
+    job.r['timings'][key] = rec['wall_s']
+    job.put(key, rec)
+    job.log(f"{key}: E = {rec['E_Ha']:.10f} Ha ({rec['sp_scf_cycles']} cycles, {w:.0f} s), "
+            f"r(H...O) {rec['r_HO_A']:.4f} A")
+    return rec
+
+
+# ---------------------------------------------------------------- the scan
+def parser():
+    p = rc.add_common_args(argparse.ArgumentParser(description=__doc__.split('\n')[1]))
+    p.add_argument('--case', default='btpc_gas', help='case name (molecules/*/cases/<case>.json); default btpc_gas')
+    p.add_argument('--chains', default='up,down,neutral', help='comma list of up, down, neutral')
+    p.add_argument('--solvent', default=None,
+                   help="override the case's model: gas, water or a dielectric constant (IEF-PCM)")
+    p.add_argument('--start', default=None, help='start geometry (XYZ); default the stored minimum of the case')
+    p.add_argument('--points', default=None, help='comma list of r(H...O) targets in A (default grid, see doc)')
+    p.add_argument('--down-to', type=float, default=1.08, help="last (smallest) target of the 'down' chain")
+    p.add_argument('--neutral-to', type=float, default=1.28, help="last (largest) target of the 'neutral' chain")
+    p.add_argument('--neutral-r', type=float, default=0.98, help='O1-H distance of the neutral start (A)')
+    p.add_argument('--xc', default=rc.XC, help='functional (default b3lyp, the level of record)')
+    p.add_argument('--disp', default=None, help="dispersion correction, e.g. d3bj (default none, as published)")
+    p.add_argument('--maxsteps', type=int, default=None, help='optimisation steps per point (default 100)')
+    return p
+
+
+def chain_targets(chain, r0, grid, args):
+    eps = 1e-3
+    if chain == 'up':
+        return sorted(r for r in grid if r > r0 + eps)
+    if chain == 'down':
+        return sorted((r for r in grid if r < r0 - eps and r >= args.down_to - 1e-9), reverse=True)
+    if chain == 'neutral':
+        return sorted(r for r in grid if r <= args.neutral_to + 1e-9)
+    raise SystemExit(f'unknown chain {chain!r} (up, down, neutral)')
+
+
+def summarise(job, case, syms):
+    """profile.csv, scan.xyz and job.r['summary'] from the finished points (lowest energy per target first)."""
+    items = [it for it in job.r['items'].values() if it.get('status') == 'done' and it.get('E_Ha') is not None]
+    if not items:
+        return
+    ref = [it for it in items if it.get('chain') == 'min']
+    e_ref = ref[0]['E_Ha'] if ref else min(it['E_Ha'] for it in items)
+    items.sort(key=lambda it: (-it['r_HO_A'], it['E_Ha']))
+    rows = []
+    for it in items:
+        q = it.get('charges', {})
+        rows.append({'label': it['key'], 'chain': it.get('chain'), 'r_target_A': it.get('r_target_A'),
+                     'r_HO_A': round(it['r_HO_A'], 4), 'r_NH_A': round(it['r_NH_A'], 4),
+                     'r_NO_A': round(it['r_NO_A'], 4), 'NHO_deg': round(it['NHO_deg'], 1),
+                     'E_Ha': it['E_Ha'], 'dE_kcal': round((it['E_Ha'] - e_ref) * rc.HARTREE_KCAL, 3),
+                     'q_picrate_mulliken': q.get('mulliken', {}).get('picrate'),
+                     'q_picrate_lowdin': q.get('lowdin', {}).get('picrate'),
+                     'q_H_mulliken': q.get('mulliken', {}).get('H'), 'q_H_lowdin': q.get('lowdin', {}).get('H'),
+                     'HOMO_eV': round(it.get('HOMO_eV', float('nan')), 4),
+                     'LUMO_eV': round(it.get('LUMO_eV', float('nan')), 4),
+                     'LUMO_on_anion_pct': ((it.get('frontier_composition_mulliken_pct') or {}).get('LUMO') or {}).get('anion'),
+                     'opt_steps': it.get('opt_steps'), 'converged': it.get('converged')})
+    cols = list(rows[0])
+    with open(job.out / 'profile.csv', 'w') as f:
+        f.write(','.join(cols) + '\n')
+        for r in rows:
+            f.write(','.join('' if r[c] is None else str(r[c]) for c in cols) + '\n')
+    tmp = job.out / 'scan.xyz.tmp'
+    tmp.unlink(missing_ok=True)
+    for it in items:
+        s, x, _ = read_frames(job.out / it['xyz'])[0]
+        append_frame(tmp, s, x, f"{it['key']} E = {it['E_Ha']:.10f} Ha r_HO {it['r_HO_A']:.4f} r_NH {it['r_NH_A']:.4f}")
+    tmp.replace(job.out / 'scan.xyz')
+    # hysteresis: same target reached from two chains
+    by_t = {}
+    for it in items:
+        if it.get('r_target_A') is not None:
+            by_t.setdefault(round(it['r_target_A'], 3), []).append(it)
+    hyst = {f'{t:.3f}': {'chains': [i['chain'] for i in v],
+                         'dE_kcal': round((max(i['E_Ha'] for i in v) - min(i['E_Ha'] for i in v)) * rc.HARTREE_KCAL, 3)}
+            for t, v in sorted(by_t.items()) if len(v) > 1}
+    job.r['summary'] = {'E_ref_Ha': e_ref, 'E_ref': 'min point' if ref else 'lowest point', 'rows': rows,
+                        'hysteresis': hyst}
+    job.save()
+
+
+def run(job, args):
+    case = rc.load_case(args.case)
+    L = level_of_theory(args, case.get('solvent'))
+    H, N, O = proton_idx(case)
+    labs = proton_labels(case)
+    grid = [float(v) for v in args.points.split(',')] if args.points else list(DEFAULT_GRID)
+    start_path = pathlib.Path(args.start) if args.start else stored_minimum(case)
+    if start_path is None or not start_path.exists():
+        raise SystemExit(f"no start geometry: {case['name']} has no stored opt.xyz; pass --start")
+    syms, x0 = rc.read_xyz(start_path)
+    m0 = measure(x0, H, N, O)
+    r0 = m0['r_HO_A']
+    if args.smoke and not args.points:
+        grid = [round(r0 + 0.06, 3), round(r0 - 0.08, 3), args.neutral_r]
+        args.down_to, args.neutral_to = round(r0 - 0.08, 3) - 1e-6, args.neutral_r
+    chains = [c.strip() for c in args.chains.split(',') if c.strip()]
+    plan = {c: chain_targets(c, r0, grid, args) for c in chains}
+    job.r['settings'].update({k: v for k, v in L.items()})
+    job.r['settings'].update({'case': case['name'], 'scan_coordinate': f"r({labs['H']}...{labs['O']})",
+                              'proton_atoms_0based': {'H': H, 'donor_N': N, 'acceptor_O': O}, 'labels': labs,
+                              'grid_A': grid, 'chains': plan, 'down_to': args.down_to, 'neutral_to': args.neutral_to,
+                              'neutral_start_r_OH_A': args.neutral_r, 'r0_A': r0})
+    job.input_file('case', rc.ROOT / case['case_file'])
+    job.input_file('start_geometry', start_path)
+    job.save()
+    job.log(f"case {case['name']} ({L['solvent'] or 'gas phase'}), start {start_path.name}: "
+            f"r({labs['N']}-{labs['H']}) {m0['r_NH_A']:.3f}, r({labs['H']}...{labs['O']}) {r0:.3f}, "
+            f"r({labs['N']}...{labs['O']}) {m0['r_NO_A']:.3f} A; chains {plan}")
+    if args.smoke:
+        job.log('SMOKE settings: STO-3G, grid 2, Lebedev 17, loose criteria -- not for production numbers')
+
+    for chain in chains:
+        targets = plan[chain]
+        if chain in ('up', 'down'):
+            if not job.done('min'):
+                single_point(job, 'min', case, L, syms, x0, extra={'chain': 'min', 'r_target_A': None})
+            prev_xyz = x0; prev_chk = job.chk_dir / 'min.chk'
+        else:
+            prev_xyz = place_H(x0, H, O, args.neutral_r, toward=N)       # neutral start: H on the O1->N4 line
+            prev_chk = None
+        for r in targets:
+            key = f'{chain}_{r:.3f}'
+            if job.done(key):
+                it = job.get(key)
+                job.log(f"{key}: done (E = {it['E_Ha']:.8f}); skipped")
+                prev_xyz = read_frames(job.out / it['xyz'])[0][1]; prev_chk = job.out / it['chk']
+                continue
+            start = place_H(prev_xyz, H, O, r)
+            relax(job, key, case, L, syms, start, constraint=(H, O, r), guess_chk=prev_chk,
+                  extra={'chain': chain, 'r_target_A': r})
+            it = job.get(key)
+            prev_xyz = read_frames(job.out / it['xyz'])[0][1]; prev_chk = job.out / it['chk']
+        summarise(job, case, syms)
+    summarise(job, case, syms)
+    s = job.r.get('summary') or {}
+    for row in s.get('rows', []):
+        job.log(f"  {row['label']:>14s} r(H...O) {row['r_HO_A']:.3f} r(N-H) {row['r_NH_A']:.3f} "
+                f"dE {row['dE_kcal']:+8.3f} kcal/mol  q(pic) M {row['q_picrate_mulliken']:+.3f} "
+                f"L {row['q_picrate_lowdin']:+.3f}")
+    if s.get('hysteresis'):
+        job.log(f"hysteresis between chains: {s['hysteresis']}")
+    return True
+
+
+if __name__ == '__main__':
+    rc.install_sigterm_handler()
+    rc.main_wrapper(parser, run, __file__)
+#INFO: ******************** input file end ********************
+
+
+System: uname_result(system='Linux', node='<vm-1>', release='7.0.0-1017-gcp', version='#19~24.04.1-Ubuntu SMP PREEMPT Thu Oct 29 22:34:06 UTC 2026', machine='x86_64')  Threads 4
+Python 3.11.16 (main, Sep  2 2026, 23:39:52) [GCC 15.3.0]
+numpy 2.4.6  scipy 1.17.1  h5py 3.16.0
+Date: Fri Nov 20 22:48:21 2026
+PySCF version 2.14.0
+PySCF path  <run-dir>/env/lib/python3.11/site-packages/pyscf
+
+[ENV] PYSCF_TMPDIR <run-dir>/scratch/scan_gas_up
+[CONFIG] conf_file None
+[INPUT] verbose = 4
+[INPUT] num. atoms = 33
+[INPUT] num. electrons = 178
+[INPUT] charge = 0
+[INPUT] spin (= nelec alpha-beta = 2S) = 0
+[INPUT] symmetry False subgroup None
+[INPUT] Mole.unit = angstrom
+[INPUT] Symbol           X                Y                Z      unit          X                Y                Z       unit  Magmom
+[INPUT]  1 O     -0.758190720000  -0.146469680000   0.405752490000 AA   -1.432772810987  -0.276787580753   0.766761080460 Bohr   0.0
+[INPUT]  2 N     -0.387069340000   2.474275380000   1.668986690000 AA   -0.731455043816   4.675702824954   3.153927749644 Bohr   0.0
+[INPUT]  3 O      0.538537480000   1.700803360000   1.918482650000 AA    1.017688345013   3.214052542140   3.625406783230 Bohr   0.0
+[INPUT]  4 C     -1.192502020000   2.224790000000   0.476186450000 AA   -2.253502220791   4.204243784671   0.899861974729 Bohr   0.0
+[INPUT]  5 C     -1.261371930000   0.896925280000  -0.093064000000 AA   -2.383647488914   1.694943133399  -0.175865472057 Bohr   0.0
+[INPUT]  6 C     -2.063614580000   0.839511440000  -1.295553660000 AA   -3.899666382859   1.586446700039  -2.448241597078 Bohr   0.0
+[INPUT]  7 C     -2.761696110000   1.906264570000  -1.809630690000 AA   -5.218849287177   3.602317958262  -3.419706390708 Bohr   0.0
+[INPUT]  8 O     -0.657973870000   3.453660710000   2.354884050000 AA   -1.243390411420   6.526472869071   4.450085909607 Bohr   0.0
+[INPUT]  9 C     -2.656691930000   3.148151000000  -1.181974990000 AA   -5.020420145042   5.949143188776  -2.233609017186 Bohr   0.0
+[INPUT] 10 C     -1.880335340000   3.308073060000  -0.043579670000 AA   -3.553318814941   6.251352083452  -0.082353640899 Bohr   0.0
+[INPUT] 11 N     -2.161340730000  -0.430300140000  -2.027420520000 AA   -4.084342041568  -0.813149415962  -3.831269522123 Bohr   0.0
+[INPUT] 12 N     -3.365049990000   4.297774680000  -1.739865160000 AA   -6.359022876570   8.121617090290  -3.287868646073 Bohr   0.0
+[INPUT] 13 O     -4.041973620000   4.114750050000  -2.747757880000 AA   -7.638223144517   7.775750665540  -5.192509849816 Bohr   0.0
+[INPUT] 14 O     -3.243196220000   5.377467060000  -1.169568520000 AA   -6.128752624025  10.161939987270  -2.210164186713 Bohr   0.0
+[INPUT] 15 O     -3.251151630000  -0.730124010000  -2.499116070000 AA   -6.143786170133  -1.379734415869  -4.722644925799 Bohr   0.0
+[INPUT] 16 O     -1.141838680000  -1.100679930000  -2.158862010000 AA   -2.157762383635  -2.079983618505  -4.079657939628 Bohr   0.0
+[INPUT] 17 H     -1.808702250000   4.273035690000   0.437970670000 AA   -3.417951893385   8.074867174592   0.827644616892 Bohr   0.0
+[INPUT] 18 H     -3.373423250000   1.790405690000  -2.693723670000 AA   -6.374846044740   3.383376405963  -5.090399991558 Bohr   0.0
+[INPUT] 19 N      1.245795220000  -1.081521450000   1.524397330000 AA    2.354211773092  -2.043779338342   2.880693458718 Bohr   0.0
+[INPUT] 20 N      2.837932300000  -1.874109290000   2.630757610000 AA    5.362914807057  -3.541553285603   4.971411383015 Bohr   0.0
+[INPUT] 21 C      2.851060060000  -2.603088670000   1.465979410000 AA    5.387722678086  -4.919124664258   2.770299589151 Bohr   0.0
+[INPUT] 22 C      1.780400010000  -2.068280560000   0.732391800000 AA    3.364468411073  -3.908483807162   1.384019917877 Bohr   0.0
+[INPUT] 23 N      1.872094790000  -0.966000560000   2.650790930000 AA    3.537746432325  -1.825476494576   5.009268871181 Bohr   0.0
+[INPUT] 24 C      1.434770110000  -2.540206640000  -0.541712440000 AA    2.711322559612  -4.800294849402  -1.023688149870 Bohr   0.0
+[INPUT] 25 C      2.218396700000  -3.567495960000  -1.030696590000 AA    4.192162198639  -6.741590314892  -1.947734272623 Bohr   0.0
+[INPUT] 26 C      3.300928330000  -4.106976300000  -0.291102580000 AA    6.237850500518  -7.761060407080  -0.550104150354 Bohr   0.0
+[INPUT] 27 C      3.643153470000  -3.643758900000   0.966789470000 AA    6.884562288059  -6.885706384946   1.826967318413 Bohr   0.0
+[INPUT] 28 H      0.602146420000  -2.114056890000  -1.088302230000 AA    1.137891820687  -3.994988533850  -2.056593155453 Bohr   0.0
+[INPUT] 29 H      4.470428130000  -4.061573900000   1.525594310000 AA    8.447884825252  -7.675262305682   2.882955423095 Bohr   0.0
+[INPUT] 30 H      2.001426640000  -3.976931450000  -2.009647700000 AA    3.782148208008  -7.515311256669  -3.797683759862 Bohr   0.0
+[INPUT] 31 H      3.879240750000  -4.912104920000  -0.728380430000 AA    7.330702588752  -9.282532993929  -1.376439527193 Bohr   0.0
+[INPUT] 32 H      0.400343152949  -0.458120041718   1.237782127255 AA    0.756538914919  -0.865721411022   2.339069222393 Bohr   0.0
+[INPUT] 33 H      3.446344300000  -1.933090440000   3.435381540000 AA    6.512646857956  -3.653011505615   6.491930243987 Bohr   0.0
+
+nuclear repulsion = 2127.94348879594
+number of shells = 290
+number of NR pGTOs = 947
+number of NR cGTOs = 606
+basis = 6-311++g(d,p)
+ecp = {}
+CPU time:      1822.96
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+
+
+******** <class 'pyscf.df.df_jk.DFRKS'> ********
+method = DFRKS
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-09
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/scan_gas_up/chk/up_1.460.chk
+max_memory 8000 MB (current use 187 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x7f167f8a77e0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x7f167f8a7740>
+small_rho_cutoff = 0
+Set gradient conv threshold to 3.16228e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+init E= -1317.2123070481
+
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.249040011635383  LUMO = -0.122119413288363  gap/eV = 3.45369
+cycle= 1 E= -1317.20805681405  delta_E= 0.00425  |g|= 0.0168  |ddm|= 0.62
+  HOMO = -0.249027349235888  LUMO = -0.125754798654391  gap/eV = 3.35442
+cycle= 2 E= -1317.20783827182  delta_E= 0.000219  |g|= 0.0364  |ddm|= 0.572
+  HOMO = -0.248916751926711  LUMO = -0.124819658965396  gap/eV = 3.37685
+cycle= 3 E= -1317.20811764777  delta_E= -0.000279  |g|= 0.00593  |ddm|= 0.31
+  HOMO = -0.249059272570381  LUMO = -0.124608578041331  gap/eV = 3.38648
+cycle= 4 E= -1317.20812307174  delta_E= -5.42e-06  |g|= 0.0028  |ddm|= 0.0433
+  HOMO = -0.249057594875616  LUMO = -0.124458642277253  gap/eV = 3.39051
+cycle= 5 E= -1317.20812442789  delta_E= -1.36e-06  |g|= 0.00103  |ddm|= 0.032
+  HOMO = -0.249043445314452  LUMO = -0.124493707505456  gap/eV = 3.38917
+cycle= 6 E= -1317.20812463747  delta_E= -2.1e-07  |g|= 0.00026  |ddm|= 0.00618
+  HOMO = -0.249047594575465  LUMO = -0.124501957860344  gap/eV = 3.38906
+cycle= 7 E= -1317.20812465095  delta_E= -1.35e-08  |g|= 0.000119  |ddm|= 0.00376
+  HOMO = -0.24904618613721  LUMO = -0.124500944656448  gap/eV = 3.38905
+cycle= 8 E= -1317.20812465317  delta_E= -2.22e-09  |g|= 6.35e-05  |ddm|= 0.000861
+  HOMO = -0.249046304588617  LUMO = -0.124500224598953  gap/eV = 3.38907
+cycle= 9 E= -1317.20812465383  delta_E= -6.55e-10  |g|= 2.74e-05  |ddm|= 0.000405
+  HOMO = -0.249046719162905  LUMO = -0.124500080348435  gap/eV = 3.38909
+Extra cycle  E= -1317.20812465278  delta_E= 1.05e-09  |g|= 7.83e-05  |ddm|= 0.000652
+converged SCF energy = -1317.20812465278
+Create scanner for <class 'pyscf.df.grad.rks.Gradients'>
+Create scanner for <class 'pyscf.df.df_jk.DFRKS'>
+
+Geometry optimization cycle 1
+Cartesian coordinates (Angstrom)
+ Atom        New coordinates             dX        dY        dZ
+   O  -0.758191  -0.146470   0.405752    0.000000  0.000000  0.000000
+   N  -0.387069   2.474275   1.668987    0.000000  0.000000  0.000000
+   O   0.538537   1.700803   1.918483    0.000000  0.000000  0.000000
+   C  -1.192502   2.224790   0.476186    0.000000  0.000000  0.000000
+   C  -1.261372   0.896925  -0.093064    0.000000 -0.000000  0.000000
+   C  -2.063615   0.839511  -1.295554    0.000000  0.000000  0.000000
+   C  -2.761696   1.906265  -1.809631    0.000000  0.000000  0.000000
+   O  -0.657974   3.453661   2.354884    0.000000 -0.000000  0.000000
+   C  -2.656692   3.148151  -1.181975    0.000000  0.000000  0.000000
+   C  -1.880335   3.308073  -0.043580    0.000000  0.000000  0.000000
+   N  -2.161341  -0.430300  -2.027421    0.000000  0.000000  0.000000
+   N  -3.365050   4.297775  -1.739865    0.000000  0.000000  0.000000
+   O  -4.041974   4.114750  -2.747758    0.000000  0.000000  0.000000
+   O  -3.243196   5.377467  -1.169569    0.000000  0.000000  0.000000
+   O  -3.251152  -0.730124  -2.499116    0.000000  0.000000  0.000000
+   O  -1.141839  -1.100680  -2.158862    0.000000  0.000000  0.000000
+   H  -1.808702   4.273036   0.437971    0.000000  0.000000  0.000000
+   H  -3.373423   1.790406  -2.693724    0.000000 -0.000000  0.000000
+   N   1.245795  -1.081521   1.524397    0.000000  0.000000  0.000000
+   N   2.837932  -1.874109   2.630758    0.000000  0.000000  0.000000
+   C   2.851060  -2.603089   1.465979    0.000000  0.000000  0.000000
+   C   1.780400  -2.068281   0.732392    0.000000  0.000000  0.000000
+   N   1.872095  -0.966001   2.650791    0.000000  0.000000  0.000000
+   C   1.434770  -2.540207  -0.541712    0.000000  0.000000  0.000000
+   C   2.218397  -3.567496  -1.030697    0.000000  0.000000  0.000000
+   C   3.300928  -4.106976  -0.291103    0.000000  0.000000  0.000000
+   C   3.643153  -3.643759   0.966789    0.000000  0.000000  0.000000
+   H   0.602146  -2.114057  -1.088302    0.000000  0.000000  0.000000
+   H   4.470428  -4.061574   1.525594    0.000000  0.000000  0.000000
+   H   2.001427  -3.976931  -2.009648    0.000000  0.000000  0.000000
+   H   3.879241  -4.912105  -0.728380   -0.000000  0.000000  0.000000
+   H   0.400343  -0.458120   1.237782    0.000000  0.000000  0.000000
+   H   3.446344  -1.933090   3.435382    0.000000  0.000000  0.000000
+
+WARN: Mole.unit (angstrom) is changed to Bohr
+
+New geometry
+   1 O     -0.758190720000  -0.146469680000   0.405752490000 AA   -1.432772810987  -0.276787580753   0.766761080460 Bohr
+   2 N     -0.387069340000   2.474275380000   1.668986690000 AA   -0.731455043816   4.675702824954   3.153927749644 Bohr
+   3 O      0.538537480000   1.700803360000   1.918482650000 AA    1.017688345013   3.214052542140   3.625406783230 Bohr
+   4 C     -1.192502020000   2.224790000000   0.476186450000 AA   -2.253502220791   4.204243784671   0.899861974729 Bohr
+   5 C     -1.261371930000   0.896925280000  -0.093064000000 AA   -2.383647488914   1.694943133399  -0.175865472057 Bohr
+   6 C     -2.063614580000   0.839511440000  -1.295553660000 AA   -3.899666382859   1.586446700039  -2.448241597078 Bohr
+   7 C     -2.761696110000   1.906264570000  -1.809630690000 AA   -5.218849287177   3.602317958262  -3.419706390708 Bohr
+   8 O     -0.657973870000   3.453660710000   2.354884050000 AA   -1.243390411420   6.526472869071   4.450085909607 Bohr
+   9 C     -2.656691930000   3.148151000000  -1.181974990000 AA   -5.020420145042   5.949143188776  -2.233609017186 Bohr
+  10 C     -1.880335340000   3.308073060000  -0.043579670000 AA   -3.553318814941   6.251352083452  -0.082353640899 Bohr
+  11 N     -2.161340730000  -0.430300140000  -2.027420520000 AA   -4.084342041568  -0.813149415962  -3.831269522123 Bohr
+  12 N     -3.365049990000   4.297774680000  -1.739865160000 AA   -6.359022876570   8.121617090290  -3.287868646073 Bohr
+  13 O     -4.041973620000   4.114750050000  -2.747757880000 AA   -7.638223144517   7.775750665540  -5.192509849816 Bohr
+  14 O     -3.243196220000   5.377467060000  -1.169568520000 AA   -6.128752624025  10.161939987270  -2.210164186713 Bohr
+  15 O     -3.251151630000  -0.730124010000  -2.499116070000 AA   -6.143786170133  -1.379734415869  -4.722644925799 Bohr
+  16 O     -1.141838680000  -1.100679930000  -2.158862010000 AA   -2.157762383635  -2.079983618505  -4.079657939628 Bohr
+  17 H     -1.808702250000   4.273035690000   0.437970670000 AA   -3.417951893385   8.074867174592   0.827644616892 Bohr
+  18 H     -3.373423250000   1.790405690000  -2.693723670000 AA   -6.374846044740   3.383376405963  -5.090399991558 Bohr
+  19 N      1.245795220000  -1.081521450000   1.524397330000 AA    2.354211773092  -2.043779338342   2.880693458718 Bohr
+  20 N      2.837932300000  -1.874109290000   2.630757610000 AA    5.362914807057  -3.541553285603   4.971411383015 Bohr
+  21 C      2.851060060000  -2.603088670000   1.465979410000 AA    5.387722678086  -4.919124664258   2.770299589151 Bohr
+  22 C      1.780400010000  -2.068280560000   0.732391800000 AA    3.364468411073  -3.908483807162   1.384019917877 Bohr
+  23 N      1.872094790000  -0.966000560000   2.650790930000 AA    3.537746432325  -1.825476494576   5.009268871181 Bohr
+  24 C      1.434770110000  -2.540206640000  -0.541712440000 AA    2.711322559612  -4.800294849402  -1.023688149870 Bohr
+  25 C      2.218396700000  -3.567495960000  -1.030696590000 AA    4.192162198639  -6.741590314892  -1.947734272623 Bohr
+  26 C      3.300928330000  -4.106976300000  -0.291102580000 AA    6.237850500518  -7.761060407080  -0.550104150354 Bohr
+  27 C      3.643153470000  -3.643758900000   0.966789470000 AA    6.884562288059  -6.885706384946   1.826967318413 Bohr
+  28 H      0.602146420000  -2.114056890000  -1.088302230000 AA    1.137891820687  -3.994988533850  -2.056593155453 Bohr
+  29 H      4.470428130000  -4.061573900000   1.525594310000 AA    8.447884825252  -7.675262305682   2.882955423095 Bohr
+  30 H      2.001426640000  -3.976931450000  -2.009647700000 AA    3.782148208008  -7.515311256669  -3.797683759862 Bohr
+  31 H      3.879240750000  -4.912104920000  -0.728380430000 AA    7.330702588752  -9.282532993929  -1.376439527193 Bohr
+  32 H      0.400343152949  -0.458120041718   1.237782127255 AA    0.756538914919  -0.865721411022   2.339069222393 Bohr
+  33 H      3.446344300000  -1.933090440000   3.435381540000 AA    6.512646857956  -3.653011505615   6.491930243987 Bohr
+
+
+******** <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+method = DFRKS_Scanner
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-09
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/scan_gas_up/chk/up_1.460.chk
+max_memory 8000 MB (current use 343 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x7f167f8a77e0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x7f167f8a7740>
+small_rho_cutoff = 0
+Set gradient conv threshold to 3.16228e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+init E= -1317.20812465278
+
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.24904535311213  LUMO = -0.124501841333192  gap/eV = 3.38900
+cycle= 1 E= -1317.20812464309  delta_E= 9.69e-09  |g|= 0.000238  |ddm|= 0.00184
+  HOMO = -0.249048321828326  LUMO = -0.12449611018248  gap/eV = 3.38924
+cycle= 2 E= -1317.20812455028  delta_E= 9.28e-08  |g|= 0.000737  |ddm|= 0.00547
+  HOMO = -0.249046826494123  LUMO = -0.124500349294013  gap/eV = 3.38908
+cycle= 3 E= -1317.20812465377  delta_E= -1.03e-07  |g|= 3.05e-05  |ddm|= 0.00403
+  HOMO = -0.249046279087015  LUMO = -0.124500549226617  gap/eV = 3.38906
+cycle= 4 E= -1317.20812465398  delta_E= -2.1e-10  |g|= 3.78e-06  |ddm|= 0.000206
+  HOMO = -0.249046347297476  LUMO = -0.124500349862446  gap/eV = 3.38907
+Extra cycle  E= -1317.20812465395  delta_E= 2.09e-11  |g|= 1.04e-05  |ddm|= 6.74e-05
+converged SCF energy = -1317.20812465395
+
+
+******** <class 'pyscf.grad.rhf.Gradients_Scanner'> for <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+unit = Eh/Bohr
+max_memory 8000 MB (current use 4687 MB)
+grid_response = False
+--------------- DFRKS_Scanner gradients ---------------
+         x                y                z
+0 O     0.0010074286    -0.0017801130     0.0007206179
+1 N     0.0003455691     0.0000853442     0.0004610357
+2 O    -0.0002963127     0.0001375289    -0.0002260568
+3 C    -0.0000409540    -0.0004583873    -0.0002217407
+4 C    -0.0004618097     0.0019838832    -0.0004252457
+5 C     0.0003314826    -0.0002518423     0.0005246082
+6 C     0.0000185007     0.0002452389     0.0000416580
+7 O    -0.0000959526    -0.0000267612    -0.0001214595
+8 C     0.0001143360    -0.0002589356     0.0000704787
+9 C    -0.0000810014     0.0000333001    -0.0001258468
+10 N    -0.0000524869    -0.0003859008    -0.0001232701
+11 N    -0.0001427815     0.0002832860    -0.0001400131
+12 O     0.0000808792    -0.0000443409     0.0001355378
+13 O     0.0000426930    -0.0001439585    -0.0000313669
+14 O     0.0000850975     0.0001012038     0.0000758768
+15 O    -0.0001011207     0.0001879990     0.0000392462
+16 H     0.0000126765    -0.0000076024     0.0000124522
+17 H     0.0000080318    -0.0000196156    -0.0000027500
+18 N    -0.0059277827     0.0038453529    -0.0023289198
+19 N     0.0007038111    -0.0005172633     0.0001923741
+20 C     0.0001417072    -0.0000633758     0.0000162561
+21 C     0.0004507202     0.0000622061     0.0007638194
+22 N    -0.0006925549     0.0001545456    -0.0007421641
+23 C     0.0000768362    -0.0000557839     0.0000539949
+24 C    -0.0000346112    -0.0000253755    -0.0000964812
+25 C    -0.0000169878     0.0000220773    -0.0000043707
+26 C     0.0000103220     0.0000075283     0.0000183716
+27 H     0.0000613632    -0.0000677716    -0.0000171877
+28 H     0.0000176784    -0.0000148898    -0.0000142811
+29 H     0.0000080879    -0.0000109765    -0.0000145421
+30 H    -0.0000054078     0.0000037362    -0.0000143336
+31 H     0.0044245695    -0.0029829016     0.0015940691
+32 H     0.0000024615    -0.0000457688    -0.0000751456
+----------------------------------------------
+cycle 1: E = -1317.20812465  dE = -1317.21  norm(grad) = 0.00999598
+
+Geometry optimization cycle 2
+Cartesian coordinates (Angstrom)
+ Atom        New coordinates             dX        dY        dZ
+   O  -0.756808  -0.138596   0.407718    0.001382  0.007874  0.001965
+   N  -0.387111   2.473053   1.666048   -0.000041 -0.001222 -0.002939
+   O   0.537732   1.698276   1.915380   -0.000806 -0.002527 -0.003103
+   C  -1.194438   2.227332   0.473868   -0.001936  0.002542 -0.002319
+   C  -1.263584   0.899512  -0.095866   -0.002212  0.002587 -0.002802
+   C  -2.065485   0.840881  -1.299117   -0.001870  0.001369 -0.003564
+   C  -2.763647   1.908070  -1.811977   -0.001951  0.001805 -0.002346
+   O  -0.655821   3.451615   2.354051    0.002153 -0.002046 -0.000833
+   C  -2.658695   3.149894  -1.183423   -0.002003  0.001743 -0.001448
+   C  -1.882435   3.310904  -0.044816   -0.002100  0.002831 -0.001236
+   N  -2.162018  -0.428831  -2.031052   -0.000677  0.001470 -0.003632
+   N  -3.367343   4.299090  -1.741312   -0.002293  0.001315 -0.001447
+   O  -4.043248   4.116653  -2.750092   -0.001275  0.001903 -0.002334
+   O  -3.246493   5.378755  -1.170584   -0.003297  0.001288 -0.001016
+   O  -3.251267  -0.730367  -2.503139   -0.000115 -0.000243 -0.004023
+   O  -1.142407  -1.099648  -2.160453   -0.000569  0.001032 -0.001591
+   H  -1.810959   4.275887   0.436712   -0.002257  0.002852 -0.001259
+   H  -3.375490   1.792953  -2.696067   -0.002067  0.002547 -0.002343
+   N   1.252431  -1.086170   1.531742    0.006636 -0.004649  0.007345
+   N   2.843074  -1.876807   2.633361    0.005141 -0.002698  0.002603
+   C   2.853052  -2.604424   1.467275    0.001992 -0.001336  0.001296
+   C   1.782375  -2.070047   0.733411    0.001975 -0.001767  0.001019
+   N   1.878556  -0.968657   2.658151    0.006461 -0.002656  0.007360
+   C   1.433906  -2.539178  -0.540901   -0.000864  0.001029  0.000812
+   C   2.217587  -3.566602  -1.029647   -0.000810  0.000894  0.001049
+   C   3.300098  -4.107472  -0.290871   -0.000831 -0.000495  0.000231
+   C   3.643866  -3.645368   0.966979    0.000713 -0.001609  0.000189
+   H   0.601015  -2.111766  -1.086316   -0.001131  0.002291  0.001987
+   H   4.471000  -4.064183   1.525181    0.000572 -0.002609 -0.000413
+   H   2.000307  -3.975697  -2.008658   -0.001119  0.001234  0.000989
+   H   3.877359  -4.913000  -0.728789   -0.001882 -0.000895 -0.000409
+   H   0.395916  -0.461853   1.243380   -0.004427 -0.003733  0.005598
+   H   3.453073  -1.937369   3.436707    0.006728 -0.004279  0.001326
+New geometry
+   1 O     -0.756808244328  -0.138596124180   0.407717627785 AA   -1.430160310593  -0.261908716626   0.770474652671 Bohr
+   2 N     -0.387110792181   2.473053272255   1.666047695788 AA   -0.731533377086   4.673393376021   3.148373855502 Bohr
+   3 O      0.537731713426   1.698275949057   1.915380113443 AA    1.016165666869   3.209276427653   3.619543838845 Bohr
+   4 C     -1.194438343126   2.227332205523   0.473867881173 AA   -2.257161341187   4.209047856863   0.895480514646 Bohr
+   5 C     -1.263583905691   0.899512446771  -0.095865978390 AA   -2.387827517164   1.699832170035  -0.181160443820 Bohr
+   6 C     -2.065484702452   0.840880856722  -1.299117471801 AA   -3.903200402114   1.589034522594  -2.454976225342 Bohr
+   7 C     -2.763647412443   1.908069851040  -1.811976913082 AA   -5.222536714381   3.605729445005  -3.424140109760 Bohr
+   8 O     -0.655820591331   3.451614633879   2.354051063659 AA   -1.239321304466   6.522606345572   4.448511793556 Bohr
+   9 C     -2.658695310846   3.149893960274  -1.183422927619 AA   -5.024205986164   5.952436906340  -2.236345222731 Bohr
+  10 C     -1.882435290260   3.310904070673  -0.044815813217 AA   -3.557287145807   6.256701918280  -0.084689613029 Bohr
+  11 N     -2.162017938213  -0.428830615580  -2.031052270263 AA   -4.085621779619  -0.810372417274  -3.838132535473 Bohr
+  12 N     -3.367342613662   4.299090121538  -1.741311903358 AA   -6.363355307398   8.124102914529  -3.290602594791 Bohr
+  13 O     -4.043248233664   4.116653347971  -2.750092374452 AA   -7.640631815256   7.779347377439  -5.196921404969 Bohr
+  14 O     -3.246492824855   5.378755096198  -1.170584423493 AA   -6.134982304341  10.164374022922  -2.212083966083 Bohr
+  15 O     -3.251266949636  -0.730367147202  -2.503138836786 AA   -6.144004092662  -1.380193878592  -4.730246853288 Bohr
+  16 O     -1.142407411479  -1.099647648987  -2.160452711122 AA   -2.158837130369  -2.078032890108  -4.082663929094 Bohr
+  17 H     -1.810959486431   4.275887260603   0.436711681001 AA   -3.422217452038   8.080255862057   0.825265472491 Bohr
+  18 H     -3.375490047447   1.792953170455  -2.696067100134 AA   -6.378751725870   3.388190446330  -5.094828432703 Bohr
+  19 N      1.252430727835  -1.086170241633   1.531742136174 AA    2.366751065597  -2.052564281338   2.894573130825 Bohr
+  20 N      2.843073764534  -1.876807410239   2.633360769136 AA    5.372630766905  -3.546651993905   4.976330640841 Bohr
+  21 C      2.853051715095  -2.604424487931   1.467275426104 AA    5.391486360751  -4.921648994301   2.772748704642 Bohr
+  22 C      1.782375387500  -2.070047364284   0.733411033015 AA    3.368201333540  -3.911822583375   1.385945989132 Bohr
+  23 N      1.878555989689  -0.968656638115   2.658151258425 AA    3.549956330173  -1.830495754779   5.023177876091 Bohr
+  24 C      1.433906393545  -2.539177768635  -0.540900683835 AA    2.709690372062  -4.798350564305  -1.022154153038 Bohr
+  25 C      2.217586513403  -3.566602386072  -1.029647138696 AA    4.190631167860  -6.739901704897  -1.945751097078 Bohr
+  26 C      3.300097575106  -4.107471658323  -0.290871282343 AA    6.236280601291  -7.761996498644  -0.549667061129 Bohr
+  27 C      3.643866075078  -3.645367767221   0.966978656402 AA    6.885908916492  -6.888746703366   1.827324828900 Bohr
+  28 H      0.601014966456  -2.111765622785  -1.086315692194 AA    1.135753683367  -3.990658666334  -2.052839143064 Bohr
+  29 H      4.470999667696  -4.064182569005   1.525180846518 AA    8.448964874967  -7.680191975651   2.882174090352 Bohr
+  30 H      2.000307317940  -3.975697231972  -2.008658322678 AA    3.780032995869  -7.512978922618  -3.795814107689 Bohr
+  31 H      3.877358914469  -4.912999638656  -0.728789354291 AA    7.327146434988  -9.284223767147  -1.377212282108 Bohr
+  32 H      0.395915787062  -0.461853361832   1.243380278560 AA    0.748172405939  -0.872776363573   2.349648195164 Bohr
+  33 H      3.453072657626  -1.937369182251   3.436707313916 AA    6.525361611138  -3.661097156627   6.494435593592 Bohr
+
+
+******** <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+method = DFRKS_Scanner
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-09
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/scan_gas_up/chk/up_1.460.chk
+max_memory 8000 MB (current use 621 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x7f167f8a77e0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x7f167f8a7740>
+small_rho_cutoff = 0
+Set gradient conv threshold to 3.16228e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+init E= -1317.20462385398
+
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.24963220777175  LUMO = -0.125288402790302  gap/eV = 3.38357
+cycle= 1 E= -1317.20813458815  delta_E= -0.00351  |g|= 0.0123  |ddm|= 1.13
+  HOMO = -0.248965959362771  LUMO = -0.123953053861026  gap/eV = 3.40177
+cycle= 2 E= -1317.20801638683  delta_E= 0.000118  |g|= 0.0269  |ddm|= 0.287
+  HOMO = -0.249130619944996  LUMO = -0.124180737067593  gap/eV = 3.40006
+cycle= 3 E= -1317.20816908842  delta_E= -0.000153  |g|= 0.00256  |ddm|= 0.149
+  HOMO = -0.249088229665777  LUMO = -0.124316792157592  gap/eV = 3.39520
+cycle= 4 E= -1317.20817008149  delta_E= -9.93e-07  |g|= 0.00142  |ddm|= 0.025
+  HOMO = -0.249121298251584  LUMO = -0.124355414727255  gap/eV = 3.39505
+cycle= 5 E= -1317.20817043363  delta_E= -3.52e-07  |g|= 0.000685  |ddm|= 0.0171
+  HOMO = -0.249122504782548  LUMO = -0.124336921475414  gap/eV = 3.39559
+cycle= 6 E= -1317.20817052252  delta_E= -8.89e-08  |g|= 0.000161  |ddm|= 0.0066
+  HOMO = -0.249119130144457  LUMO = -0.124335399241325  gap/eV = 3.39554
+cycle= 7 E= -1317.20817052712  delta_E= -4.6e-09  |g|= 8.36e-05  |ddm|= 0.0014
+  HOMO = -0.249120102435207  LUMO = -0.124336747721247  gap/eV = 3.39553
+cycle= 8 E= -1317.20817052842  delta_E= -1.3e-09  |g|= 3.09e-05  |ddm|= 0.000651
+  HOMO = -0.249120027904034  LUMO = -0.124337272009118  gap/eV = 3.39551
+cycle= 9 E= -1317.20817052856  delta_E= -1.43e-10  |g|= 1.72e-05  |ddm|= 0.000223
+  HOMO = -0.249119734666746  LUMO = -0.124337290974787  gap/eV = 3.39550
+Extra cycle  E= -1317.20817052811  delta_E= 4.48e-10  |g|= 5.13e-05  |ddm|= 0.000313
+converged SCF energy = -1317.20817052811
+
+
+******** <class 'pyscf.grad.rhf.Gradients_Scanner'> for <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+unit = Eh/Bohr
+max_memory 8000 MB (current use 5000 MB)
+grid_response = False
+--------------- DFRKS_Scanner gradients ---------------
+         x                y                z
+0 O     0.0005321989     0.0007749276     0.0008081746
+1 N    -0.0000019065    -0.0000595290    -0.0001393759
+2 O    -0.0000405681    -0.0000895434     0.0001351573
+3 C     0.0000239355    -0.0003501669     0.0000973758
+4 C    -0.0008692399     0.0006472893    -0.0008614195
+5 C    -0.0000523448     0.0000263115     0.0000589995
+6 C    -0.0000112617    -0.0000213420    -0.0001236205
+7 O     0.0001869040    -0.0002978067     0.0000126714
+8 C     0.0002285686    -0.0001479301     0.0001957822
+9 C    -0.0001974121     0.0002821915    -0.0001652714
+10 N     0.0000798842    -0.0000239179    -0.0002560795
+11 N    -0.0000653771     0.0000319938    -0.0000043601
+12 O     0.0000448188     0.0000500766     0.0000643893
+13 O     0.0000341956    -0.0000828867    -0.0000665874
+14 O     0.0000676567    -0.0001721725     0.0000874680
+15 O    -0.0002093395     0.0000001777    -0.0000773172
+16 H     0.0000253950    -0.0000210991     0.0000370035
+17 H     0.0000111125    -0.0000333447     0.0000192145
+18 N     0.0017609501    -0.0012399501     0.0003127098
+19 N    -0.0006087188     0.0003897596    -0.0002446446
+20 C    -0.0006499270     0.0006311738     0.0001894557
+21 C    -0.0003912381    -0.0007062759    -0.0020775138
+22 N    -0.0001066012     0.0012047479     0.0013647701
+23 C    -0.0002879503     0.0000970962    -0.0003141333
+24 C     0.0001319904     0.0000425464     0.0002360024
+25 C    -0.0000688461     0.0000092976    -0.0000844542
+26 C    -0.0001132710     0.0000922933     0.0000054690
+27 H    -0.0000254493    -0.0000068860    -0.0000491689
+28 H    -0.0000394444     0.0000428651     0.0000357867
+29 H    -0.0000024388     0.0000119103     0.0000175729
+30 H     0.0000225210    -0.0000036274     0.0000315242
+31 H     0.0007295319    -0.0012376713     0.0006656706
+32 H    -0.0001435653     0.0001508199     0.0000847544
+----------------------------------------------
+cycle 2: E = -1317.20817053  dE = -4.58742e-05  norm(grad) = 0.00464457
+
+Geometry optimization cycle 3
+Cartesian coordinates (Angstrom)
+ Atom        New coordinates             dX        dY        dZ
+   O  -0.764643  -0.153000   0.399885   -0.007835 -0.014403 -0.007833
+   N  -0.386883   2.472534   1.665166    0.000228 -0.000519 -0.000881
+   O   0.542496   1.704398   1.918871    0.004764  0.006122  0.003491
+   C  -1.193737   2.219839   0.474245    0.000702 -0.007493  0.000377
+   C  -1.265211   0.890801  -0.095829   -0.001627 -0.008712  0.000037
+   C  -2.066498   0.839419  -1.300433   -0.001014 -0.001462 -0.001316
+   C  -2.763966   1.906780  -1.813666   -0.000318 -0.001290 -0.001689
+   O  -0.658070   3.455025   2.346841   -0.002249  0.003410 -0.007210
+   C  -2.659293   3.147740  -1.183631   -0.000597 -0.002154 -0.000208
+   C  -1.881716   3.303229  -0.045017    0.000720 -0.007675 -0.000201
+   N  -2.163252  -0.428438  -2.034583   -0.001235  0.000392 -0.003531
+   N  -3.367230   4.298545  -1.738867    0.000113 -0.000545  0.002444
+   O  -4.042750   4.118738  -2.748511    0.000498  0.002084  0.001582
+   O  -3.247244   5.376830  -1.165123   -0.000752 -0.001925  0.005461
+   O  -3.251534  -0.725937  -2.511638   -0.000267  0.004430 -0.008499
+   O  -1.144647  -1.101594  -2.161227   -0.002240 -0.001946 -0.000775
+   H  -1.808875   4.267724   0.437330    0.002084 -0.008164  0.000619
+   H  -3.375029   1.792709  -2.698441    0.000462 -0.000245 -0.002374
+   N   1.254393  -1.078183   1.533377    0.001962  0.007987  0.001634
+   N   2.845773  -1.879070   2.634294    0.002699 -0.002262  0.000933
+   C   2.856069  -2.606282   1.468473    0.003018 -0.001858  0.001198
+   C   1.784432  -2.066125   0.739996    0.002057  0.003922  0.006585
+   N   1.883387  -0.968742   2.659328    0.004831 -0.000085  0.001177
+   C   1.434453  -2.535277  -0.533824    0.000547  0.003901  0.007077
+   C   2.214973  -3.563336  -1.026692   -0.002613  0.003267  0.002955
+   C   3.299059  -4.107126  -0.292273   -0.001039  0.000346 -0.001402
+   C   3.645349  -3.647324   0.965615    0.001483 -0.001956 -0.001364
+   H   0.601116  -2.106071  -1.077203    0.000101  0.005694  0.009113
+   H   4.473352  -4.067363   1.521649    0.002353 -0.003180 -0.003532
+   H   1.994446  -3.970279  -2.005892   -0.005861  0.005418  0.002766
+   H   3.874802  -4.912130  -0.733191   -0.002557  0.000869 -0.004402
+   H   0.394817  -0.444681   1.237843   -0.001099  0.017173 -0.005537
+   H   3.455656  -1.941102   3.437686    0.002583 -0.003733  0.000978
+New geometry
+   1 O     -0.764643475212  -0.152999516593   0.399884699717 AA   -1.444966751086  -0.289127183553   0.755672563870 Bohr
+   2 N     -0.386883116718   2.472534444768   1.665166296978 AA   -0.731103132814   4.672412934165   3.146708253144 Bohr
+   3 O      0.542495867745   1.704398305821   1.918871100221 AA    1.025168613747   3.220846005174   3.626140847760 Bohr
+   4 C     -1.193736585579   2.219839129887   0.474244532216 AA   -2.255835211617   4.194887996079   0.896192281961 Bohr
+   5 C     -1.265211088263   0.890800721620  -0.095828956150 AA   -2.390902446579   1.683369395427  -0.181090481926 Bohr
+   6 C     -2.066498441434   0.839419116216  -1.300433211672 AA   -3.905116091151   1.586272233373  -2.457462613348 Bohr
+   7 C     -2.763965525201   1.906779693661  -1.813666243502 AA   -5.223137860369   3.603291400902  -3.427332481588 Bohr
+   8 O     -0.658070086133   3.455025057727   2.346841376831 AA   -1.243572233560   6.529051112613   4.434887460008 Bohr
+   9 C     -2.659292756443   3.147740331916  -1.183631375324 AA   -5.025334994718   5.948367138569  -2.236739131805 Bohr
+  10 C     -1.881715768395   3.303228575711  -0.045016972004 AA   -3.555927446542   6.242197334930  -0.085069748045 Bohr
+  11 N     -2.163252449988  -0.428438209365  -2.034583334586 AA   -4.087954668771  -0.809630876999  -3.844805279972 Bohr
+  12 N     -3.367229819908   4.298544648015  -1.738867426941 AA   -6.363142158095   8.123072118962  -3.285983203845 Bohr
+  13 O     -4.042749773922   4.118737846090  -2.748510760159 AA   -7.639689862861   7.783286507992  -5.193932587121 Bohr
+  14 O     -3.247244329819   5.376830051794  -1.165123167629 AA   -6.136402442905  10.160736216221  -2.201763688205 Bohr
+  15 O     -3.251533690053  -0.725937487688  -2.511637854988 AA   -6.144508158996  -1.371823035285  -4.746307670017 Bohr
+  16 O     -1.144647268362  -1.101593981875  -2.161227412633 AA   -2.163069846436  -2.081710926213  -4.084127902778 Bohr
+  17 H     -1.808875203526   4.267723512727   0.437330322854 AA   -3.418278728181   8.064828614420   0.826434536162 Bohr
+  18 H     -3.375028520486   1.792708555163  -2.698441152230 AA   -6.377879566315   3.387728190424  -5.099314740970 Bohr
+  19 N      1.254393169309  -1.078182970072   1.533376545768 AA    2.370459542519  -2.037470525606   2.897661717333 Bohr
+  20 N      2.845772507882  -1.879069904590   2.634293808448 AA    5.377730652713  -3.550927488587   4.978093829604 Bohr
+  21 C      2.856069320658  -2.606282237539   1.468473393022 AA    5.397188808816  -4.925159632267   2.775012534023 Bohr
+  22 C      1.784432225294  -2.066125281448   0.739996011441 AA    3.372088193654  -3.904410920976   1.398389794894 Bohr
+  23 N      1.883386519431  -0.968741925646   2.659327827319 AA    3.559084708423  -1.830656924855   5.025401269067 Bohr
+  24 C      1.434453232407  -2.535277112922  -0.533824113843 AA    2.710723747747  -4.790979393301  -1.008781373852 Bohr
+  25 C      2.214973476684  -3.563335819975  -1.026692475920 AA    4.185693244108  -6.733728789605  -1.940167593640 Bohr
+  26 C      3.299058727529  -4.107125796639  -0.292273251334 AA    6.234317463886  -7.761342914785  -0.552316398557 Bohr
+  27 C      3.645349387931  -3.647323545189   0.965614510717 AA    6.888711971541  -6.892442588084   1.824746967161 Bohr
+  28 H      0.601115577199  -2.106071392585  -1.077202847342 AA    1.135943810115  -3.979898130766  -2.035618362078 Bohr
+  29 H      4.473352342778  -4.067362650419   1.521649221392 AA    8.453410786533  -7.686201458578   2.875500286089 Bohr
+  30 H      1.994446361487  -3.970279021669  -2.005891942657 AA    3.768957393346  -7.502739989061  -3.790586407093 Bohr
+  31 H      3.874802201202  -4.912130375948  -0.733191059550 AA    7.322314947133  -9.282581098699  -1.385530299530 Bohr
+  32 H      0.394816554229  -0.444680679844   1.237843254350 AA    0.746095156937  -0.840324697790   2.339184735861 Bohr
+  33 H      3.455655540709  -1.941102326155   3.437685526881 AA    6.530242552775  -3.668151776188   6.496284148187 Bohr
+
+
+******** <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+method = DFRKS_Scanner
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-09
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/scan_gas_up/chk/up_1.460.chk
+max_memory 8000 MB (current use 595 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x7f167f8a77e0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x7f167f8a7740>
+small_rho_cutoff = 0
+Set gradient conv threshold to 3.16228e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+init E= -1317.20134593074
+
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.25100060507928  LUMO = -0.125567295546085  gap/eV = 3.41321
+cycle= 1 E= -1317.20811119089  delta_E= -0.00677  |g|= 0.0158  |ddm|= 3.09
+  HOMO = -0.249923624183744  LUMO = -0.123076909795596  gap/eV = 3.45167
+cycle= 2 E= -1317.2079147585  delta_E= 0.000196  |g|= 0.036  |ddm|= 0.95
+  HOMO = -0.249835299388149  LUMO = -0.12359276195715  gap/eV = 3.43523
+cycle= 3 E= -1317.20815963685  delta_E= -0.000245  |g|= 0.00665  |ddm|= 0.469
+  HOMO = -0.249817436808193  LUMO = -0.123648891416629  gap/eV = 3.43322
+cycle= 4 E= -1317.20816651896  delta_E= -6.88e-06  |g|= 0.00288  |ddm|= 0.097
+  HOMO = -0.249887608543606  LUMO = -0.123718298764501  gap/eV = 3.43324
+cycle= 5 E= -1317.20816803861  delta_E= -1.52e-06  |g|= 0.000772  |ddm|= 0.0358
+  HOMO = -0.249881327317738  LUMO = -0.123708342239481  gap/eV = 3.43334
+cycle= 6 E= -1317.20816813026  delta_E= -9.16e-08  |g|= 0.000376  |ddm|= 0.00722
+  HOMO = -0.249878974749276  LUMO = -0.123705463846814  gap/eV = 3.43336
+cycle= 7 E= -1317.20816814979  delta_E= -1.95e-08  |g|= 0.000232  |ddm|= 0.00217
+  HOMO = -0.249877178641032  LUMO = -0.123704193498409  gap/eV = 3.43334
+cycle= 8 E= -1317.20816815969  delta_E= -9.9e-09  |g|= 5.35e-05  |ddm|= 0.00178
+  HOMO = -0.249878694583831  LUMO = -0.123705811250486  gap/eV = 3.43334
+cycle= 9 E= -1317.20816816023  delta_E= -5.37e-10  |g|= 2.36e-05  |ddm|= 0.000633
+  HOMO = -0.249879014276967  LUMO = -0.123705533965084  gap/eV = 3.43336
+Extra cycle  E= -1317.20816815976  delta_E= 4.65e-10  |g|= 5.41e-05  |ddm|= 0.000721
+converged SCF energy = -1317.20816815976
+
+
+******** <class 'pyscf.grad.rhf.Gradients_Scanner'> for <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+unit = Eh/Bohr
+max_memory 8000 MB (current use 5001 MB)
+grid_response = False
+--------------- DFRKS_Scanner gradients ---------------
+         x                y                z
+0 O    -0.0021215577     0.0006464441    -0.0018648795
+1 N    -0.0001367658    -0.0008792252    -0.0004535118
+2 O     0.0004632498     0.0009396897     0.0007234214
+3 C     0.0000670844     0.0006667625     0.0002658378
+4 C     0.0004845256    -0.0018522211     0.0007899046
+5 C    -0.0000405847     0.0004255779     0.0000075706
+6 C     0.0000475994    -0.0002902375    -0.0001811025
+7 O     0.0000552377     0.0001430465    -0.0000978122
+8 C    -0.0002814247     0.0004702756    -0.0002341583
+9 C     0.0002547860    -0.0006389909     0.0001884603
+10 N    -0.0000231485     0.0003942128     0.0000517395
+11 N     0.0000879612    -0.0001952715    -0.0000138808
+12 O    -0.0001273007     0.0001398373    -0.0000870308
+13 O    -0.0000760128     0.0001682408    -0.0000510155
+14 O    -0.0000168197    -0.0000053258     0.0000917086
+15 O     0.0001319578    -0.0000903854     0.0001178493
+16 H    -0.0000084175     0.0000095048    -0.0000193050
+17 H    -0.0000399560     0.0000799437     0.0000199457
+18 N     0.0007625130    -0.0005121121     0.0002119959
+19 N    -0.0005642937     0.0001556512    -0.0007090408
+20 C     0.0007075525    -0.0007219815    -0.0003054185
+21 C     0.0002640758     0.0003361904     0.0013164978
+22 N     0.0002369639    -0.0007439265    -0.0000572152
+23 C    -0.0000281904     0.0000209746     0.0001992407
+24 C     0.0000453641     0.0000505239     0.0001694409
+25 C     0.0001901811    -0.0001711406    -0.0000270294
+26 C     0.0000765421    -0.0000909627    -0.0000720445
+27 H    -0.0000218475     0.0000633868     0.0000440658
+28 H     0.0000231237    -0.0000066001    -0.0000266449
+29 H     0.0000433046    -0.0000142498     0.0000037141
+30 H     0.0000508409    -0.0000111907     0.0000175951
+31 H    -0.0005387084     0.0015005143    -0.0000017394
+32 H     0.0000264008     0.0000049016    -0.0000202919
+----------------------------------------------
+cycle 3: E = -1317.20816816  dE = 2.36835e-06  norm(grad) = 0.00504565
+
+Geometry optimization cycle 4
+Cartesian coordinates (Angstrom)
+ Atom        New coordinates             dX        dY        dZ
+   O  -0.762815  -0.147894   0.403712    0.001829  0.005106  0.003827
+   N  -0.387237   2.470246   1.664801   -0.000354 -0.002289 -0.000365
+   O   0.538347   1.694487   1.908948   -0.004149 -0.009912 -0.009923
+   C  -1.195187   2.223133   0.473681   -0.001450  0.003293 -0.000564
+   C  -1.265238   0.894054  -0.095223   -0.000027  0.003253  0.000606
+   C  -2.065807   0.839638  -1.300014    0.000691  0.000219  0.000419
+   C  -2.763288   1.907208  -1.812942    0.000678  0.000428  0.000725
+   O  -0.652999   3.450036   2.352474    0.005071 -0.004989  0.005632
+   C  -2.659345   3.148602  -1.183519   -0.000053  0.000862  0.000112
+   C  -1.882761   3.307085  -0.044795   -0.001045  0.003857  0.000222
+   N  -2.161922  -0.428791  -2.033630    0.001331 -0.000352  0.000954
+   N  -3.367959   4.298186  -1.740190   -0.000730 -0.000359 -0.001322
+   O  -4.042659   4.116100  -2.749922    0.000091 -0.002637 -0.001411
+   O  -3.249141   5.377158  -1.167574   -0.001897  0.000328 -0.002451
+   O  -3.250086  -0.726673  -2.510715    0.001448 -0.000735  0.000923
+   O  -1.143093  -1.101559  -2.160039    0.001554  0.000035  0.001189
+   H  -1.810572   4.271841   0.437130   -0.001697  0.004117 -0.000200
+   H  -3.374221   1.792759  -2.697762    0.000807  0.000050  0.000679
+   N   1.254645  -1.078743   1.533481    0.000252 -0.000560  0.000104
+   N   2.846383  -1.878968   2.635306    0.000611  0.000102  0.001012
+   C   2.855354  -2.605423   1.468887   -0.000716  0.000859  0.000414
+   C   1.783988  -2.066295   0.739251   -0.000444 -0.000170 -0.000745
+   N   1.883530  -0.968808   2.659428    0.000144 -0.000066  0.000100
+   C   1.434115  -2.535568  -0.534677   -0.000338 -0.000291 -0.000853
+   C   2.214534  -3.563561  -1.027598   -0.000440 -0.000225 -0.000905
+   C   3.298291  -4.106429  -0.292088   -0.000768  0.000697  0.000185
+   C   3.644464  -3.646458   0.965856   -0.000886  0.000866  0.000241
+   H   0.600818  -2.106498  -1.078166   -0.000298 -0.000427 -0.000963
+   H   4.472458  -4.066513   1.521901   -0.000895  0.000850  0.000252
+   H   1.994368  -3.970819  -2.006758   -0.000079 -0.000540 -0.000866
+   H   3.874327  -4.911469  -0.732530   -0.000475  0.000662  0.000661
+   H   0.396683  -0.446482   1.239182    0.001867 -0.001802  0.001338
+   H   3.456450  -1.941171   3.438538    0.000794 -0.000069  0.000853
+New geometry
+   1 O     -0.762814604550  -0.147893527762   0.403711995133 AA   -1.441510686418  -0.279478263066   0.762905104003 Bohr
+   2 N     -0.387237438077   2.470245553797   1.664801455893 AA   -0.731772703144   4.668087557101   3.146018803414 Bohr
+   3 O      0.538346908628   1.694486511649   1.908948381051 AA    1.017328217312   3.202115428786   3.607389626119 Bohr
+   4 C     -1.195186562338   2.223132507059   0.473680980332 AA   -2.258575270578   4.201111576959   0.895127323243 Bohr
+   5 C     -1.265238126225   0.894053842601  -0.095223070084 AA   -2.390953540922   1.689516903130  -0.179945523200 Bohr
+   6 C     -2.065806946610   0.839637753968  -1.300014253013 AA   -3.903809355316   1.586685398845  -2.456670896225 Bohr
+   7 C     -2.763287913217   1.907207651575  -1.812941588530 AA   -5.221857359301   3.604100124152  -3.425963082156 Bohr
+   8 O     -0.652999069867   3.450035723657   2.352473516641 AA   -1.233989401645   6.519622637678   4.445530661744 Bohr
+   9 C     -2.659345449118   3.148602171205  -1.183518965995 AA   -5.025434569442   5.949995778789  -2.236526708960 Bohr
+  10 C     -1.882760803456   3.307085101379  -0.044794573841 AA   -3.557902276599   6.249485112236  -0.084649476426 Bohr
+  11 N     -2.161921644176  -0.428790661074  -2.033629794228 AA   -4.085439810263  -0.810296914201  -3.843003349846 Bohr
+  12 N     -3.367959406755   4.298186121293  -1.740189524838 AA   -6.364520877420   8.122394601651  -3.288481606780 Bohr
+  13 O     -4.042658777969   4.116100442440  -2.749921559684 AA   -7.639517905430   7.778302537412  -5.196598611839 Bohr
+  14 O     -3.249141317095   5.377157554036  -1.167573985443 AA   -6.139987229318  10.161355105764  -2.206395062655 Bohr
+  15 O     -3.250085883689  -0.726672771799  -2.510714952203 AA   -6.141772201488  -1.373212520879  -4.744563636514 Bohr
+  16 O     -1.143093177201  -1.101559456979  -2.160038674089 AA   -2.160133039769  -2.081645683616  -4.081881512497 Bohr
+  17 H     -1.810572283149   4.271840876612   0.437130090584 AA   -3.421485743880   8.072609304519   0.826056152011 Bohr
+  18 H     -3.374221090186   1.792758932221  -2.697762253606 AA   -6.376353744182   3.387823389266  -5.098031808504 Bohr
+  19 N      1.254645341050  -1.078743093302   1.533480811871 AA    2.370936078046  -2.038529005106   2.897858751712 Bohr
+  20 N      2.846383480211  -1.878968085121   2.635305954517 AA    5.378885223086  -3.550735077676   4.980006508473 Bohr
+  21 C      2.855353614865  -2.605423438499   1.468887238214 AA    5.395836320881  -4.923536737286   2.775794588094 Bohr
+  22 C      1.783987895668  -2.066295446755   0.739251477796 AA    3.371248532351  -3.904732486803   1.396982830215 Bohr
+  23 N      1.883530023487  -0.968807638692   2.659427505037 AA    3.559355891787  -1.830781104515   5.025589632655 Bohr
+  24 C      1.434115012481  -2.535568368001  -0.534676675734 AA    2.710084604716  -4.791529785632  -1.010392482331 Bohr
+  25 C      2.214533633868  -3.563560583444  -1.027597883476 AA    4.184862061649  -6.734153531004  -1.941878565952 Bohr
+  26 C      3.298290986781  -4.106429158716  -0.292088247117 AA    6.232866644137  -7.760026459902  -0.551966791256 Bohr
+  27 C      3.644463694778  -3.646457681668   0.965856007534 AA    6.887038254050  -6.890806343170   1.825203330005 Bohr
+  28 H      0.600817691130  -2.106498438132  -1.078166266584 AA    1.135380887029  -3.980705129893  -2.037438960588 Bohr
+  29 H      4.472457572324  -4.066513088104   1.521900857156 AA    8.451719915429  -7.684596018476   2.875975808766 Bohr
+  30 H      1.994367844632  -3.970819155066  -2.006757997160 AA    3.768809017994  -7.503760693252  -3.792223012914 Bohr
+  31 H      3.874327012661  -4.911468528873  -0.732530158333 AA    7.321416970934  -9.281330388990  -1.384281377233 Bohr
+  32 H      0.396683344662  -0.446482225131   1.239181501284 AA    0.749622879588  -0.843729124985   2.341713656054 Bohr
+  33 H      3.456449759106  -1.941171136612   3.438538195917 AA    6.531743408028  -3.668281809106   6.497895459138 Bohr
+
+
+******** <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+method = DFRKS_Scanner
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-09
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/scan_gas_up/chk/up_1.460.chk
+max_memory 8000 MB (current use 621 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x7f167f8a77e0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x7f167f8a7740>
+small_rho_cutoff = 0
+Set gradient conv threshold to 3.16228e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+init E= -1317.20999387727
+
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.249320244138374  LUMO = -0.123327624673311  gap/eV = 3.42843
+cycle= 1 E= -1317.20818945151  delta_E= 0.0018  |g|= 0.00744  |ddm|= 2.32
+  HOMO = -0.249484630191517  LUMO = -0.123881981511923  gap/eV = 3.41782
+cycle= 2 E= -1317.20814358081  delta_E= 4.59e-05  |g|= 0.0171  |ddm|= 0.307
+  HOMO = -0.249654477955499  LUMO = -0.123766398903213  gap/eV = 3.42559
+cycle= 3 E= -1317.20820011655  delta_E= -5.65e-05  |g|= 0.00359  |ddm|= 0.126
+  HOMO = -0.249701800658634  LUMO = -0.12376792741857  gap/eV = 3.42684
+cycle= 4 E= -1317.20820218083  delta_E= -2.06e-06  |g|= 0.0014  |ddm|= 0.0505
+  HOMO = -0.249656750201545  LUMO = -0.123761057219579  gap/eV = 3.42580
+cycle= 5 E= -1317.20820252725  delta_E= -3.46e-07  |g|= 0.00044  |ddm|= 0.0192
+  HOMO = -0.249660077705851  LUMO = -0.12376203918451  gap/eV = 3.42586
+cycle= 6 E= -1317.20820255619  delta_E= -2.89e-08  |g|= 0.000226  |ddm|= 0.00462
+  HOMO = -0.249663601886414  LUMO = -0.123762415836264  gap/eV = 3.42595
+cycle= 7 E= -1317.20820256317  delta_E= -6.99e-09  |g|= 0.000134  |ddm|= 0.00169
+  HOMO = -0.249663635982703  LUMO = -0.123763048582035  gap/eV = 3.42593
+cycle= 8 E= -1317.20820256646  delta_E= -3.29e-09  |g|= 2.23e-05  |ddm|= 0.000672
+  HOMO = -0.249662409501514  LUMO = -0.123762973547676  gap/eV = 3.42590
+cycle= 9 E= -1317.20820256655  delta_E= -8.82e-11  |g|= 1.09e-05  |ddm|= 0.000408
+  HOMO = -0.249663094810284  LUMO = -0.123762939641903  gap/eV = 3.42592
+Extra cycle  E= -1317.20820256645  delta_E= 9.91e-11  |g|= 2.51e-05  |ddm|= 0.00038
+converged SCF energy = -1317.20820256645
+
+
+******** <class 'pyscf.grad.rhf.Gradients_Scanner'> for <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+unit = Eh/Bohr
+max_memory 8000 MB (current use 5003 MB)
+grid_response = False
+--------------- DFRKS_Scanner gradients ---------------
+         x                y                z
+0 O    -0.0011796245     0.0005875761    -0.0008312710
+1 N     0.0000013911    -0.0002577405     0.0005552196
+2 O    -0.0001177532    -0.0002688110    -0.0006235684
+3 C     0.0000983061     0.0000929129    -0.0002556238
+4 C     0.0001592427    -0.0007409382     0.0005454817
+5 C    -0.0000809586     0.0001510177    -0.0001575790
+6 C     0.0000705141    -0.0001093342    -0.0000580302
+7 O    -0.0001083464     0.0004579149     0.0001104738
+8 C    -0.0000970901     0.0001454685    -0.0000765560
+9 C     0.0000503402    -0.0000020652     0.0000304504
+10 N     0.0000610154     0.0001279569    -0.0000052390
+11 N     0.0000653303     0.0000170196     0.0000470935
+12 O    -0.0000064199    -0.0000769210    -0.0000075726
+13 O    -0.0000170701     0.0000902765    -0.0000031672
+14 O    -0.0000433033     0.0000101861     0.0000783242
+15 O     0.0000798567    -0.0000694661     0.0000406796
+16 H    -0.0000159282     0.0000031026    -0.0000406175
+17 H    -0.0000263270     0.0000235519     0.0000172284
+18 N     0.0004245856    -0.0002143246     0.0000233777
+19 N     0.0001208858     0.0000248115     0.0001426887
+20 C     0.0001731846    -0.0000949992    -0.0000725374
+21 C    -0.0000017033     0.0002046154     0.0006586302
+22 N     0.0002438017    -0.0007899867    -0.0002449379
+23 C     0.0000565582    -0.0000823564     0.0001376107
+24 C    -0.0000331364    -0.0000361502    -0.0000915138
+25 C     0.0000345928     0.0000063400     0.0000298129
+26 C     0.0000652928    -0.0000357755     0.0000031152
+27 H    -0.0000044301     0.0000199166     0.0000132302
+28 H     0.0000142544     0.0000140810    -0.0000034442
+29 H     0.0000316852    -0.0000206808    -0.0000206962
+30 H     0.0000220435     0.0000096120     0.0000096441
+31 H    -0.0000963845     0.0008200016     0.0000495165
+32 H     0.0000494686    -0.0000149721    -0.0000035902
+----------------------------------------------
+cycle 4: E = -1317.20820257  dE = -3.44067e-05  norm(grad) = 0.00262875
+
+Geometry optimization cycle 5
+Cartesian coordinates (Angstrom)
+ Atom        New coordinates             dX        dY        dZ
+   O  -0.756860  -0.145836   0.403713    0.005955  0.002058  0.000001
+   N  -0.385759   2.473198   1.664734    0.001479  0.002953 -0.000068
+   O   0.541871   1.702463   1.916747    0.003524  0.007977  0.007799
+   C  -1.192539   2.223294   0.473365    0.002647  0.000162 -0.000316
+   C  -1.261888   0.895037  -0.096739    0.003350  0.000983 -0.001516
+   C  -2.063823   0.838399  -1.300523    0.001984 -0.001238 -0.000509
+   C  -2.762237   1.905930  -1.812461    0.001051 -0.001277  0.000481
+   O  -0.657151   3.452748   2.350098   -0.004152  0.002713 -0.002376
+   C  -2.658009   3.147105  -1.182991    0.001336 -0.001498  0.000528
+   C  -1.881352   3.306532  -0.044720    0.001408 -0.000553  0.000075
+   N  -2.161231  -0.430120  -2.034406    0.000690 -0.001329 -0.000776
+   N  -3.366973   4.296765  -1.739149    0.000986 -0.001421  0.001041
+   O  -4.042268   4.116472  -2.748738    0.000390  0.000372  0.001183
+   O  -3.247021   5.375116  -1.165761    0.002121 -0.002042  0.001813
+   O  -3.250040  -0.727548  -2.510291    0.000046 -0.000875  0.000424
+   O  -1.142742  -1.102763  -2.163012    0.000352 -0.001203 -0.002973
+   H  -1.809836   4.271289   0.437332    0.000736 -0.000552  0.000202
+   H  -3.373946   1.791360  -2.696750    0.000275 -0.001399  0.001013
+   N   1.253800  -1.081337   1.533723   -0.000845 -0.002594  0.000242
+   N   2.844602  -1.877365   2.635276   -0.001781  0.001603 -0.000030
+   C   2.852928  -2.603937   1.468566   -0.002426  0.001487 -0.000321
+   C   1.782038  -2.067203   0.736618   -0.001950 -0.000908 -0.002633
+   N   1.881283  -0.967440   2.659794   -0.002247  0.001368  0.000366
+   C   1.432264  -2.536136  -0.537505   -0.001851 -0.000567 -0.002828
+   C   2.213799  -3.563887  -1.028765   -0.000735 -0.000327 -0.001167
+   C   3.296965  -4.105715  -0.291711   -0.001326  0.000714  0.000377
+   C   3.642407  -3.644999   0.966263   -0.002057  0.001458  0.000407
+   H   0.599094  -2.107725  -1.081615   -0.001724 -0.001227 -0.003449
+   H   4.470180  -4.064768   1.522878   -0.002278  0.001745  0.000977
+   H   1.994710  -3.971942  -2.007806    0.000342 -0.001123 -0.001048
+   H   3.873439  -4.910952  -0.731220   -0.000888  0.000517  0.001310
+   H   0.397991  -0.453255   1.242410    0.001307 -0.006773  0.003229
+   H   3.455048  -1.939384   3.438202   -0.001402  0.001787 -0.000336
+New geometry
+   1 O     -0.756860013840  -0.145835795804   0.403712914741 AA   -1.430258140792  -0.275589713227   0.762906841810 Bohr
+   2 N     -0.385758903284   2.473198237710   1.664733914584 AA   -0.728978677320   4.673667321028   3.145891168839 Bohr
+   3 O      0.541870549217   1.702463290595   1.916747318952 AA    1.023986932989   3.217189356351   3.622127482814 Bohr
+   4 C     -1.192539370435   2.223294461662   0.473364750767 AA   -2.253572802883   4.201417626804   0.894529735972 Bohr
+   5 C     -1.261888433662   0.895037287685  -0.096739181488 AA   -2.384623539378   1.691375344999  -0.182810558528 Bohr
+   6 C     -2.063822725377   0.838399270987  -1.300523046568 AA   -3.900059720616   1.584345005201  -2.457632376699 Bohr
+   7 C     -2.762236983445   1.905930433617  -1.812460979111 AA   -5.219871389857   3.601686532011  -3.425054861981 Bohr
+   8 O     -0.657150955347   3.452748424317   2.350097666122 AA   -1.241835328102   6.524748898982   4.441040954950 Bohr
+   9 C     -2.658009485951   3.147104621391  -1.182990689038 AA   -5.022909964943   5.947165819782  -2.235528410193 Bohr
+  10 C     -1.881352409325   3.306532216340  -0.044719805528 AA   -3.555240797414   6.248440310934  -0.084508184792 Bohr
+  11 N     -2.161231446663  -0.430119718493  -2.034406096816 AA   -4.084135525991  -0.812808468726  -3.844470349128 Bohr
+  12 N     -3.366972965643   4.296765248309  -1.739148711779 AA   -6.362656773880   8.119709540853  -3.286514755153 Bohr
+  13 O     -4.042268469070   4.116472197410  -2.748738133943 AA   -7.638780328507   7.779005052492  -5.194362261301 Bohr
+  14 O     -3.247020712978   5.375115941877  -1.165760503930 AA   -6.135979868319  10.157497017931  -2.202968079264 Bohr
+  15 O     -3.250039997515  -0.727547518562  -2.510291334803 AA   -6.141685489186  -1.374865552689  -4.743763115646 Bohr
+  16 O     -1.142741600316  -1.102762687869  -2.163011906902 AA   -2.159468655745  -2.083919460462  -4.087500108218 Bohr
+  17 H     -1.809836105773   4.271289309924   0.437332005234 AA   -3.420094570260   8.071566994539   0.826437715399 Bohr
+  18 H     -3.373946343086   1.791359802091  -2.696749530479 AA   -6.375834547410   3.385179416506  -5.096118039155 Bohr
+  19 N      1.253800242201  -1.081336658226   1.533722760713 AA    2.369339072673  -2.043430132500   2.898315968759 Bohr
+  20 N      2.844602212445  -1.877364728128   2.635275514307 AA    5.375519114853  -3.547705172081   4.979948984813 Bohr
+  21 C      2.852927604917  -2.603936776026   1.468566166451 AA    5.391251826505  -4.920727352372   2.775187850394 Bohr
+  22 C      1.782037555299  -2.067203426764   0.736618370691 AA    3.367562923204  -3.906448320347   1.392006978930 Bohr
+  23 N      1.881282873734  -0.967439517408   2.659793906472 AA    3.555109394193  -1.828195729983   5.026282031019 Bohr
+  24 C      1.432264262632  -2.536135514891  -0.537504794496 AA    2.706587194377  -4.792601537926  -1.015736852239 Bohr
+  25 C      2.213799022692  -3.563887280278  -1.028765240357 AA    4.183473847718  -6.734770898546  -1.944084550747 Bohr
+  26 C      3.296965018104  -4.105715164935  -0.291711002882 AA    6.230360926489  -7.758677207201  -0.551253902969 Bohr
+  27 C      3.642407108229  -3.644999323874   0.966262970727 AA    6.883151868722  -6.888050446346   1.825972378983 Bohr
+  28 H      0.599093762477  -2.107725146516  -1.081615165997 AA    1.132123134016  -3.983023272774  -2.043956435911 Bohr
+  29 H      4.470179667258  -4.064768192834   1.522877923906 AA    8.447415298717  -7.681298644299   2.877822197328 Bohr
+  30 H      1.994709959058  -3.971942490128  -2.007805598076 AA    3.769455520561  -7.505883488864  -3.794202691733 Bohr
+  31 H      3.873439108159  -4.910951783675  -0.731219672068 AA    7.319739074600  -9.280353882090  -1.381804917102 Bohr
+  32 H      0.397990523590  -0.453255406239   1.242410368805 AA    0.752093089757  -0.856528582271   2.347815331362 Bohr
+  33 H      3.455047655930  -1.939384066380   3.438202052785 AA    6.529093817028  -3.664904735803   6.497260240681 Bohr
+
+
+******** <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+method = DFRKS_Scanner
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-09
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/scan_gas_up/chk/up_1.460.chk
+max_memory 8000 MB (current use 633 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x7f167f8a77e0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x7f167f8a7740>
+small_rho_cutoff = 0
+Set gradient conv threshold to 3.16228e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+init E= -1317.21116630247
+
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.24881586284069  LUMO = -0.123378773615684  gap/eV = 3.41332
+cycle= 1 E= -1317.20819244869  delta_E= 0.00297  |g|= 0.00756  |ddm|= 1.08
+  HOMO = -0.249644994999866  LUMO = -0.124139097959616  gap/eV = 3.41519
+cycle= 2 E= -1317.20815640615  delta_E= 3.6e-05  |g|= 0.0156  |ddm|= 0.539
+  HOMO = -0.24953580692107  LUMO = -0.124128581751055  gap/eV = 3.41250
+cycle= 3 E= -1317.20820596643  delta_E= -4.96e-05  |g|= 0.00155  |ddm|= 0.298
+  HOMO = -0.249455407054455  LUMO = -0.12408527865816  gap/eV = 3.41149
+cycle= 4 E= -1317.20820630192  delta_E= -3.35e-07  |g|= 0.000841  |ddm|= 0.0183
+  HOMO = -0.24946226084122  LUMO = -0.124081187187864  gap/eV = 3.41179
+cycle= 5 E= -1317.20820639033  delta_E= -8.84e-08  |g|= 0.000521  |ddm|= 0.00695
+  HOMO = -0.249465393756157  LUMO = -0.12408360213832  gap/eV = 3.41181
+cycle= 6 E= -1317.20820643776  delta_E= -4.74e-08  |g|= 0.000152  |ddm|= 0.00299
+  HOMO = -0.249463672579132  LUMO = -0.124085726702683  gap/eV = 3.41171
+cycle= 7 E= -1317.20820644144  delta_E= -3.68e-09  |g|= 6.54e-05  |ddm|= 0.00183
+  HOMO = -0.249465250023761  LUMO = -0.124085792235102  gap/eV = 3.41175
+cycle= 8 E= -1317.20820644235  delta_E= -9.04e-10  |g|= 2.38e-05  |ddm|= 0.000637
+  HOMO = -0.249463566158994  LUMO = -0.124084081519871  gap/eV = 3.41175
+Extra cycle  E= -1317.20820644158  delta_E= 7.67e-10  |g|= 6.51e-05  |ddm|= 0.000654
+converged SCF energy = -1317.20820644158
+
+
+******** <class 'pyscf.grad.rhf.Gradients_Scanner'> for <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+unit = Eh/Bohr
+max_memory 8000 MB (current use 4998 MB)
+grid_response = False
+--------------- DFRKS_Scanner gradients ---------------
+         x                y                z
+0 O    -0.0001254247    -0.0001239191     0.0000907434
+1 N    -0.0001470430    -0.0001046389    -0.0004798300
+2 O     0.0001710020     0.0004130330     0.0005227040
+3 C    -0.0000052114     0.0000833417     0.0001794164
+4 C    -0.0005116196     0.0004649592    -0.0003164364
+5 C    -0.0000451522    -0.0000407555    -0.0001470096
+6 C     0.0000549930     0.0000249008     0.0000120502
+7 O     0.0001660376    -0.0003412957    -0.0001156356
+8 C     0.0001557183     0.0000487753     0.0001840991
+9 C    -0.0000766517    -0.0000258235    -0.0000314822
+10 N     0.0000610019    -0.0001339981    -0.0000905689
+11 N    -0.0000107736    -0.0001306943    -0.0000159249
+12 O    -0.0000327632     0.0001576966     0.0000019585
+13 O     0.0000504336    -0.0001256616    -0.0000378350
+14 O    -0.0000297085    -0.0000180649     0.0000207375
+15 O    -0.0000983381     0.0000407857    -0.0000726421
+16 H     0.0000182609     0.0000367224     0.0000327188
+17 H    -0.0000029639    -0.0000062506     0.0000058691
+18 N     0.0009626271    -0.0007112093     0.0001059760
+19 N    -0.0000220114     0.0001563053     0.0002609959
+20 C    -0.0004563562     0.0005268294     0.0001182257
+21 C    -0.0003715387    -0.0003910536    -0.0011621590
+22 N    -0.0001093790     0.0004566458     0.0006373341
+23 C    -0.0000607211    -0.0000743140    -0.0001536927
+24 C    -0.0000023796    -0.0000081209    -0.0000229151
+25 C    -0.0000966261     0.0000761466    -0.0000396430
+26 C    -0.0000487028     0.0000786876     0.0000446637
+27 H     0.0000066583    -0.0000328300    -0.0000313447
+28 H     0.0000006752     0.0000298953     0.0000261630
+29 H     0.0000065304     0.0000015097     0.0000000208
+30 H     0.0000069925     0.0000096863     0.0000003790
+31 H     0.0006190183    -0.0003978238     0.0004234378
+32 H    -0.0000326631     0.0000521831     0.0000462112
+----------------------------------------------
+cycle 5: E = -1317.20820644  dE = -3.87513e-06  norm(grad) = 0.00261862
+
+Geometry optimization cycle 6
+Cartesian coordinates (Angstrom)
+ Atom        New coordinates             dX        dY        dZ
+   O  -0.756933  -0.145966   0.401719   -0.000073 -0.000130 -0.001994
+   N  -0.385743   2.472242   1.664525    0.000016 -0.000956 -0.000208
+   O   0.540381   1.698623   1.913347   -0.001490 -0.003840 -0.003401
+   C  -1.192694   2.223830   0.472924   -0.000154  0.000536 -0.000441
+   C  -1.261474   0.895534  -0.097153    0.000415  0.000497 -0.000414
+   C  -2.063711   0.839394  -1.300502    0.000112  0.000995  0.000021
+   C  -2.762513   1.906495  -1.812736   -0.000276  0.000564 -0.000275
+   O  -0.655646   3.450866   2.351951    0.001505 -0.001883  0.001853
+   C  -2.658432   3.147760  -1.183398   -0.000422  0.000655 -0.000407
+   C  -1.881642   3.307134  -0.045036   -0.000289  0.000602 -0.000316
+   N  -2.160745  -0.429312  -2.033853    0.000487  0.000808  0.000553
+   N  -3.367646   4.297197  -1.739796   -0.000673  0.000431 -0.000647
+   O  -4.042399   4.115061  -2.749430   -0.000131 -0.001411 -0.000692
+   O  -3.248580   5.376097  -1.167168   -0.001559  0.000981 -0.001407
+   O  -3.249187  -0.727670  -2.509976    0.000853 -0.000123  0.000315
+   O  -1.141867  -1.101563  -2.161782    0.000874  0.001200  0.001230
+   H  -1.810239   4.271804   0.437145   -0.000403  0.000515 -0.000187
+   H  -3.374211   1.791570  -2.696978   -0.000265  0.000210 -0.000229
+   N   1.252862  -1.080316   1.534387   -0.000938  0.001020  0.000664
+   N   2.844823  -1.877703   2.634397    0.000221 -0.000338 -0.000878
+   C   2.854145  -2.605109   1.468474    0.001217 -0.001172 -0.000092
+   C   1.782744  -2.066503   0.738623    0.000707  0.000700  0.002004
+   N   1.881781  -0.967437   2.659660    0.000498  0.000002 -0.000133
+   C   1.432793  -2.535182  -0.535483    0.000529  0.000953  0.002022
+   C   2.213750  -3.563120  -1.027499   -0.000049  0.000767  0.001267
+   C   3.297203  -4.106535  -0.292005    0.000238 -0.000820 -0.000294
+   C   3.643271  -3.646369   0.965905    0.000864 -0.001370 -0.000358
+   H   0.599567  -2.106387  -1.079232    0.000473  0.001338  0.002383
+   H   4.471042  -4.066576   1.522178    0.000862 -0.001807 -0.000700
+   H   1.993730  -3.970425  -2.006644   -0.000980  0.001517  0.001162
+   H   3.872890  -4.911884  -0.732358   -0.000549 -0.000932 -0.001139
+   H   0.396272  -0.452246   1.243092   -0.001718  0.001009  0.000682
+   H   3.455234  -1.939513   3.437337    0.000186 -0.000129 -0.000865
+New geometry
+   1 O     -0.756933428752  -0.145966016427   0.401718878949 AA   -1.430396874870  -0.275835794541   0.759138660282 Bohr
+   2 N     -0.385742902754   2.472242280433   1.664525414937 AA   -0.728948440701   4.671860823589   3.145497161608 Bohr
+   3 O      0.540380595942   1.698622983301   1.913346685406 AA    1.021171329359   3.209932227330   3.615701216762 Bohr
+   4 C     -1.192693834508   2.223830168478   0.472923648368 AA   -2.253864697678   4.202429965970   0.893696173246 Bohr
+   5 C     -1.261473792162   0.895534299465  -0.097153073200 AA   -2.383839980502   1.692314561142  -0.183592700508 Bohr
+   6 C     -2.063710978719   0.839393850117  -1.300502325133 AA   -3.899848550037   1.586224487366  -2.457593218862 Bohr
+   7 C     -2.762512660803   1.906494530097  -1.812736292072 AA   -5.220392344561   3.602752519865  -3.425575128077 Bohr
+   8 O     -0.655645593262   3.450865599620   2.351951165262 AA   -1.238990606043   6.521190875965   4.444543560698 Bohr
+   9 C     -2.658431830717   3.147759537957  -1.183397839297 AA   -5.023708080880   5.948403432727  -2.236297812673 Bohr
+  10 C     -1.881641856307   3.307134128446  -0.045035526999 AA   -3.555787772938   6.249577759965  -0.085104811903 Bohr
+  11 N     -2.160744698304  -0.429311837374  -2.033853100611 AA   -4.083215704900  -0.811281794671  -3.843425337753 Bohr
+  12 N     -3.367646259791   4.297196679595  -1.739795731352 AA   -6.363929115422   8.120524827825  -3.287737444943 Bohr
+  13 O     -4.042399025261   4.115060747818  -2.749429911907 AA   -7.639027043952   7.776337799323  -5.195669532192 Bohr
+  14 O     -3.248579701768   5.376096529314  -1.167167663921 AA   -6.138925930162  10.159350059628  -2.205627226259 Bohr
+  15 O     -3.249186894312  -0.727670163096  -2.509976328439 AA   -6.140073357775  -1.375097317269  -4.743167839891 Bohr
+  16 O     -1.141867187917  -1.101562960885  -2.161782011660 AA   -2.157816255790  -2.081652305038  -4.085175943050 Bohr
+  17 H     -1.810239423319   4.271804176881   0.437145025311 AA   -3.420856729964   8.072539952078   0.826084374553 Bohr
+  18 H     -3.374211407982   1.791570016762  -2.696978113372 AA   -6.376335447469   3.385576664662  -5.096549998219 Bohr
+  19 N      1.252861885928  -1.080316488974   1.534387081803 AA    2.367565836310  -2.041502292013   2.899571353679 Bohr
+  20 N      2.844822773659  -1.877702569178   2.634397269518 AA    5.375935915140  -3.548343599138   4.978289342690 Bohr
+  21 C      2.854144856970  -2.605108624797   1.468474188236 AA    5.393552099509  -4.922941825608   2.775014036758 Bohr
+  22 C      1.782744263592  -2.066503085025   0.738622840666 AA    3.368898408327  -3.905124866266   1.395794878207 Bohr
+  23 N      1.881780510665  -0.967437212459   2.659660428362 AA    3.556049791701  -1.828191374259   5.026029793948 Bohr
+  24 C      1.432793103653  -2.535182187520  -0.535483235635 AA    2.707586559070  -4.790800010288  -1.011916659647 Bohr
+  25 C      2.213750161675  -3.563120121046  -1.027498722347 AA    4.183381513778  -6.733321177705  -1.941691178576 Bohr
+  26 C      3.297203267608  -4.106535122593  -0.292004769620 AA    6.230811152800  -7.760226702608  -0.551809041648 Bohr
+  27 C      3.643271109771  -3.646369195431   0.965904530046 AA    6.884784595007  -6.890639128416   1.825295024263 Bohr
+  28 H      0.599567217086  -2.106387169488  -1.079232440652 AA    1.133017833560  -3.980494862630  -2.039453737578 Bohr
+  29 H      4.471041515623  -4.066575678264   1.522177560452 AA    8.449043956087  -7.684714296736   2.876498702213 Bohr
+  30 H      1.993730067691  -3.970425290792  -2.006643753514 AA    3.767603794247  -7.503016397643  -3.792007123711 Bohr
+  31 H      3.872889719422  -4.911883725959  -0.732358401236 AA    7.318700880351  -9.282114997772  -1.383956803360 Bohr
+  32 H      0.396272169268  -0.452246242168   1.243092322880 AA    0.748845870704  -0.854621538562   2.349104037793 Bohr
+  33 H      3.455234104142  -1.939513310803   3.437336675177 AA    6.529446153086  -3.665148972366   6.495624914007 Bohr
+
+
+******** <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+method = DFRKS_Scanner
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-09
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/scan_gas_up/chk/up_1.460.chk
+max_memory 8000 MB (current use 633 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x7f167f8a77e0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x7f167f8a7740>
+small_rho_cutoff = 0
+Set gradient conv threshold to 3.16228e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+init E= -1317.20902041133
+
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.249146979747  LUMO = -0.123799671812023  gap/eV = 3.41087
+cycle= 1 E= -1317.20821328126  delta_E= 0.000807  |g|= 0.00299  |ddm|= 0.682
+  HOMO = -0.249730978795174  LUMO = -0.124164146489899  gap/eV = 3.41685
+cycle= 2 E= -1317.20820776736  delta_E= 5.51e-06  |g|= 0.00578  |ddm|= 0.162
+  HOMO = -0.249525556688685  LUMO = -0.123987228131704  gap/eV = 3.41607
+cycle= 3 E= -1317.20821517156  delta_E= -7.4e-06  |g|= 0.00158  |ddm|= 0.0704
+  HOMO = -0.249509900742193  LUMO = -0.123988759852098  gap/eV = 3.41560
+cycle= 4 E= -1317.20821557037  delta_E= -3.99e-07  |g|= 0.000671  |ddm|= 0.0136
+  HOMO = -0.249504094724912  LUMO = -0.123987648296911  gap/eV = 3.41548
+cycle= 5 E= -1317.20821564964  delta_E= -7.93e-08  |g|= 0.000214  |ddm|= 0.0084
+  HOMO = -0.249501379846929  LUMO = -0.123988991077886  gap/eV = 3.41537
+cycle= 6 E= -1317.20821565774  delta_E= -8.1e-09  |g|= 8.29e-05  |ddm|= 0.0013
+  HOMO = -0.249503092828657  LUMO = -0.123989001072079  gap/eV = 3.41541
+cycle= 7 E= -1317.20821565896  delta_E= -1.22e-09  |g|= 4.05e-05  |ddm|= 0.000715
+  HOMO = -0.249503191707589  LUMO = -0.123989205994436  gap/eV = 3.41541
+cycle= 8 E= -1317.20821565926  delta_E= -3.01e-10  |g|= 1.53e-05  |ddm|= 0.000315
+  HOMO = -0.249502598148123  LUMO = -0.123988963144758  gap/eV = 3.41540
+Extra cycle  E= -1317.2082156589  delta_E= 3.62e-10  |g|= 4.59e-05  |ddm|= 0.000288
+converged SCF energy = -1317.2082156589
+
+
+******** <class 'pyscf.grad.rhf.Gradients_Scanner'> for <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+unit = Eh/Bohr
+max_memory 8000 MB (current use 4989 MB)
+grid_response = False
+--------------- DFRKS_Scanner gradients ---------------
+         x                y                z
+0 O    -0.0003867171     0.0000748207    -0.0003059743
+1 N     0.0000890795     0.0000584407    -0.0001012600
+2 O    -0.0000177191     0.0000012294     0.0000262627
+3 C    -0.0000407093    -0.0000430293    -0.0000384842
+4 C    -0.0001845471     0.0001890737    -0.0000500328
+5 C     0.0000915629     0.0000244010     0.0000484315
+6 C     0.0000063573     0.0000195566    -0.0000392114
+7 O    -0.0000089181    -0.0000748988     0.0000439625
+8 C     0.0000243325    -0.0000644144    -0.0000258409
+9 C    -0.0000305686     0.0000498959     0.0000164423
+10 N    -0.0000418566     0.0000044702     0.0000089212
+11 N    -0.0000314361     0.0000750557     0.0000271115
+12 O     0.0000471104    -0.0000959583     0.0000159333
+13 O     0.0000461987     0.0000204903     0.0000134032
+14 O     0.0000184537    -0.0000756546    -0.0000047632
+15 O    -0.0000541748     0.0000371860    -0.0000088614
+16 H     0.0000075959    -0.0000016109    -0.0000005909
+17 H    -0.0000087823     0.0000009105    -0.0000055129
+18 N    -0.0000127560     0.0000998900     0.0000015051
+19 N    -0.0003846460     0.0000153796    -0.0004644875
+20 C     0.0002710819    -0.0003296208    -0.0001344977
+21 C     0.0001412963     0.0000393737     0.0001945363
+22 N    -0.0001409775     0.0003074996     0.0001684077
+23 C    -0.0000581485     0.0000089722    -0.0000543423
+24 C     0.0000499715     0.0000704298     0.0001761615
+25 C     0.0000725713    -0.0001003080    -0.0000699378
+26 C    -0.0000132333    -0.0000022638    -0.0000225140
+27 H    -0.0000029888    -0.0000052952     0.0000019025
+28 H     0.0000120083    -0.0000044576    -0.0000070262
+29 H     0.0000160116    -0.0000015868     0.0000159947
+30 H     0.0000258577    -0.0000077329     0.0000025202
+31 H     0.0005292331    -0.0003098383     0.0005807390
+32 H    -0.0000365577     0.0000113752    -0.0000125850
+----------------------------------------------
+cycle 6: E = -1317.20821566  dE = -9.21732e-06  norm(grad) = 0.00140417
+
+Geometry optimization cycle 7
+Cartesian coordinates (Angstrom)
+ Atom        New coordinates             dX        dY        dZ
+   O  -0.757287  -0.147997   0.401056   -0.000354 -0.002031 -0.000663
+   N  -0.386527   2.471721   1.665336   -0.000784 -0.000521  0.000810
+   O   0.539175   1.697475   1.913908   -0.001206 -0.001148  0.000561
+   C  -1.192512   2.222651   0.473228    0.000182 -0.001179  0.000304
+   C  -1.260743   0.894135  -0.096905    0.000730 -0.001400  0.000248
+   C  -2.063047   0.838845  -1.300313    0.000664 -0.000549  0.000189
+   C  -2.762116   1.905715  -1.812666    0.000396 -0.000780  0.000070
+   O  -0.655449   3.451655   2.351397    0.000197  0.000789 -0.000555
+   C  -2.658627   3.147168  -1.183605   -0.000195 -0.000591 -0.000207
+   C  -1.881495   3.305760  -0.045272    0.000147 -0.001374 -0.000236
+   N  -2.159770  -0.429584  -2.033910    0.000974 -0.000273 -0.000057
+   N  -3.368335   4.296550  -1.739705   -0.000689 -0.000647  0.000090
+   O  -4.043399   4.115544  -2.749366   -0.001000  0.000483  0.000064
+   O  -3.250100   5.375035  -1.166096   -0.001521 -0.001062  0.001071
+   O  -3.248273  -0.726272  -2.510943    0.000914  0.001398 -0.000966
+   O  -1.141200  -1.102488  -2.161411    0.000667 -0.000925  0.000371
+   H  -1.810260   4.270344   0.437093   -0.000021 -0.001460 -0.000052
+   H  -3.373666   1.790467  -2.696952    0.000546 -0.001103  0.000026
+   N   1.254323  -1.078633   1.534022    0.001461  0.001683 -0.000365
+   N   2.846842  -1.878045   2.635784    0.002019 -0.000342  0.001386
+   C   2.853869  -2.604380   1.469243   -0.000276  0.000728  0.000769
+   C   1.782885  -2.065702   0.738795    0.000141  0.000801  0.000172
+   N   1.884017  -0.967491   2.659239    0.002237 -0.000054 -0.000422
+   C   1.432649  -2.534409  -0.535223   -0.000144  0.000773  0.000261
+   C   2.212342  -3.562784  -1.028363   -0.001408  0.000336 -0.000864
+   C   3.295487  -4.105595  -0.291946   -0.001716  0.000940  0.000059
+   C   3.642172  -3.645899   0.965971   -0.001099  0.000470  0.000067
+   H   0.599475  -2.104953  -1.078544   -0.000093  0.001434  0.000688
+   H   4.470049  -4.066516   1.521759   -0.000992  0.000060 -0.000419
+   H   1.992036  -3.970060  -2.007481   -0.001694  0.000365 -0.000837
+   H   3.871144  -4.911011  -0.732177   -0.001746  0.000873  0.000182
+   H   0.398703  -0.447775   1.240949    0.002431  0.004471 -0.002144
+   H   3.457465  -1.940287   3.438565    0.002230 -0.000774  0.001228
+New geometry
+   1 O     -0.757287323693  -0.147997158412   0.401055617747 AA   -1.431065639385  -0.279674096613   0.757885278259 Bohr
+   2 N     -0.386526561489   2.471721256688   1.665335541628 AA   -0.730429341084   4.670876231406   3.147028079181 Bohr
+   3 O      0.539174868259   1.697474892141   1.913907844771 AA    1.018892834257   3.207762649472   3.616761654274 Bohr
+   4 C     -1.192511739414   2.222650934082   0.473227693979 AA   -2.253520587821   4.200201535925   0.894270736179 Bohr
+   5 C     -1.260743318802   0.894134509337  -0.096904670558 AA   -2.382459585910   1.689669341170  -0.183123287545 Bohr
+   6 C     -2.063046927936   0.838844575020  -1.300313210217 AA   -3.898593675924   1.585186507864  -2.457235843464 Bohr
+   7 C     -2.762116213535   1.905714619021  -1.812666321400 AA   -5.219643167801   3.601278701530  -3.425442902668 Bohr
+   8 O     -0.655448612543   3.451654740400   2.351396627470 AA   -1.238618366432   6.522682135913   4.443495636145 Bohr
+   9 C     -2.658627137924   3.147168186794  -1.183604910972 AA   -5.024077158013   5.947285940984  -2.236689121428 Bohr
+  10 C     -1.881494812520   3.305759823558  -0.045271646175 AA   -3.555509900453   6.246980700115  -0.085551012478 Bohr
+  11 N     -2.159770203192  -0.429584478369  -2.033909629260 AA   -4.081374176029  -0.811797011481  -3.843532161416 Bohr
+  12 N     -3.368335334059   4.296550105293  -1.739705351875 AA   -6.365231277067   8.119302979475  -3.287566652483 Bohr
+  13 O     -4.043398890495   4.115543999987  -2.749366117693 AA   -7.640916515405   7.777251013573  -5.195548978598 Bohr
+  14 O     -3.250100475541   5.375034908736  -1.166096306049 AA   -6.141799776091  10.157343887488  -2.203602653300 Bohr
+  15 O     -3.248273084318  -0.726272260255  -2.510942596224 AA   -6.138346507157  -1.372455663752  -4.744993821368 Bohr
+  16 O     -1.141200392544  -1.102487636200  -2.161410938155 AA   -2.156556195155  -2.083399688137  -4.084474715752 Bohr
+  17 H     -1.810259951160   4.270344054937   0.437092678910 AA   -3.420895521960   8.069780721495   0.825985454192 Bohr
+  18 H     -3.373665884181   1.790466682136  -2.696952296288 AA   -6.375304556891   3.383491664395  -5.096501211001 Bohr
+  19 N      1.254323383367  -1.078633137537   1.534021591478 AA    2.370327666202  -2.038321218826   2.898880677063 Bohr
+  20 N      2.846841616936  -1.878044749102   2.635783603277 AA    5.379750976024  -3.548990225480   4.980909133813 Bohr
+  21 C      2.853868949091  -2.604380307324   1.469243337546 AA    5.393030709182  -4.921565505052   2.776467518305 Bohr
+  22 C      1.782885258626  -2.065702139767   0.738795114330 AA    3.369164850327  -3.903611299087   1.396120428250 Bohr
+  23 N      1.884017088229  -0.967490832765   2.659238677647 AA    3.560276310752  -1.828292701953   5.025232800604 Bohr
+  24 C      1.432649187645  -2.534409114279  -0.535222583322 AA    2.707314597230  -4.789339113589  -1.011424098161 Bohr
+  25 C      2.212341688035  -3.562783949536  -1.028362628307 AA    4.180719884344  -6.732685905619  -1.943323724238 Bohr
+  26 C      3.295487076555  -4.105595399920  -0.291945607895 AA    6.227568021732  -7.758450884122  -0.551697242191 Bohr
+  27 C      3.642171770621  -3.645899301614   0.965971118473 AA    6.882707145096  -6.889751157794   1.825420858155 Bohr
+  28 H      0.599474681308  -2.104953034798  -1.078544238115 AA    1.132842966283  -3.977784740841  -2.038153223265 Bohr
+  29 H      4.470049245272  -4.066515804658   1.521758652248 AA    8.447168836882  -7.684601152018   2.875707080436 Bohr
+  30 H      1.992035568603  -3.970060402421  -2.007480887975 AA    3.764401655052  -7.502326858555  -3.793589078572 Bohr
+  31 H      3.871143839923  -4.911010534996  -0.732176862950 AA    7.315401646252  -9.280464905995  -1.383613745718 Bohr
+  32 H      0.398702747432  -0.447775245771   1.240948500165 AA    0.753438997759  -0.846172579867   2.345052800001 Bohr
+  33 H      3.457464514704  -1.940287469695   3.438564594142 AA    6.533661018192  -3.666611920649   6.497945344555 Bohr
+
+
+******** <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+method = DFRKS_Scanner
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-09
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/scan_gas_up/chk/up_1.460.chk
+max_memory 8000 MB (current use 657 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x7f167f8a77e0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x7f167f8a7740>
+small_rho_cutoff = 0
+Set gradient conv threshold to 3.16228e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+init E= -1317.20699912289
+
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.24972093397384  LUMO = -0.124249408468824  gap/eV = 3.41425
+cycle= 1 E= -1317.20821087993  delta_E= -0.00121  |g|= 0.00303  |ddm|= 0.648
+  HOMO = -0.249735135507887  LUMO = -0.123586600940603  gap/eV = 3.43268
+cycle= 2 E= -1317.20820426527  delta_E= 6.61e-06  |g|= 0.00661  |ddm|= 0.126
+  HOMO = -0.24964002930944  LUMO = -0.123799746458717  gap/eV = 3.42429
+cycle= 3 E= -1317.20821280114  delta_E= -8.54e-06  |g|= 0.00117  |ddm|= 0.0605
+  HOMO = -0.249628680578535  LUMO = -0.123833495158925  gap/eV = 3.42306
+cycle= 4 E= -1317.20821302112  delta_E= -2.2e-07  |g|= 0.000517  |ddm|= 0.0104
+  HOMO = -0.249637360772301  LUMO = -0.123848845600895  gap/eV = 3.42288
+cycle= 5 E= -1317.20821306637  delta_E= -4.52e-08  |g|= 0.000175  |ddm|= 0.00397
+  HOMO = -0.249634386780457  LUMO = -0.12384514085906  gap/eV = 3.42290
+cycle= 6 E= -1317.20821307219  delta_E= -5.82e-09  |g|= 6.79e-05  |ddm|= 0.00137
+  HOMO = -0.249634501503699  LUMO = -0.123843281248559  gap/eV = 3.42295
+cycle= 7 E= -1317.20821307294  delta_E= -7.54e-10  |g|= 3.35e-05  |ddm|= 0.000585
+  HOMO = -0.249634253025533  LUMO = -0.12384305716202  gap/eV = 3.42295
+cycle= 8 E= -1317.20821307312  delta_E= -1.75e-10  |g|= 1.76e-05  |ddm|= 0.000444
+  HOMO = -0.249634932603456  LUMO = -0.1238445918931  gap/eV = 3.42293
+Extra cycle  E= -1317.20821307263  delta_E= 4.87e-10  |g|= 5.28e-05  |ddm|= 0.000486
+converged SCF energy = -1317.20821307263
+
+
+******** <class 'pyscf.grad.rhf.Gradients_Scanner'> for <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+unit = Eh/Bohr
+max_memory 8000 MB (current use 4986 MB)
+grid_response = False
+--------------- DFRKS_Scanner gradients ---------------
+         x                y                z
+0 O    -0.0008780682     0.0001583307    -0.0006509540
+1 N     0.0000327666    -0.0000752335     0.0002730809
+2 O    -0.0000285866    -0.0000661308    -0.0002553379
+3 C     0.0000700577    -0.0000266001    -0.0000493762
+4 C     0.0002350755    -0.0002933942     0.0002278651
+5 C    -0.0000453411     0.0000741346     0.0000178895
+6 C     0.0000549618    -0.0000795789     0.0000318356
+7 O    -0.0000935676     0.0002151849     0.0000334927
+8 C    -0.0000955656     0.0001649719    -0.0000369096
+9 C     0.0000752987    -0.0001416920     0.0000047915
+10 N     0.0000408898    -0.0001115405     0.0000535348
+11 N     0.0000848696    -0.0001193301    -0.0000519126
+12 O    -0.0000961101     0.0001573676    -0.0000250797
+13 O    -0.0000561442     0.0000246315    -0.0000522926
+14 O    -0.0000484529     0.0001616748     0.0000701480
+15 O     0.0001070249     0.0000141200     0.0000288049
+16 H    -0.0000059949    -0.0000096792    -0.0000272798
+17 H    -0.0000035952     0.0000195588     0.0000112510
+18 N    -0.0003979520     0.0001128786    -0.0003208495
+19 N     0.0006697115    -0.0001397509     0.0007724562
+20 C    -0.0003112314     0.0004194736     0.0001473019
+21 C    -0.0001155964     0.0000866738     0.0000735782
+22 N     0.0001965459    -0.0006582147    -0.0005400352
+23 C     0.0001268734    -0.0000518853     0.0001429799
+24 C    -0.0000810288    -0.0001407604    -0.0003417260
+25 C    -0.0001089196     0.0002162064     0.0001626663
+26 C     0.0000803640    -0.0000399169     0.0000477334
+27 H     0.0000077220    -0.0000252494    -0.0000201871
+28 H     0.0000082371     0.0000267035     0.0000118006
+29 H     0.0000025982    -0.0000167033    -0.0000349833
+30 H    -0.0000070795     0.0000301690    -0.0000006655
+31 H     0.0005182534     0.0001409668     0.0002942203
+32 H     0.0000556028    -0.0000353050    -0.0000013870
+----------------------------------------------
+cycle 7: E = -1317.20821307  dE = 2.58627e-06  norm(grad) = 0.00221924
+
+Geometry optimization cycle 8
+Cartesian coordinates (Angstrom)
+ Atom        New coordinates             dX        dY        dZ
+   O  -0.755574  -0.146324   0.401287    0.001713  0.001673  0.000231
+   N  -0.386405   2.472045   1.665069    0.000122  0.000324 -0.000267
+   O   0.539158   1.698160   1.915258   -0.000017  0.000685  0.001351
+   C  -1.192381   2.223233   0.472919    0.000131  0.000582 -0.000309
+   C  -1.260377   0.894916  -0.097584    0.000366  0.000781 -0.000679
+   C  -2.062888   0.838708  -1.300912    0.000159 -0.000136 -0.000599
+   C  -2.762141   1.905724  -1.812736   -0.000025  0.000010 -0.000070
+   O  -0.655786   3.451937   2.350898   -0.000337  0.000282 -0.000498
+   C  -2.658515   3.146987  -1.183343    0.000112 -0.000181  0.000262
+   C  -1.881545   3.306391  -0.045108   -0.000050  0.000631  0.000164
+   N  -2.159686  -0.429708  -2.034726    0.000084 -0.000124 -0.000817
+   N  -3.368446   4.296189  -1.739356   -0.000110 -0.000361  0.000350
+   O  -4.042982   4.114369  -2.749201    0.000417 -0.001175  0.000165
+   O  -3.250454   5.374778  -1.165916   -0.000354 -0.000257  0.000181
+   O  -3.247991  -0.727159  -2.511753    0.000282 -0.000887 -0.000810
+   O  -1.141107  -1.102579  -2.162045    0.000093 -0.000092 -0.000634
+   H  -1.810577   4.270991   0.437296   -0.000317  0.000647  0.000203
+   H  -3.373903   1.790681  -2.696910   -0.000237  0.000214  0.000043
+   N   1.254633  -1.078813   1.534725    0.000309 -0.000180  0.000703
+   N   2.846413  -1.877711   2.635114   -0.000428  0.000334 -0.000669
+   C   2.854051  -2.604781   1.468948    0.000182 -0.000401 -0.000295
+   C   1.782985  -2.065705   0.738994    0.000100 -0.000002  0.000198
+   N   1.883991  -0.966779   2.659931   -0.000027  0.000711  0.000692
+   C   1.432355  -2.534034  -0.535028   -0.000294  0.000376  0.000195
+   C   2.212244  -3.562491  -1.027636   -0.000098  0.000293  0.000727
+   C   3.295496  -4.106306  -0.292122    0.000009 -0.000711 -0.000176
+   C   3.642194  -3.646489   0.965769    0.000022 -0.000589 -0.000202
+   H   0.599235  -2.104479  -1.078346   -0.000239  0.000474  0.000199
+   H   4.469965  -4.067247   1.521609   -0.000084 -0.000731 -0.000150
+   H   1.991689  -3.969567  -2.006761   -0.000347  0.000493  0.000720
+   H   3.870719  -4.911888  -0.732641   -0.000425 -0.000878 -0.000464
+   H   0.399136  -0.448850   1.241955    0.000433 -0.001075  0.001006
+   H   3.457142  -1.939969   3.437800   -0.000323  0.000318 -0.000765
+New geometry
+   1 O     -0.755574172276  -0.146324366495   0.401286637282 AA   -1.427828252396  -0.276512978025   0.758321841910 Bohr
+   2 N     -0.386404643875   2.472045308831   1.665068673000 AA   -0.730198950183   4.671488601206   3.146523770563 Bohr
+   3 O      0.539157895895   1.698159696743   1.915258401324 AA    1.018860761139   3.209056742618   3.619313836275 Bohr
+   4 C     -1.192380734767   2.223232505589   0.472918764452 AA   -2.253273024918   4.201300546794   0.893686943983 Bohr
+   5 C     -1.260377094410   0.894915740745  -0.097583667383 AA   -2.381767522109   1.691145654571  -0.184406405585 Bohr
+   6 C     -2.062888069782   0.838708169030  -1.300912019675 AA   -3.898293477521   1.584928737903  -2.458367429340 Bohr
+   7 C     -2.762141198191   1.905724427915  -1.812736276267 AA   -5.219690381960   3.601297237653  -3.425575098209 Bohr
+   8 O     -0.655785507149   3.451937073539   2.350898263335 AA   -1.239255004971   6.523215668221   4.442553864419 Bohr
+   9 C     -2.658515273189   3.146987299475  -1.183342707254 AA   -5.023865764300   5.946944113492  -2.236193628211 Bohr
+  10 C     -1.881545170279   3.306390889889  -0.045107632520 AA   -3.555605062826   6.248173242647  -0.085241071590 Bohr
+  11 N     -2.159686263847  -0.429708451088  -2.034726482126 AA   -4.081215553656  -0.812031285967  -3.845075789619 Bohr
+  12 N     -3.368445715015   4.296189183339  -1.739355760835 AA   -6.365439866842   8.118620935830  -3.286906021163 Bohr
+  13 O     -4.042981515270   4.114369025176  -2.749201206637 AA   -7.640127790539   7.775030632976  -5.195237341867 Bohr
+  14 O     -3.250454451220   5.374778118269  -1.165915514692 AA   -6.142468693180  10.156858623833  -2.203261007149 Bohr
+  15 O     -3.247990917539  -0.727159089977  -2.511752980039 AA   -6.137813289223  -1.374131529044  -4.746525224835 Bohr
+  16 O     -1.141106983447  -1.102579145030  -2.162044659605 AA   -2.156379677544  -2.083572614763  -4.085672275733 Bohr
+  17 H     -1.810576675269   4.270991044757   0.437295935912 AA   -3.421494043784   8.071003355060   0.826369554260 Bohr
+  18 H     -3.373902645446   1.790680971933  -2.696909666725 AA   -6.375751970838   3.383896613424  -5.096420652802 Bohr
+  19 N      1.254632552714  -1.078812959535   1.534724572487 AA    2.370911911593  -2.038661033152   2.900209118641 Bohr
+  20 N      2.846413386563  -1.877710842948   2.635114274300 AA    5.378941737900  -3.548359234298   4.979644285359 Bohr
+  21 C      2.854051442752  -2.604780890522   1.468947906897 AA    5.393375572220  -4.922322497587   2.775909235289 Bohr
+  22 C      1.782985242963  -2.065704594334   0.738993560290 AA    3.369353793341  -3.903615937547   1.396495436765 Bohr
+  23 N      1.883990572536  -0.966779396695   2.659930724050 AA    3.560226203356  -1.826948282626   5.026540578770 Bohr
+  24 C      1.432354707753  -2.534033600278  -0.535027772890 AA    2.706758110884  -4.788629494972  -1.011055959799 Bohr
+  25 C      2.212243585108  -3.562490505974  -1.027635712304 AA    4.180534496681  -6.732131377655  -1.941950052076 Bohr
+  26 C      3.295495753286  -4.106305921253  -0.292121950904 AA    6.227584418378  -7.759793574847  -0.552030482183 Bohr
+  27 C      3.642193772487  -3.646488643772   0.965768750752 AA    6.882748722596  -6.890864853066   1.825038438585 Bohr
+  28 H      0.599235456792  -2.104478917176  -1.078345543394 AA    1.132390897465  -3.976888788384  -2.037777744660 Bohr
+  29 H      4.469965218576  -4.067247084009   1.521608587874 AA    8.447010049441  -7.685983069713   2.875423499869 Bohr
+  30 H      1.991688929200  -3.969567306925  -2.006761242963 AA    3.763746601517  -7.501395043116  -3.792229146592 Bohr
+  31 H      3.870718962350  -4.911888140452  -0.732640572381 AA    7.314598744002  -9.282123339954  -1.384490029545 Bohr
+  32 H      0.399136001337  -0.448849997821   1.241954620188 AA    0.754257728980  -0.848203566894   2.346954091294 Bohr
+  33 H      3.457141576382  -1.939969179921   3.437799794503 AA    6.533050753209  -3.666010440148   6.496500082697 Bohr
+
+
+******** <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+method = DFRKS_Scanner
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-09
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/scan_gas_up/chk/up_1.460.chk
+max_memory 8000 MB (current use 654 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x7f167f8a77e0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x7f167f8a7740>
+small_rho_cutoff = 0
+Set gradient conv threshold to 3.16228e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+init E= -1317.20930691429
+
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.249345696888398  LUMO = -0.123669121581416  gap/eV = 3.41983
+cycle= 1 E= -1317.20821662623  delta_E= 0.00109  |g|= 0.00266  |ddm|= 0.539
+  HOMO = -0.24958601247388  LUMO = -0.124034908151175  gap/eV = 3.41642
+cycle= 2 E= -1317.20821164705  delta_E= 4.98e-06  |g|= 0.0058  |ddm|= 0.168
+  HOMO = -0.249601213469141  LUMO = -0.123930914694758  gap/eV = 3.41966
+cycle= 3 E= -1317.20821814918  delta_E= -6.5e-06  |g|= 0.000674  |ddm|= 0.0851
+  HOMO = -0.2495843950209  LUMO = -0.123925473702256  gap/eV = 3.41935
+cycle= 4 E= -1317.20821820955  delta_E= -6.04e-08  |g|= 0.000415  |ddm|= 0.0108
+  HOMO = -0.249575295223057  LUMO = -0.123919950767452  gap/eV = 3.41926
+cycle= 5 E= -1317.20821823826  delta_E= -2.87e-08  |g|= 0.00015  |ddm|= 0.00248
+  HOMO = -0.249577336935918  LUMO = -0.123921552366093  gap/eV = 3.41927
+cycle= 6 E= -1317.20821824223  delta_E= -3.96e-09  |g|= 4.57e-05  |ddm|= 0.00145
+  HOMO = -0.249577367235919  LUMO = -0.123922530933237  gap/eV = 3.41924
+cycle= 7 E= -1317.20821824252  delta_E= -2.95e-10  |g|= 2.55e-05  |ddm|= 0.000378
+  HOMO = -0.249578053961351  LUMO = -0.123922284965797  gap/eV = 3.41927
+Extra cycle  E= -1317.20821824166  delta_E= 8.61e-10  |g|= 6.99e-05  |ddm|= 0.000537
+converged SCF energy = -1317.20821824166
+
+
+******** <class 'pyscf.grad.rhf.Gradients_Scanner'> for <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+unit = Eh/Bohr
+max_memory 8000 MB (current use 4995 MB)
+grid_response = False
+--------------- DFRKS_Scanner gradients ---------------
+         x                y                z
+0 O    -0.0005627463     0.0001418316    -0.0003236545
+1 N    -0.0000155918    -0.0000399977     0.0000334809
+2 O     0.0000123471     0.0000234743    -0.0000235136
+3 C     0.0000058568    -0.0000111438     0.0000011333
+4 C    -0.0000178952    -0.0000035157    -0.0000227733
+5 C    -0.0000233560     0.0000069600    -0.0000227079
+6 C     0.0000197468    -0.0000082585     0.0000053570
+7 O    -0.0000041841    -0.0000019109    -0.0000152638
+8 C    -0.0000082737    -0.0000009234    -0.0000109541
+9 C     0.0000264420     0.0000222151     0.0000113535
+10 N     0.0000206459    -0.0000130755    -0.0000180603
+11 N     0.0000152480     0.0000114012     0.0000057394
+12 O     0.0000029724    -0.0000289323     0.0000012080
+13 O     0.0000162333     0.0000211115     0.0000076695
+14 O    -0.0000111398    -0.0000151100     0.0000225330
+15 O    -0.0000239466     0.0000043608    -0.0000068300
+16 H     0.0000048759     0.0000090613     0.0000018560
+17 H    -0.0000036009     0.0000026850     0.0000001047
+18 N     0.0000109695    -0.0000546539    -0.0000276500
+19 N     0.0000019659     0.0000079308     0.0000179451
+20 C    -0.0000066637     0.0000215068    -0.0000006928
+21 C    -0.0000169245    -0.0000047421     0.0000088816
+22 N    -0.0000233879    -0.0000397119     0.0000172114
+23 C    -0.0000063354    -0.0000010039     0.0000045225
+24 C     0.0000036091     0.0000100060     0.0000182198
+25 C     0.0000305302    -0.0000277259    -0.0000182143
+26 C    -0.0000188916     0.0000138138    -0.0000075030
+27 H    -0.0000001087    -0.0000086541    -0.0000028550
+28 H     0.0000067626     0.0000125123    -0.0000037920
+29 H     0.0000103115    -0.0000022590     0.0000018347
+30 H     0.0000146210     0.0000045606    -0.0000050030
+31 H     0.0005289555    -0.0000655452     0.0003470225
+32 H     0.0000047237     0.0000056906    -0.0000001680
+----------------------------------------------
+cycle 8: E = -1317.20821824  dE = -5.16903e-06  norm(grad) = 0.000933097
+
+Geometry optimization cycle 9
+Cartesian coordinates (Angstrom)
+ Atom        New coordinates             dX        dY        dZ
+   O  -0.752835  -0.145871   0.399414    0.002739  0.000453 -0.001873
+   N  -0.386229   2.472758   1.664746    0.000176  0.000713 -0.000323
+   O   0.538900   1.698612   1.915768   -0.000258  0.000452  0.000510
+   C  -1.192019   2.223560   0.472536    0.000362  0.000327 -0.000383
+   C  -1.259030   0.895302  -0.098249    0.001347  0.000386 -0.000665
+   C  -2.062061   0.838944  -1.301230    0.000827  0.000236 -0.000318
+   C  -2.762034   1.905550  -1.812973    0.000107 -0.000174 -0.000237
+   O  -0.656003   3.452569   2.350531   -0.000217  0.000632 -0.000368
+   C  -2.658925   3.146818  -1.183562   -0.000410 -0.000169 -0.000220
+   C  -1.882008   3.306273  -0.045323   -0.000463 -0.000118 -0.000215
+   N  -2.158660  -0.429446  -2.035068    0.001026  0.000263 -0.000342
+   N  -3.369223   4.295871  -1.739467   -0.000777 -0.000318 -0.000112
+   O  -4.043395   4.114717  -2.749671   -0.000414  0.000348 -0.000469
+   O  -3.251586   5.374225  -1.165545   -0.001132 -0.000553  0.000370
+   O  -3.246809  -0.726671  -2.512599    0.001182  0.000488 -0.000846
+   O  -1.140079  -1.102387  -2.162053    0.001028  0.000192 -0.000008
+   H  -1.811548   4.270819   0.437237   -0.000972 -0.000172 -0.000059
+   H  -3.373863   1.790161  -2.697052    0.000040 -0.000520 -0.000142
+   N   1.255105  -1.078826   1.535740    0.000473 -0.000013  0.001016
+   N   2.847396  -1.877677   2.635174    0.000983  0.000034  0.000060
+   C   2.854362  -2.604919   1.469104    0.000311 -0.000138  0.000156
+   C   1.783261  -2.065430   0.739485    0.000276  0.000275  0.000492
+   N   1.885254  -0.966450   2.660451    0.001263  0.000329  0.000520
+   C   1.432114  -2.533405  -0.534539   -0.000241  0.000629  0.000489
+   C   2.211330  -3.562162  -1.027543   -0.000914  0.000328  0.000093
+   C   3.294302  -4.106480  -0.292000   -0.001194 -0.000174  0.000122
+   C   3.641827  -3.647079   0.965816   -0.000367 -0.000590  0.000047
+   H   0.599051  -2.103358  -1.077554   -0.000184  0.001121  0.000792
+   H   4.469423  -4.068474   1.521443   -0.000542 -0.001227 -0.000166
+   H   1.990408  -3.969057  -2.006667   -0.001281  0.000510  0.000095
+   H   3.868871  -4.912469  -0.732610   -0.001848 -0.000581  0.000031
+   H   0.398827  -0.449760   1.243764   -0.000309 -0.000910  0.001809
+   H   3.458366  -1.940133   3.437653    0.001225 -0.000164 -0.000147
+New geometry
+   1 O     -0.752835118240  -0.145871045808   0.399413864921 AA   -1.422652190428  -0.275656326081   0.754782815055 Bohr
+   2 N     -0.386228863006   2.472758100971   1.664745607091 AA   -0.729866772484   4.672835583134   3.145913264475 Bohr
+   3 O      0.538900354842   1.698612094321   1.915767948300 AA    1.018374079082   3.209911650140   3.620276740507 Bohr
+   4 C     -1.192018614632   2.223559836911   0.472536122280 AA   -2.252588717037   4.201919113344   0.892963855072 Bohr
+   5 C     -1.259030343888   0.895301837223  -0.098248958143 AA   -2.379222532465   1.691875271171  -0.185663622915 Bohr
+   6 C     -2.062061120518   0.838943980618  -1.301229587949 AA   -3.896730769892   1.585374357221  -2.458967546404 Bohr
+   7 C     -2.762034141750   1.905550262814  -1.812972978964 AA   -5.219488074606   3.600968113312  -3.426022401479 Bohr
+   8 O     -0.656002553424   3.452568764690   2.350530525855 AA   -1.239665162987   6.524409391491   4.441858941296 Bohr
+   9 C     -2.658925196416   3.146818107922  -1.183562346914 AA   -5.024640406932   5.946624387795  -2.236608687016 Bohr
+  10 C     -1.882008196071   3.306273042099  -0.045322787175 AA   -3.556480054761   6.247950542600  -0.085647654963 Bohr
+  11 N     -2.158660068043  -0.429445898468  -2.035068241729 AA   -4.079276324636  -0.811535133422  -3.845721621668 Bohr
+  12 N     -3.369223081979   4.295871025555  -1.739467383479 AA   -6.366908877502   8.118019704754  -3.287116957389 Bohr
+  13 O     -4.043395174003   4.114716611202  -2.749670693469 AA   -7.640909492253   7.775687475370  -5.196124543399 Bohr
+  14 O     -3.251585952281   5.374224664692  -1.165545426073 AA   -6.144606920294  10.155812748151  -2.202561641018 Bohr
+  15 O     -3.246808595838  -0.726671050730  -2.512599305096 AA   -6.135579025018  -1.373209268530  -4.748124547404 Bohr
+  16 O     -1.140078734111  -1.102387168657  -2.162052852557 AA   -2.154436567912  -2.083209831996  -4.085687758168 Bohr
+  17 H     -1.811548463129   4.270818935319   0.437237432002 AA   -3.423330456690   8.070678115360   0.826258997893 Bohr
+  18 H     -3.373862593019   1.790160634954  -2.697051757701 AA   -6.375676282720   3.382913319040  -5.096689165833 Bohr
+  19 N      1.255105459191  -1.078825536097   1.535740478423 AA    2.371805575318  -2.038684799410   2.902128902628 Bohr
+  20 N      2.847396016132  -1.877677322115   2.635174336603 AA    5.380798638668  -3.548295889105   4.979757786662 Bohr
+  21 C      2.854362400741  -2.604918599838   1.469103613465 AA    5.393963197657  -4.922582730480   2.776203478057 Bohr
+  22 C      1.783261091789  -2.065429791258   0.739485322101 AA    3.369875072075  -3.903096634994   1.397424731907 Bohr
+  23 N      1.885253704832  -0.966450297883   2.660451177579 AA    3.562613177455  -1.826326376003   5.027524093400 Bohr
+  24 C      1.432113821710  -2.533404693537  -0.534538818994 AA    2.706302902236  -4.787441033473  -1.010131970846 Bohr
+  25 C      2.211329635668  -3.562162449498  -1.027542750756 AA    4.178807382547  -6.731511440761  -1.941774380211 Bohr
+  26 C      3.294301901507  -4.106480044486  -0.292000135002 AA    6.225328365482  -7.760122620070  -0.551800283489 Bohr
+  27 C      3.641826561884  -3.647078517644   0.965816088231 AA    6.882054795127  -6.891979553133   1.825127893456 Bohr
+  28 H      0.599051289544  -2.103358008213  -1.077553525555 AA    1.132042871807  -3.974770577433  -2.036281047859 Bohr
+  29 H      4.469422748314  -4.068473826195   1.521442914475 AA    8.445984929215  -7.688301276470   2.875110422518 Bohr
+  30 H      1.990408059337  -3.969056873224  -2.006666728241 AA    3.761326108274  -7.500430463216  -3.792050539652 Bohr
+  31 H      3.868870964631  -4.912469334620  -0.732609801559 AA    7.311106534435  -9.283221637757  -1.384431881119 Bohr
+  32 H      0.398826686192  -0.449759919701   1.243763698032 AA    0.753673208071  -0.849923070041   2.350372752957 Bohr
+  33 H      3.458366317471  -1.940132945604   3.437652887646 AA    6.535365178441  -3.666319912437   6.496222468970 Bohr
+
+
+******** <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+method = DFRKS_Scanner
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-09
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/scan_gas_up/chk/up_1.460.chk
+max_memory 8000 MB (current use 649 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x7f167f8a77e0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x7f167f8a7740>
+small_rho_cutoff = 0
+Set gradient conv threshold to 3.16228e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+init E= -1317.20879547554
+
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.249263082251129  LUMO = -0.12381572243937  gap/eV = 3.41360
+cycle= 1 E= -1317.20821696339  delta_E= 0.000579  |g|= 0.00225  |ddm|= 0.571
+  HOMO = -0.249843878947015  LUMO = -0.123925169816427  gap/eV = 3.42642
+cycle= 2 E= -1317.20821260039  delta_E= 4.36e-06  |g|= 0.00508  |ddm|= 0.167
+  HOMO = -0.249647026771274  LUMO = -0.123906869957236  gap/eV = 3.42156
+cycle= 3 E= -1317.20821815587  delta_E= -5.56e-06  |g|= 0.000984  |ddm|= 0.0809
+  HOMO = -0.249609329713916  LUMO = -0.123918301515992  gap/eV = 3.42023
+cycle= 4 E= -1317.20821833107  delta_E= -1.75e-07  |g|= 0.000352  |ddm|= 0.0135
+  HOMO = -0.249594137894704  LUMO = -0.123918086726224  gap/eV = 3.41982
+cycle= 5 E= -1317.20821835266  delta_E= -2.16e-08  |g|= 0.000104  |ddm|= 0.00294
+  HOMO = -0.249595652003304  LUMO = -0.123918491414527  gap/eV = 3.41985
+cycle= 6 E= -1317.20821835434  delta_E= -1.68e-09  |g|= 4.35e-05  |ddm|= 0.0016
+  HOMO = -0.249595303205432  LUMO = -0.123917815110129  gap/eV = 3.41986
+cycle= 7 E= -1317.2082183546  delta_E= -2.58e-10  |g|= 2.52e-05  |ddm|= 0.0008
+  HOMO = -0.2495961708537  LUMO = -0.123919181105416  gap/eV = 3.41985
+Extra cycle  E= -1317.20821835363  delta_E= 9.73e-10  |g|= 7.56e-05  |ddm|= 0.000509
+converged SCF energy = -1317.20821835363
+
+
+******** <class 'pyscf.grad.rhf.Gradients_Scanner'> for <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+unit = Eh/Bohr
+max_memory 8000 MB (current use 4995 MB)
+grid_response = False
+--------------- DFRKS_Scanner gradients ---------------
+         x                y                z
+0 O    -0.0004335810     0.0000666748    -0.0003858761
+1 N     0.0000585020     0.0000395892    -0.0000775569
+2 O    -0.0000074549     0.0000069893     0.0000220802
+3 C    -0.0000276836     0.0000225135    -0.0000109701
+4 C    -0.0000522376     0.0000412568     0.0000140500
+5 C     0.0000142016     0.0000435393     0.0000328762
+6 C     0.0000060940    -0.0000204412    -0.0000100405
+7 O    -0.0000187936    -0.0000475618     0.0000256314
+8 C     0.0000228271     0.0000489813     0.0000223429
+9 C     0.0000041837    -0.0000343841    -0.0000083807
+10 N    -0.0000337675    -0.0000334124     0.0000022668
+11 N     0.0000036037    -0.0000809567     0.0000105993
+12 O    -0.0000302211     0.0000978470    -0.0000245487
+13 O     0.0000122998    -0.0000294623    -0.0000408569
+14 O     0.0000037550     0.0000212976     0.0000262197
+15 O     0.0000174863     0.0000150625     0.0000162676
+16 H     0.0000011419     0.0000008036    -0.0000046880
+17 H    -0.0000021467     0.0000067748     0.0000023648
+18 N     0.0000421523    -0.0000766622    -0.0000189085
+19 N    -0.0000651965    -0.0000029937    -0.0000300077
+20 C     0.0000030097    -0.0000397835    -0.0000267040
+21 C     0.0000246103     0.0000350920    -0.0000288293
+22 N     0.0000359146     0.0000938623     0.0000092395
+23 C     0.0000393980    -0.0000099594     0.0000170889
+24 C    -0.0000084292    -0.0000293009    -0.0000754640
+25 C    -0.0000465185     0.0000760334     0.0000394108
+26 C     0.0000429521    -0.0000249638     0.0000278333
+27 H    -0.0000004825    -0.0000130891    -0.0000101807
+28 H     0.0000082151     0.0000061782     0.0000088570
+29 H     0.0000013902    -0.0000034453    -0.0000086932
+30 H     0.0000025867     0.0000134048     0.0000019244
+31 H     0.0003893674    -0.0001975132     0.0004765668
+32 H    -0.0000133957     0.0000001509     0.0000023930
+----------------------------------------------
+cycle 9: E = -1317.20821835  dE = -1.1197e-07  norm(grad) = 0.000929356
+
+Geometry optimization cycle 10
+Cartesian coordinates (Angstrom)
+ Atom        New coordinates             dX        dY        dZ
+   O  -0.752494  -0.145723   0.399568    0.000341  0.000148  0.000155
+   N  -0.386413   2.472881   1.665029   -0.000185  0.000123  0.000284
+   O   0.538631   1.698701   1.916299   -0.000269  0.000089  0.000531
+   C  -1.192033   2.223509   0.472727   -0.000015 -0.000050  0.000190
+   C  -1.258849   0.895275  -0.098217    0.000181 -0.000027  0.000032
+   C  -2.061788   0.838806  -1.301306    0.000273 -0.000138 -0.000076
+   C  -2.761856   1.905416  -1.812921    0.000179 -0.000134  0.000052
+   O  -0.655989   3.453031   2.350416    0.000014  0.000462 -0.000115
+   C  -2.658990   3.146627  -1.183388   -0.000065 -0.000191  0.000174
+   C  -1.882144   3.306167  -0.045118   -0.000136 -0.000106  0.000205
+   N  -2.158253  -0.429443  -2.035409    0.000407  0.000002 -0.000341
+   N  -3.369548   4.295538  -1.739258   -0.000325 -0.000333  0.000209
+   O  -4.043375   4.113503  -2.749525    0.000020 -0.001214  0.000146
+   O  -3.252635   5.374010  -1.165391   -0.001049 -0.000215  0.000155
+   O  -3.246269  -0.726525  -2.513354    0.000540  0.000146 -0.000754
+   O  -1.139684  -1.102412  -2.162366    0.000395 -0.000025 -0.000313
+   H  -1.811859   4.270688   0.437510   -0.000311 -0.000131  0.000272
+   H  -3.373625   1.790024  -2.697040    0.000238 -0.000137  0.000012
+   N   1.255792  -1.078128   1.535624    0.000687  0.000698 -0.000116
+   N   2.847798  -1.877627   2.635176    0.000402  0.000050  0.000002
+   C   2.854418  -2.604881   1.469108    0.000055  0.000038  0.000004
+   C   1.783424  -2.065125   0.739542    0.000163  0.000304  0.000057
+   N   1.885925  -0.966087   2.660383    0.000672  0.000363 -0.000068
+   C   1.431948  -2.533056  -0.534391   -0.000165  0.000348  0.000148
+   C   2.210921  -3.562054  -1.027274   -0.000409  0.000108  0.000269
+   C   3.293906  -4.106771  -0.292047   -0.000396 -0.000291 -0.000046
+   C   3.641527  -3.647269   0.965707   -0.000300 -0.000190 -0.000109
+   H   0.598954  -2.102793  -1.077339   -0.000097  0.000565  0.000214
+   H   4.469078  -4.068822   1.521271   -0.000344 -0.000348 -0.000172
+   H   1.989750  -3.968900  -2.006356   -0.000658  0.000157  0.000311
+   H   3.868227  -4.912908  -0.732720   -0.000644 -0.000439 -0.000110
+   H   0.399987  -0.448612   1.243159    0.001161  0.001148 -0.000605
+   H   3.458786  -1.940256   3.437629    0.000420 -0.000123 -0.000023
+New geometry
+   1 O     -0.752494352746  -0.145722804054   0.399568442489 AA   -1.422008236972  -0.275376189766   0.755074924323 Bohr
+   2 N     -0.386413455416   2.472881305744   1.665029136804 AA   -0.730215601582   4.673068406412   3.146449057981 Bohr
+   3 O      0.538630913160   1.698701261312   1.916298515070 AA    1.017864908097   3.210080151334   3.621279366393 Bohr
+   4 C     -1.192033465757   2.223509474277   0.472726568953 AA   -2.252616781598   4.201823941758   0.893323747126 Bohr
+   5 C     -1.258848921993   0.895275080415  -0.098216993037 AA   -2.378879694771   1.691824708133  -0.185603217618 Bohr
+   6 C     -2.061788044980   0.838806046257  -1.301305902885 AA   -3.896214731915   1.585113699055  -2.459111760733 Bohr
+   7 C     -2.761855542068   1.905416142179  -1.812920822545 AA   -5.219150570122   3.600714662044  -3.425923840132 Bohr
+   8 O     -0.655988800737   3.453031249625   2.350415901795 AA   -1.239639174174   6.525283361356   4.441642333215 Bohr
+   9 C     -2.658990291266   3.146627098919  -1.183388047047 AA   -5.024763418371   5.946263433091  -2.236279308004 Bohr
+  10 C     -1.882144163304   3.306166720925  -0.045118148819 AA   -3.556736995593   6.247749624699  -0.085260944514 Bohr
+  11 N     -2.158253310613  -0.429443407295  -2.035409337240 AA   -4.078507664494  -0.811530425788  -3.846366198766 Bohr
+  12 N     -3.369548105633   4.295538193131  -1.739258129876 AA   -6.367523083194   8.117390742626  -3.286721525389 Bohr
+  13 O     -4.043375102680   4.113503101380  -2.749524544162 AA   -7.640871562950   7.773394274158  -5.195848361235 Bohr
+  14 O     -3.252634527066   5.374009560843  -1.165390856271 AA   -6.146588439460  10.155406260788  -2.202269546424 Bohr
+  15 O     -3.246268581610  -0.726524637622  -2.513353765869 AA   -6.134558546023  -1.372932587855  -4.749550271636 Bohr
+  16 O     -1.139683549200  -1.102412160796  -2.162366129040 AA   -2.153689776661  -2.083257060295  -4.086279764922 Bohr
+  17 H     -1.811859185324   4.270687559918   0.437509595875 AA   -3.423917636540   8.070429851831   0.826773313072 Bohr
+  18 H     -3.373625068507   1.790024044690  -2.697039954545 AA   -6.375227426446   3.382655200850  -5.096666861100 Bohr
+  19 N      1.255792481147  -1.078127532027   1.535624019295 AA    2.373103858655  -2.037365762883   2.901908826772 Bohr
+  20 N      2.847798292291  -1.877627023032   2.635175846458 AA    5.381558830433  -3.548200837612   4.979760639874 Bohr
+  21 C      2.854417579840  -2.604880511448   1.469107624772 AA    5.394067471041  -4.922510753854   2.776211058329 Bohr
+  22 C      1.783423614938  -2.065125445379   0.739542200458 AA    3.370182196314  -3.902521504637   1.397532216424 Bohr
+  23 N      1.885925404686  -0.966087047291   2.660382834223 AA    3.563882506216  -1.825639931870   5.027394943175 Bohr
+  24 C      1.431948354047  -2.533056314027  -0.534391105116 AA    2.705990213670  -4.786782691612  -1.009852832072 Bohr
+  25 C      2.210921026499  -3.562054254083  -1.027273817202 AA    4.178035223126  -6.731306981059  -1.941266169449 Bohr
+  26 C      3.293905945864  -4.106771061691  -0.292046538655 AA    6.224580117760  -7.760672562885  -0.551887973684 Bohr
+  27 C      3.641526544200  -3.647268802255   0.965706712829 AA    6.881487843872  -6.892339138932   1.824921203901 Bohr
+  28 H      0.598954087627  -2.102793145839  -1.077339393014 AA    1.131859186804  -3.973703142248  -2.035876396001 Bohr
+  29 H      4.469078272826  -4.068822306991   1.521270652337 AA    8.445333964885  -7.688959809733   2.874784894256 Bohr
+  30 H      1.989749599051  -3.968899930174  -2.006355848232 AA    3.760081798669  -7.500133883834  -3.791463061578 Bohr
+  31 H      3.868226977512  -4.912908137951  -0.732720058968 AA    7.309889575151  -9.284050855875  -1.384640237424 Bohr
+  32 H      0.399987212882  -0.448612124703   1.243158568545 AA    0.755866285676  -0.847754051847   2.349229223956 Bohr
+  33 H      3.458786029850  -1.940255615020   3.437629483536 AA    6.536158319887  -3.666551724038   6.496178241612 Bohr
+
+
+******** <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+method = DFRKS_Scanner
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-09
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/scan_gas_up/chk/up_1.460.chk
+max_memory 8000 MB (current use 633 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x7f167f8a77e0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x7f167f8a7740>
+small_rho_cutoff = 0
+Set gradient conv threshold to 3.16228e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+init E= -1317.20823339919
+
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.249580375376084  LUMO = -0.123942825824233  gap/eV = 3.41877
+cycle= 1 E= -1317.2082189282  delta_E= 1.45e-05  |g|= 0.000563  |ddm|= 0.184
+  HOMO = -0.249594622832269  LUMO = -0.123889509277572  gap/eV = 3.42061
+cycle= 2 E= -1317.20821873304  delta_E= 1.95e-07  |g|= 0.00118  |ddm|= 0.0215
+  HOMO = -0.249604221360773  LUMO = -0.123900902366732  gap/eV = 3.42056
+cycle= 3 E= -1317.20821899899  delta_E= -2.66e-07  |g|= 0.000279  |ddm|= 0.0103
+  HOMO = -0.249603307973445  LUMO = -0.123909166639086  gap/eV = 3.42031
+cycle= 4 E= -1317.20821901179  delta_E= -1.28e-08  |g|= 0.000124  |ddm|= 0.00313
+  HOMO = -0.249600711973095  LUMO = -0.123912257099851  gap/eV = 3.42016
+cycle= 5 E= -1317.20821901458  delta_E= -2.79e-09  |g|= 4.66e-05  |ddm|= 0.00201
+  HOMO = -0.249601069188849  LUMO = -0.123910864221688  gap/eV = 3.42020
+cycle= 6 E= -1317.20821901496  delta_E= -3.77e-10  |g|= 1.72e-05  |ddm|= 0.000828
+  HOMO = -0.249601371407355  LUMO = -0.123910932207462  gap/eV = 3.42021
+Extra cycle  E= -1317.20821901466  delta_E= 2.99e-10  |g|= 4.35e-05  |ddm|= 0.000474
+converged SCF energy = -1317.20821901466
+
+
+******** <class 'pyscf.grad.rhf.Gradients_Scanner'> for <class 'pyscf.scf.hf.DFRKS_Scanner'> ********
+unit = Eh/Bohr
+max_memory 8000 MB (current use 4984 MB)
+grid_response = False
+--------------- DFRKS_Scanner gradients ---------------
+         x                y                z
+0 O    -0.0004656813     0.0001018875    -0.0003589476
+1 N     0.0000247524     0.0000364334    -0.0000318646
+2 O     0.0000012874     0.0000052327     0.0000038181
+3 C     0.0000020336    -0.0000035828     0.0000018986
+4 C    -0.0000479519     0.0000186373     0.0000080345
+5 C     0.0000075624     0.0000130603    -0.0000011070
+6 C     0.0000082041     0.0000032917     0.0000000978
+7 O    -0.0000121135    -0.0000245732     0.0000178151
+8 C    -0.0000157581     0.0000030687    -0.0000362397
+9 C     0.0000098427    -0.0000198838    -0.0000023968
+10 N    -0.0000277720    -0.0000262146     0.0000185781
+11 N    -0.0000032346     0.0000359706     0.0000046655
+12 O     0.0000205798    -0.0000465027     0.0000063340
+13 O     0.0000190178     0.0000247544     0.0000067986
+14 O     0.0000015858     0.0000090665     0.0000099925
+15 O     0.0000007775     0.0000101895    -0.0000060711
+16 H     0.0000028433    -0.0000040137    -0.0000053855
+17 H    -0.0000051047     0.0000046913    -0.0000017182
+18 N     0.0000039030    -0.0000411497    -0.0000161371
+19 N    -0.0000117281    -0.0000043500     0.0000150007
+20 C    -0.0000072451     0.0000029604     0.0000035337
+21 C     0.0000135964     0.0000060231    -0.0000263748
+22 N     0.0000188700     0.0000252375    -0.0000043414
+23 C    -0.0000115599     0.0000052474    -0.0000142004
+24 C     0.0000101857     0.0000110471     0.0000205520
+25 C     0.0000107439    -0.0000043546    -0.0000062382
+26 C    -0.0000033716     0.0000042107    -0.0000011334
+27 H    -0.0000049459    -0.0000045850    -0.0000053665
+28 H     0.0000033471     0.0000067098    -0.0000013262
+29 H     0.0000049990     0.0000019644     0.0000007170
+30 H     0.0000096624     0.0000056386    -0.0000019798
+31 H     0.0004421988    -0.0001638781     0.0003986340
+32 H    -0.0000057448    -0.0000001073     0.0000006672
+----------------------------------------------
+cycle 10: E = -1317.20821901  dE = -6.61028e-07  norm(grad) = 0.000871586
+#INFO: **** input file is <run-dir>/repo/dft/revision/proton_scan.py ****
+"""
+Relaxed scan of the proton coordinate of the BTPC ion pair (revision item 2, R2's "proton-transfer equilibrium").
+
+The H4N...O1 distance (case 'proton' block: H, donor_N, acceptor_O) is held at each target value with a geomeTRIC
+'$set distance' constraint and every other coordinate is relaxed at the level of record (rev_common: B3LYP/
+6-311++G(d,p), density fitting, grid level 4; IEF-PCM water with Lebedev order 29 when --solvent/the case asks for
+it).  Each point then gets a tight single point (conv_tol 1e-10) at its optimised geometry for the energy, the
+Mulliken and Loewdin charges of the picrate (H4N counted separately), the frontier orbitals and the dipole.
+
+Chains (independent, so they can run as separate jobs in parallel):
+  up       from the stored minimum outward: grid points with r(H...O) > r0, ascending (toward 1.70 A)
+  down     from the stored minimum inward:  grid points with r(H...O) < r0, descending to --down-to
+  neutral  from a neutral start (H4N put on O1, O1-H 0.98 A along the O1->N4 line): grid points <= --neutral-to,
+           ascending; it overlaps 'down', so a jump between the two branches (hysteresis) shows up
+Each chain starting at the minimum also records the free minimum ('min', a single point at the start geometry).
+Default grid (A): 1.70 1.60 1.52 1.46 1.40 1.34 1.28 1.23 1.18 1.13 1.08 1.03 0.98 (finer near the gas minimum,
+r0 = 1.437 A, and through the transfer region, where r(N-H) = r(H...O) near 1.24 A).
+
+Usage:
+  python dft/revision/proton_scan.py --job ID --out DIR [--case btpc_gas] [--chains up,down,neutral]
+         [--solvent gas|water|<eps>] [--start XYZ] [--points 1.70,...] [--down-to 1.08] [--neutral-to 1.28]
+         [--xc b3lyp] [--disp d3bj] [--maxsteps 100] [--smoke]
+Outputs in DIR: result.json (one item per point), log.txt, profile.csv, scan.xyz (final geometries, by r),
+points/<label>.xyz, traj/<label>.xyz (every optimisation step), pyscf/<label>.log, chk/<label>.chk.
+Restart: finished points are skipped; an interrupted point resumes from the last geometry in traj/<label>.xyz
+with its own checkpoint as the SCF guess.  An optimisation that hits --maxsteps without meeting the criteria is
+accepted only on negligible forces (constraint-projected max/rms gradient below the Gaussian thresholds and
+|dE| < 1e-5 Ha over the last 5 steps, the rule used for btpc_pcm); otherwise the job fails, and a rerun continues
+from the last geometry.
+--smoke: STO-3G, grid 2, Lebedev 17, loose criteria, 3 steps per point, one point per chain; not for numbers.
+
+Also the shared optimisation helpers for neutral_start.py (relax, place_H, measure, analyse, kabsch_rmsd).
+"""
+import sys, pathlib, argparse, json, time, gc
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import rev_common as rc          # first: pins the thread pools
+import numpy as np
+
+DEFAULT_GRID = (1.70, 1.60, 1.52, 1.46, 1.40, 1.34, 1.28, 1.23, 1.18, 1.13, 1.08, 1.03, 0.98)
+# geomeTRIC defaults = Gaussian's default criteria (dft/optimize.py uses these for every published geometry)
+GAU = dict(convergence_energy=1e-6, convergence_grms=3e-4, convergence_gmax=4.5e-4,
+           convergence_drms=1.2e-3, convergence_dmax=1.8e-3)
+GAU_LOOSE = dict(convergence_energy=1e-6, convergence_grms=1.7e-3, convergence_gmax=2.5e-3,
+                 convergence_drms=6.7e-3, convergence_dmax=1.0e-2)
+ENFORCE_AU = 0.1      # geomeTRIC 'enforce': constraints held exactly once within 0.1 a.u. of the target
+NEGLIGIBLE = dict(gmax=4.5e-4, grms=3.0e-4, dE=1e-5, window=5)
+
+
+# ---------------------------------------------------------------- geometry helpers
+def proton_idx(case):
+    p = case.get('proton') or {}
+    if not {'H', 'donor_N', 'acceptor_O'} <= set(p):
+        raise SystemExit(f"case {case['name']} has no 'proton' block (H, donor_N, acceptor_O)")
+    return int(p['H']), int(p['donor_N']), int(p['acceptor_O'])
+
+
+def short_label(lab):
+    return lab.split('#')[0]
+
+
+def proton_labels(case):
+    H, N, O = proton_idx(case)
+    labs = case.get('cif_labels')
+    if not labs:
+        return {'H': f'atom{H}', 'N': f'atom{N}', 'O': f'atom{O}'}
+    return {'H': short_label(labs[H]), 'N': short_label(labs[N]), 'O': short_label(labs[O])}
+
+
+def measure(xyz, H, N, O):
+    """r(N-H), r(H...O), r(N...O) in A, the N-H...O angle in degrees, delta = r(N-H) - r(H...O)."""
+    xyz = np.asarray(xyz, float)
+    rNH = float(np.linalg.norm(xyz[H] - xyz[N])); rHO = float(np.linalg.norm(xyz[H] - xyz[O]))
+    rNO = float(np.linalg.norm(xyz[N] - xyz[O]))
+    v1, v2 = xyz[N] - xyz[H], xyz[O] - xyz[H]
+    ang = float(np.degrees(np.arccos(np.clip(np.dot(v1, v2) / np.linalg.norm(v1) / np.linalg.norm(v2), -1, 1))))
+    return {'r_NH_A': rNH, 'r_HO_A': rHO, 'r_NO_A': rNO, 'NHO_deg': ang, 'delta_A': rNH - rHO}
+
+
+def place_H(xyz, H, O, r, toward=None):
+    """Copy of xyz with H at distance r (A) from O: along the current O->H direction, or along O->toward."""
+    x = np.array(xyz, float)
+    d = (x[toward] if toward is not None else x[H]) - x[O]
+    x[H] = x[O] + r * d / np.linalg.norm(d)
+    return x
+
+
+def read_frames(path):
+    """All frames of a multi-frame XYZ file: list of (symbols, coords, comment)."""
+    lines = open(path).read().splitlines()
+    out, i = [], 0
+    while i < len(lines):
+        if not lines[i].strip():
+            i += 1; continue
+        n = int(lines[i]); comment = lines[i + 1] if i + 1 < len(lines) else ''
+        block = lines[i + 2:i + 2 + n]
+        if len(block) < n:
+            break                                   # truncated last frame (killed while writing)
+        try:
+            syms = [b.split()[0] for b in block]
+            xyz = np.array([[float(v) for v in b.split()[1:4]] for b in block])
+        except (ValueError, IndexError):
+            break
+        out.append((syms, xyz, comment)); i += 2 + n
+    return out
+
+
+def append_frame(path, syms, xyz, comment):
+    with open(path, 'a') as f:
+        f.write(f'{len(syms)}\n{comment}\n' + ''.join(f'{s:2s} {a:14.8f} {b:14.8f} {c:14.8f}\n'
+                                                       for s, (a, b, c) in zip(syms, xyz)))
+        f.flush()
+
+
+def kabsch_rmsd(A, B, idx=None, w=None):
+    """RMSD (A) between coordinate sets after optimal superposition (Kabsch) of the atoms idx (default all),
+    optionally mass-weighted.  Returns (rmsd, B aligned onto A)."""
+    A = np.asarray(A, float); B = np.asarray(B, float)
+    idx = np.arange(len(A)) if idx is None else np.asarray(idx)
+    w = np.ones(len(A)) if w is None else np.asarray(w, float)
+    wa = w[idx] / w[idx].sum()
+    ca, cb = (A[idx] * wa[:, None]).sum(0), (B[idx] * wa[:, None]).sum(0)
+    P, Q = B[idx] - cb, A[idx] - ca
+    U, S, Vt = np.linalg.svd((P * wa[:, None]).T @ Q)
+    d = np.sign(np.linalg.det(U @ Vt))
+    R = U @ np.diag([1, 1, d]) @ Vt
+    Bal = (B - cb) @ R + ca
+    rmsd = float(np.sqrt((wa * ((Bal[idx] - A[idx]) ** 2).sum(1)).sum()))
+    return rmsd, Bal
+
+
+def stored_minimum(case):
+    """molecules/<mol>/results/<case>/opt.xyz, the published (or pipeline) minimum of the case."""
+    p = rc.find_case_file(case['name']).parent.parent / 'results' / case['name'] / 'opt.xyz'
+    return p if p.exists() else None
+
+
+# ---------------------------------------------------------------- level of theory
+def level_of_theory(args, case_solvent):
+    """Settings of one run.  Production values are the defaults; --smoke reduces them."""
+    smoke = bool(args.smoke)
+    solvent = case_solvent
+    if getattr(args, 'solvent', None) is not None:
+        solvent = None if str(args.solvent).lower() in ('gas', 'none', '') else args.solvent
+    eps = rc.solvent_eps(solvent)
+    L = {'xc': args.xc, 'disp': args.disp, 'basis': 'sto-3g' if smoke else rc.BASIS,
+         'grid_level': 2 if smoke else rc.GRID_LEVEL,
+         'pcm_lebedev_order': (17 if smoke else rc.PCM_LEBEDEV_ORDER),
+         'solvent': solvent, 'eps': eps, 'pcm_method': rc.PCM_METHOD if eps is not None else None,
+         'density_fit': True, 'auxbasis': 'PySCF default (aug-cc-pVTZ-JKFIT for 6-311++G(d,p))',
+         'conv_tol_opt': 1e-6 if smoke else (rc.CONV_TOL_OPT_PCM if eps is not None else rc.CONV_TOL_OPT_GAS),
+         'conv_tol_sp': 1e-8 if smoke else rc.CONV_TOL_SP, 'max_cycle': rc.MAX_CYCLE,
+         'opt_engine': 'geomeTRIC (TRIC coordinates) via pyscf.geomopt.geometric_solver',
+         'opt_criteria': dict(GAU_LOOSE if smoke else GAU),
+         'opt_criteria_name': 'GAU_LOOSE (smoke)' if smoke else 'GAU (Gaussian defaults, as dft/optimize.py)',
+         'maxsteps': args.maxsteps or (3 if smoke else 100), 'constraint_enforce_au': ENFORCE_AU,
+         'accept_unconverged': smoke, 'negligible_force_rule': NEGLIGIBLE}
+    return L
+
+
+def make_mol_mf(case, syms, xyz, L, conv_tol, chkfile, output):
+    mol = rc.build_mol(list(zip(syms, [tuple(v) for v in xyz])), case['charge'], case['spin'], basis=L['basis'],
+                       basis_overrides=case.get('basis_overrides'), verbose=4, output=output)
+    mf = rc.make_mf(mol, xc=L['xc'], disp=L['disp'], solvent=L['eps'], conv_tol=conv_tol,
+                    grid_level=L['grid_level'], lebedev_order=L['pcm_lebedev_order'], chkfile=chkfile,
+                    max_cycle=L['max_cycle'])
+    return mol, mf
+
+
+def analyse(mf, case):
+    """Charges (Mulliken, Loewdin) of the picrate, of the cation core and of the transferring H; frontier orbitals
+    and their Mulliken composition on the case's fragments; dipole moment."""
+    H, N, O = proton_idx(case)
+    fr = rc.fragments(case)
+    anion = [a for a in fr.get('anion', []) if a != H]
+    cation = [a for a in fr.get('cation', []) if a != H]
+    pops = rc.fragment_populations(mf, {'picrate': anion, 'cation_core': cation, 'H': [H]})
+    charges = {}
+    for m, d in pops.items():
+        q = {k: round(v['charge'], 5) for k, v in d.items()}
+        q['picrate_plus_H'] = round(q['picrate'] + q['H'], 5)
+        q['cation_with_H'] = round(q['cation_core'] + q['H'], 5)
+        charges[m] = q
+    occ, e = mf.mo_occ, mf.mo_energy
+    n = int((occ > 0).sum())
+    out = {'charges': charges, 'HOMO_eV': float(e[n - 1] * rc.HARTREE_EV), 'LUMO_eV': float(e[n] * rc.HARTREE_EV),
+           'gap_eV': float((e[n] - e[n - 1]) * rc.HARTREE_EV)}
+    try:
+        comp = rc.fragment_composition(mf, fr, methods=('mulliken',))
+        out['frontier_composition_mulliken_pct'] = {k: v['mulliken'] for k, v in comp.items()}
+    except Exception as ex:                                  # pragma: no cover
+        out['frontier_composition_mulliken_pct'] = f'failed: {ex}'
+    try:
+        out['dipole_debye'] = [round(float(v), 4) for v in mf.dip_moment(unit='Debye', verbose=0)]
+    except Exception:
+        pass
+    return out
+
+
+def _project_constraint(g, xyz_bohr, pair):
+    """Cartesian gradient with the component along the constrained distance removed."""
+    if pair is None:
+        return g
+    i, j = pair
+    c = np.zeros_like(g)
+    e = xyz_bohr[i] - xyz_bohr[j]; e /= np.linalg.norm(e)
+    c[i], c[j] = e, -e
+    return g - (g * c).sum() / (c * c).sum() * c
+
+
+# ---------------------------------------------------------------- one (constrained) optimisation, restartable
+def relax(job, key, case, L, syms, start_xyz, constraint=None, guess_chk=None, extra=None):
+    """Optimise from start_xyz.  constraint = (i, j, r_A): distance i-j held at r_A (geomeTRIC '$set').
+    Stores job item `key` (status running while optimising, done at the end) and returns the record."""
+    from pyscf.geomopt import geometric_solver
+    H, N, O = proton_idx(case)
+    for sub in ('traj', 'points', 'pyscf'):
+        (job.out / sub).mkdir(exist_ok=True)
+    chk = job.chk_dir / f'{key}.chk'
+    traj = job.out / 'traj' / f'{key}.xyz'
+    prev = job.get(key) or {}
+    hist = list(prev.get('history', [])) if prev.get('status') == 'running' else []
+    rec = dict(extra or {})
+    rec.update({'key': key, 'constraint': None, 'history': hist,
+                'restarted_from_step': None, 'wall_s': prev.get('wall_s', 0.0) if hist else 0.0})
+    start = np.array(start_xyz, float)
+    if hist and traj.exists():
+        frames = read_frames(traj)
+        if frames:
+            start = frames[-1][1]
+            rec['restarted_from_step'] = len(hist)
+            job.log(f'{key}: resuming from step {len(hist)} (last frame of {traj.name})')
+    elif traj.exists():
+        traj.unlink()
+    if constraint is not None:
+        i, j, r = constraint
+        start = place_H(start, i, j, r) if i == H and j == O else start
+        rec['constraint'] = {'type': 'distance', 'atoms_0based': [i, j], 'target_A': r}
+    rec['start'] = measure(start, H, N, O)
+    mol, mf = make_mol_mf(case, syms, start, L, L['conv_tol_opt'], chk, job.out / 'pyscf' / f'{key}.log')
+    if 'scf_settings' not in job.r['settings']:
+        job.r['settings']['scf_settings'] = rc.settings_of(mf); job.save()
+    rec['scf_settings'] = rc.settings_of(mf)
+    job.put(key, rec, status='running')
+    g0 = chk if chk.exists() else guess_chk
+    t_all = time.time()
+    w = rc.run_scf(mf, chk_guess=g0, log=job.log)
+    job.log(f'{key}: start SCF E = {mf.e_tot:.8f} ({mf._cycles} cycles, {w:.0f} s); '
+            f"r(N-H) {rec['start']['r_NH_A']:.3f}, r(H...O) {rec['start']['r_HO_A']:.3f} A")
+    params = dict(L['opt_criteria'])
+    cons_file = None
+    if constraint is not None:
+        i, j, r = constraint
+        cons_file = job.chk_dir / f'{key}.constraints'
+        cons_file.write_text(f'$set\ndistance {i + 1} {j + 1} {r:.6f}\n')
+        params['enforce'] = L['constraint_enforce_au']
+    pair = (constraint[0], constraint[1]) if constraint is not None else None
+    t_step = [time.time()]
+
+    def cb(env):
+        m = env['mol']; e = float(env['energy']); g = np.asarray(env['gradients']).reshape(-1, 3)
+        xb = m.atom_coords(); xa = m.atom_coords(unit='Angstrom')
+        gp = _project_constraint(g, xb, pair)
+        meas = measure(xa, H, N, O)
+        now = time.time()
+        h = {'step': len(hist), 'E_Ha': e, 'gmax': float(np.abs(gp).max()), 'grms': float(np.sqrt((gp ** 2).mean())),
+             'r_NH_A': round(meas['r_NH_A'], 5), 'r_HO_A': round(meas['r_HO_A'], 5),
+             'r_NO_A': round(meas['r_NO_A'], 5), 'wall_s': round(now - t_step[0], 1)}
+        t_step[0] = now
+        hist.append(h)
+        append_frame(traj, syms, xa, f"step {h['step']} E = {e:.10f} Ha gmax {h['gmax']:.2e} grms {h['grms']:.2e} "
+                                     f"r_NH {h['r_NH_A']:.4f} r_HO {h['r_HO_A']:.4f}")
+        rec['wall_s'] = round(rec.get('wall_s', 0.0) + h['wall_s'], 1)
+        job.put(key, rec, status='running')
+        job.log(f"{key}: step {h['step']:3d} E = {e:.8f} gmax {h['gmax']:.2e} grms {h['grms']:.2e} "
+                f"r(N-H) {h['r_NH_A']:.3f} r(H...O) {h['r_HO_A']:.3f} r(N...O) {h['r_NO_A']:.3f} ({h['wall_s']:.0f} s)")
+
+    n0 = len(hist)
+    conv, mol_opt = geometric_solver.kernel(mf, assert_convergence=True,
+                                            constraints=str(cons_file) if cons_file else None,
+                                            callback=cb, maxsteps=L['maxsteps'], **params)
+    steps_now = len(hist) - n0
+    rec['opt_steps'] = len(hist)
+    if conv:
+        rec['converged'] = True
+        rec['converged_on'] = f"geomeTRIC criteria ({L['opt_criteria_name']})"
+    else:
+        tail = hist[-NEGLIGIBLE['window']:]
+        ok = (len(tail) == NEGLIGIBLE['window'] and tail[-1]['gmax'] <= NEGLIGIBLE['gmax']
+              and tail[-1]['grms'] <= NEGLIGIBLE['grms']
+              and max(t['E_Ha'] for t in tail) - min(t['E_Ha'] for t in tail) < NEGLIGIBLE['dE'])
+        if ok:
+            rec['converged'] = True
+            rec['converged_on'] = (f"negligible forces after {len(hist)} steps (max {tail[-1]['gmax']:.2e}, "
+                                   f"rms {tail[-1]['grms']:.2e} Ha/Bohr; Gaussian thresholds 4.5e-4 / 3.0e-4; "
+                                   f"|dE| < 1e-5 Ha over the last {NEGLIGIBLE['window']} steps)")
+        elif L['accept_unconverged']:
+            rec['converged'] = False
+            rec['converged_on'] = f'NOT converged (smoke: accepted after {steps_now} steps)'
+        else:
+            job.put(key, rec, status='running')
+            raise RuntimeError(f'{key}: optimisation not converged in {L["maxsteps"]} steps '
+                               f'(last gmax {hist[-1]["gmax"]:.2e}, grms {hist[-1]["grms"]:.2e}); '
+                               f'rerun the same command to continue from the last geometry')
+    xyz_f = mol_opt.atom_coords(unit='Angstrom')
+    mol.stdout.close()
+    del mf; gc.collect()
+
+    # tight single point at the optimised geometry
+    mol2, mf2 = make_mol_mf(case, syms, xyz_f, L, L['conv_tol_sp'], chk, job.out / 'pyscf' / f'{key}.log')
+    w2 = rc.run_scf(mf2, chk_guess=chk, log=None)
+    meas = measure(xyz_f, H, N, O)
+    rec.update(meas)
+    if constraint is not None:
+        rec['constraint']['final_A'] = meas['r_HO_A'] if constraint[:2] == (H, O) else None
+        rec['constraint']['deviation_A'] = (meas['r_HO_A'] - constraint[2]) if constraint[:2] == (H, O) else None
+    rec.update({'E_Ha': float(mf2.e_tot), 'E_opt_last_Ha': hist[-1]['E_Ha'] if hist else None,
+                'sp_scf_cycles': mf2._cycles, 'sp_wall_s': round(w2, 1),
+                'wall_s': round(rec.get('wall_s', 0.0) + w + w2, 1)})
+    if hasattr(mf2, 'with_solvent') and getattr(mf2.with_solvent, 'e', None) is not None:
+        rec['E_solvation_Ha'] = float(mf2.with_solvent.e)
+    rec.update(analyse(mf2, case))
+    rec.update(rc.runtime_sizes(mf2))
+    pt = job.out / 'points' / f'{key}.xyz'
+    rc.write_xyz(pt, syms, xyz_f, f"{key} E = {mf2.e_tot:.10f} Ha r_NH {meas['r_NH_A']:.4f} r_HO {meas['r_HO_A']:.4f}")
+    rec['xyz'] = str(pt.relative_to(job.out)); rec['chk'] = str(chk.relative_to(job.out))
+    rec['peak_rss_mb'] = round(rc.peak_rss_mb(), 1)
+    mol2.stdout.close()
+    del mf2; gc.collect()
+    job.r['timings'][key] = rec['wall_s']
+    job.put(key, rec)
+    q = rec['charges']
+    job.log(f"{key}: done in {len(hist)} steps ({time.time() - t_all:.0f} s this run): E = {rec['E_Ha']:.8f} Ha, "
+            f"r(N-H) {meas['r_NH_A']:.3f}, r(H...O) {meas['r_HO_A']:.3f}, r(N...O) {meas['r_NO_A']:.3f} A; "
+            f"q(picrate) Mulliken {q['mulliken']['picrate']:+.3f}, Loewdin {q['lowdin']['picrate']:+.3f}; "
+            f"{rec['converged_on']}")
+    return rec
+
+
+def single_point(job, key, case, L, syms, xyz, guess_chk=None, extra=None):
+    """Tight single point (the free minimum of a chain), stored as item `key`."""
+    H, N, O = proton_idx(case)
+    for sub in ('points', 'pyscf'):
+        (job.out / sub).mkdir(exist_ok=True)
+    chk = job.chk_dir / f'{key}.chk'
+    mol, mf = make_mol_mf(case, syms, xyz, L, L['conv_tol_sp'], chk, job.out / 'pyscf' / f'{key}.log')
+    if 'scf_settings' not in job.r['settings']:
+        job.r['settings']['scf_settings'] = rc.settings_of(mf); job.save()
+    rec = dict(extra or {}); rec.update({'key': key, 'constraint': None, 'opt_steps': 0, 'converged': True,
+                                          'converged_on': 'stored minimum (single point, no optimisation)',
+                                          'scf_settings': rc.settings_of(mf)})
+    job.put(key, rec, status='running')
+    w = rc.run_scf(mf, chk_guess=chk if chk.exists() else guess_chk, log=job.log)
+    rec.update(measure(xyz, H, N, O))
+    rec.update({'E_Ha': float(mf.e_tot), 'sp_scf_cycles': mf._cycles, 'sp_wall_s': round(w, 1), 'wall_s': round(w, 1)})
+    if hasattr(mf, 'with_solvent') and getattr(mf.with_solvent, 'e', None) is not None:
+        rec['E_solvation_Ha'] = float(mf.with_solvent.e)
+    rec.update(analyse(mf, case)); rec.update(rc.runtime_sizes(mf))
+    pt = job.out / 'points' / f'{key}.xyz'
+    rc.write_xyz(pt, syms, xyz, f"{key} E = {mf.e_tot:.10f} Ha (stored minimum)")
+    rec['xyz'] = str(pt.relative_to(job.out)); rec['chk'] = str(chk.relative_to(job.out))
+    mol.stdout.close()
+    del mf; gc.collect()
+    job.r['timings'][key] = rec['wall_s']
+    job.put(key, rec)
+    job.log(f"{key}: E = {rec['E_Ha']:.10f} Ha ({rec['sp_scf_cycles']} cycles, {w:.0f} s), "
+            f"r(H...O) {rec['r_HO_A']:.4f} A")
+    return rec
+
+
+# ---------------------------------------------------------------- the scan
+def parser():
+    p = rc.add_common_args(argparse.ArgumentParser(description=__doc__.split('\n')[1]))
+    p.add_argument('--case', default='btpc_gas', help='case name (molecules/*/cases/<case>.json); default btpc_gas')
+    p.add_argument('--chains', default='up,down,neutral', help='comma list of up, down, neutral')
+    p.add_argument('--solvent', default=None,
+                   help="override the case's model: gas, water or a dielectric constant (IEF-PCM)")
+    p.add_argument('--start', default=None, help='start geometry (XYZ); default the stored minimum of the case')
+    p.add_argument('--points', default=None, help='comma list of r(H...O) targets in A (default grid, see doc)')
+    p.add_argument('--down-to', type=float, default=1.08, help="last (smallest) target of the 'down' chain")
+    p.add_argument('--neutral-to', type=float, default=1.28, help="last (largest) target of the 'neutral' chain")
+    p.add_argument('--neutral-r', type=float, default=0.98, help='O1-H distance of the neutral start (A)')
+    p.add_argument('--xc', default=rc.XC, help='functional (default b3lyp, the level of record)')
+    p.add_argument('--disp', default=None, help="dispersion correction, e.g. d3bj (default none, as published)")
+    p.add_argument('--maxsteps', type=int, default=None, help='optimisation steps per point (default 100)')
+    return p
+
+
+def chain_targets(chain, r0, grid, args):
+    eps = 1e-3
+    if chain == 'up':
+        return sorted(r for r in grid if r > r0 + eps)
+    if chain == 'down':
+        return sorted((r for r in grid if r < r0 - eps and r >= args.down_to - 1e-9), reverse=True)
+    if chain == 'neutral':
+        return sorted(r for r in grid if r <= args.neutral_to + 1e-9)
+    raise SystemExit(f'unknown chain {chain!r} (up, down, neutral)')
+
+
+def summarise(job, case, syms):
+    """profile.csv, scan.xyz and job.r['summary'] from the finished points (lowest energy per target first)."""
+    items = [it for it in job.r['items'].values() if it.get('status') == 'done' and it.get('E_Ha') is not None]
+    if not items:
+        return
+    ref = [it for it in items if it.get('chain') == 'min']
+    e_ref = ref[0]['E_Ha'] if ref else min(it['E_Ha'] for it in items)
+    items.sort(key=lambda it: (-it['r_HO_A'], it['E_Ha']))
+    rows = []
+    for it in items:
+        q = it.get('charges', {})
+        rows.append({'label': it['key'], 'chain': it.get('chain'), 'r_target_A': it.get('r_target_A'),
+                     'r_HO_A': round(it['r_HO_A'], 4), 'r_NH_A': round(it['r_NH_A'], 4),
+                     'r_NO_A': round(it['r_NO_A'], 4), 'NHO_deg': round(it['NHO_deg'], 1),
+                     'E_Ha': it['E_Ha'], 'dE_kcal': round((it['E_Ha'] - e_ref) * rc.HARTREE_KCAL, 3),
+                     'q_picrate_mulliken': q.get('mulliken', {}).get('picrate'),
+                     'q_picrate_lowdin': q.get('lowdin', {}).get('picrate'),
+                     'q_H_mulliken': q.get('mulliken', {}).get('H'), 'q_H_lowdin': q.get('lowdin', {}).get('H'),
+                     'HOMO_eV': round(it.get('HOMO_eV', float('nan')), 4),
+                     'LUMO_eV': round(it.get('LUMO_eV', float('nan')), 4),
+                     'LUMO_on_anion_pct': ((it.get('frontier_composition_mulliken_pct') or {}).get('LUMO') or {}).get('anion'),
+                     'opt_steps': it.get('opt_steps'), 'converged': it.get('converged')})
+    cols = list(rows[0])
+    with open(job.out / 'profile.csv', 'w') as f:
+        f.write(','.join(cols) + '\n')
+        for r in rows:
+            f.write(','.join('' if r[c] is None else str(r[c]) for c in cols) + '\n')
+    tmp = job.out / 'scan.xyz.tmp'
+    tmp.unlink(missing_ok=True)
+    for it in items:
+        s, x, _ = read_frames(job.out / it['xyz'])[0]
+        append_frame(tmp, s, x, f"{it['key']} E = {it['E_Ha']:.10f} Ha r_HO {it['r_HO_A']:.4f} r_NH {it['r_NH_A']:.4f}")
+    tmp.replace(job.out / 'scan.xyz')
+    # hysteresis: same target reached from two chains
+    by_t = {}
+    for it in items:
+        if it.get('r_target_A') is not None:
+            by_t.setdefault(round(it['r_target_A'], 3), []).append(it)
+    hyst = {f'{t:.3f}': {'chains': [i['chain'] for i in v],
+                         'dE_kcal': round((max(i['E_Ha'] for i in v) - min(i['E_Ha'] for i in v)) * rc.HARTREE_KCAL, 3)}
+            for t, v in sorted(by_t.items()) if len(v) > 1}
+    job.r['summary'] = {'E_ref_Ha': e_ref, 'E_ref': 'min point' if ref else 'lowest point', 'rows': rows,
+                        'hysteresis': hyst}
+    job.save()
+
+
+def run(job, args):
+    case = rc.load_case(args.case)
+    L = level_of_theory(args, case.get('solvent'))
+    H, N, O = proton_idx(case)
+    labs = proton_labels(case)
+    grid = [float(v) for v in args.points.split(',')] if args.points else list(DEFAULT_GRID)
+    start_path = pathlib.Path(args.start) if args.start else stored_minimum(case)
+    if start_path is None or not start_path.exists():
+        raise SystemExit(f"no start geometry: {case['name']} has no stored opt.xyz; pass --start")
+    syms, x0 = rc.read_xyz(start_path)
+    m0 = measure(x0, H, N, O)
+    r0 = m0['r_HO_A']
+    if args.smoke and not args.points:
+        grid = [round(r0 + 0.06, 3), round(r0 - 0.08, 3), args.neutral_r]
+        args.down_to, args.neutral_to = round(r0 - 0.08, 3) - 1e-6, args.neutral_r
+    chains = [c.strip() for c in args.chains.split(',') if c.strip()]
+    plan = {c: chain_targets(c, r0, grid, args) for c in chains}
+    job.r['settings'].update({k: v for k, v in L.items()})
+    job.r['settings'].update({'case': case['name'], 'scan_coordinate': f"r({labs['H']}...{labs['O']})",
+                              'proton_atoms_0based': {'H': H, 'donor_N': N, 'acceptor_O': O}, 'labels': labs,
+                              'grid_A': grid, 'chains': plan, 'down_to': args.down_to, 'neutral_to': args.neutral_to,
+                              'neutral_start_r_OH_A': args.neutral_r, 'r0_A': r0})
+    job.input_file('case', rc.ROOT / case['case_file'])
+    job.input_file('start_geometry', start_path)
+    job.save()
+    job.log(f"case {case['name']} ({L['solvent'] or 'gas phase'}), start {start_path.name}: "
+            f"r({labs['N']}-{labs['H']}) {m0['r_NH_A']:.3f}, r({labs['H']}...{labs['O']}) {r0:.3f}, "
+            f"r({labs['N']}...{labs['O']}) {m0['r_NO_A']:.3f} A; chains {plan}")
+    if args.smoke:
+        job.log('SMOKE settings: STO-3G, grid 2, Lebedev 17, loose criteria -- not for production numbers')
+
+    for chain in chains:
+        targets = plan[chain]
+        if chain in ('up', 'down'):
+            if not job.done('min'):
+                single_point(job, 'min', case, L, syms, x0, extra={'chain': 'min', 'r_target_A': None})
+            prev_xyz = x0; prev_chk = job.chk_dir / 'min.chk'
+        else:
+            prev_xyz = place_H(x0, H, O, args.neutral_r, toward=N)       # neutral start: H on the O1->N4 line
+            prev_chk = None
+        for r in targets:
+            key = f'{chain}_{r:.3f}'
+            if job.done(key):
+                it = job.get(key)
+                job.log(f"{key}: done (E = {it['E_Ha']:.8f}); skipped")
+                prev_xyz = read_frames(job.out / it['xyz'])[0][1]; prev_chk = job.out / it['chk']
+                continue
+            start = place_H(prev_xyz, H, O, r)
+            relax(job, key, case, L, syms, start, constraint=(H, O, r), guess_chk=prev_chk,
+                  extra={'chain': chain, 'r_target_A': r})
+            it = job.get(key)
+            prev_xyz = read_frames(job.out / it['xyz'])[0][1]; prev_chk = job.out / it['chk']
+        summarise(job, case, syms)
+    summarise(job, case, syms)
+    s = job.r.get('summary') or {}
+    for row in s.get('rows', []):
+        job.log(f"  {row['label']:>14s} r(H...O) {row['r_HO_A']:.3f} r(N-H) {row['r_NH_A']:.3f} "
+                f"dE {row['dE_kcal']:+8.3f} kcal/mol  q(pic) M {row['q_picrate_mulliken']:+.3f} "
+                f"L {row['q_picrate_lowdin']:+.3f}")
+    if s.get('hysteresis'):
+        job.log(f"hysteresis between chains: {s['hysteresis']}")
+    return True
+
+
+if __name__ == '__main__':
+    rc.install_sigterm_handler()
+    rc.main_wrapper(parser, run, __file__)
+#INFO: ******************** input file end ********************
+
+
+System: uname_result(system='Linux', node='<vm-1>', release='7.0.0-1017-gcp', version='#19~24.04.1-Ubuntu SMP PREEMPT Thu Oct 29 22:34:06 UTC 2026', machine='x86_64')  Threads 4
+Python 3.11.16 (main, Sep  2 2026, 23:39:52) [GCC 15.3.0]
+numpy 2.4.6  scipy 1.17.1  h5py 3.16.0
+Date: Fri Nov 20 23:55:28 2026
+PySCF version 2.14.0
+PySCF path  <run-dir>/env/lib/python3.11/site-packages/pyscf
+
+[ENV] PYSCF_TMPDIR <run-dir>/scratch/scan_gas_up
+[CONFIG] conf_file None
+[INPUT] verbose = 4
+[INPUT] num. atoms = 33
+[INPUT] num. electrons = 178
+[INPUT] charge = 0
+[INPUT] spin (= nelec alpha-beta = 2S) = 0
+[INPUT] symmetry False subgroup None
+[INPUT] Mole.unit = angstrom
+[INPUT] Symbol           X                Y                Z      unit          X                Y                Z       unit  Magmom
+[INPUT]  1 O     -0.752494352746  -0.145722804054   0.399568442489 AA   -1.422008236972  -0.275376189766   0.755074924323 Bohr   0.0
+[INPUT]  2 N     -0.386413455416   2.472881305744   1.665029136804 AA   -0.730215601582   4.673068406412   3.146449057981 Bohr   0.0
+[INPUT]  3 O      0.538630913160   1.698701261312   1.916298515070 AA    1.017864908097   3.210080151334   3.621279366393 Bohr   0.0
+[INPUT]  4 C     -1.192033465757   2.223509474277   0.472726568953 AA   -2.252616781598   4.201823941758   0.893323747126 Bohr   0.0
+[INPUT]  5 C     -1.258848921993   0.895275080415  -0.098216993037 AA   -2.378879694771   1.691824708133  -0.185603217618 Bohr   0.0
+[INPUT]  6 C     -2.061788044980   0.838806046257  -1.301305902885 AA   -3.896214731915   1.585113699055  -2.459111760733 Bohr   0.0
+[INPUT]  7 C     -2.761855542068   1.905416142179  -1.812920822545 AA   -5.219150570122   3.600714662044  -3.425923840132 Bohr   0.0
+[INPUT]  8 O     -0.655988800737   3.453031249625   2.350415901795 AA   -1.239639174174   6.525283361356   4.441642333215 Bohr   0.0
+[INPUT]  9 C     -2.658990291266   3.146627098919  -1.183388047047 AA   -5.024763418371   5.946263433091  -2.236279308004 Bohr   0.0
+[INPUT] 10 C     -1.882144163304   3.306166720925  -0.045118148819 AA   -3.556736995593   6.247749624699  -0.085260944514 Bohr   0.0
+[INPUT] 11 N     -2.158253310613  -0.429443407295  -2.035409337240 AA   -4.078507664494  -0.811530425788  -3.846366198766 Bohr   0.0
+[INPUT] 12 N     -3.369548105633   4.295538193131  -1.739258129876 AA   -6.367523083194   8.117390742626  -3.286721525389 Bohr   0.0
+[INPUT] 13 O     -4.043375102680   4.113503101380  -2.749524544162 AA   -7.640871562950   7.773394274158  -5.195848361235 Bohr   0.0
+[INPUT] 14 O     -3.252634527066   5.374009560843  -1.165390856271 AA   -6.146588439460  10.155406260788  -2.202269546424 Bohr   0.0
+[INPUT] 15 O     -3.246268581610  -0.726524637622  -2.513353765869 AA   -6.134558546023  -1.372932587855  -4.749550271636 Bohr   0.0
+[INPUT] 16 O     -1.139683549200  -1.102412160796  -2.162366129040 AA   -2.153689776661  -2.083257060295  -4.086279764922 Bohr   0.0
+[INPUT] 17 H     -1.811859185324   4.270687559918   0.437509595875 AA   -3.423917636540   8.070429851831   0.826773313072 Bohr   0.0
+[INPUT] 18 H     -3.373625068507   1.790024044690  -2.697039954545 AA   -6.375227426446   3.382655200850  -5.096666861100 Bohr   0.0
+[INPUT] 19 N      1.255792481147  -1.078127532027   1.535624019295 AA    2.373103858655  -2.037365762883   2.901908826772 Bohr   0.0
+[INPUT] 20 N      2.847798292291  -1.877627023032   2.635175846458 AA    5.381558830433  -3.548200837612   4.979760639874 Bohr   0.0
+[INPUT] 21 C      2.854417579840  -2.604880511448   1.469107624772 AA    5.394067471041  -4.922510753854   2.776211058329 Bohr   0.0
+[INPUT] 22 C      1.783423614938  -2.065125445379   0.739542200458 AA    3.370182196314  -3.902521504637   1.397532216424 Bohr   0.0
+[INPUT] 23 N      1.885925404686  -0.966087047291   2.660382834223 AA    3.563882506216  -1.825639931870   5.027394943175 Bohr   0.0
+[INPUT] 24 C      1.431948354047  -2.533056314027  -0.534391105116 AA    2.705990213670  -4.786782691612  -1.009852832072 Bohr   0.0
+[INPUT] 25 C      2.210921026499  -3.562054254083  -1.027273817202 AA    4.178035223126  -6.731306981059  -1.941266169449 Bohr   0.0
+[INPUT] 26 C      3.293905945864  -4.106771061691  -0.292046538655 AA    6.224580117760  -7.760672562885  -0.551887973684 Bohr   0.0
+[INPUT] 27 C      3.641526544200  -3.647268802255   0.965706712829 AA    6.881487843872  -6.892339138932   1.824921203901 Bohr   0.0
+[INPUT] 28 H      0.598954087627  -2.102793145839  -1.077339393014 AA    1.131859186804  -3.973703142248  -2.035876396001 Bohr   0.0
+[INPUT] 29 H      4.469078272826  -4.068822306991   1.521270652337 AA    8.445333964885  -7.688959809733   2.874784894256 Bohr   0.0
+[INPUT] 30 H      1.989749599051  -3.968899930174  -2.006355848232 AA    3.760081798669  -7.500133883834  -3.791463061578 Bohr   0.0
+[INPUT] 31 H      3.868226977512  -4.912908137951  -0.732720058968 AA    7.309889575151  -9.284050855875  -1.384640237424 Bohr   0.0
+[INPUT] 32 H      0.399987212882  -0.448612124703   1.243158568545 AA    0.755866285676  -0.847754051847   2.349229223956 Bohr   0.0
+[INPUT] 33 H      3.458786029850  -1.940255615020   3.437629483536 AA    6.536158319887  -3.666551724038   6.496178241612 Bohr   0.0
+
+nuclear repulsion = 2127.64103648845
+number of shells = 290
+number of NR pGTOs = 947
+number of NR cGTOs = 606
+basis = 6-311++g(d,p)
+ecp = {}
+CPU time:     17252.49
+
+
+******** <class 'pyscf.df.df_jk.DFRKS'> ********
+method = DFRKS
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-10
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/scan_gas_up/chk/up_1.460.chk
+max_memory 8000 MB (current use 655 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x7f167f8a77e0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x7f167f8a7740>
+small_rho_cutoff = 0
+Set gradient conv threshold to 1e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+init E= -1317.20821901466
+
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.249601090810643  LUMO = -0.123909760071208  gap/eV = 3.42024
+cycle= 1 E= -1317.20821901207  delta_E= 2.59e-09  |g|= 0.000125  |ddm|= 0.0014
+  HOMO = -0.249601500542497  LUMO = -0.123914067031932  gap/eV = 3.42013
+cycle= 2 E= -1317.20821898815  delta_E= 2.39e-08  |g|= 0.000376  |ddm|= 0.00407
+  HOMO = -0.249601144015127  LUMO = -0.123910651261549  gap/eV = 3.42021
+cycle= 3 E= -1317.20821901487  delta_E= -2.67e-08  |g|= 2.74e-05  |ddm|= 0.00302
+  HOMO = -0.249601306114801  LUMO = -0.123910702120162  gap/eV = 3.42022
+cycle= 4 E= -1317.20821901501  delta_E= -1.41e-10  |g|= 3.01e-06  |ddm|= 0.000193
+  HOMO = -0.249601229105746  LUMO = -0.123910733104141  gap/eV = 3.42021
+cycle= 5 E= -1317.20821901502  delta_E= -9.55e-12  |g|= 6.15e-07  |ddm|= 2.9e-05
+  HOMO = -0.249601229552038  LUMO = -0.123910762834495  gap/eV = 3.42021
+Extra cycle  E= -1317.20821901502  delta_E= 4.09e-12  |g|= 1.82e-06  |ddm|= 1.63e-05
+converged SCF energy = -1317.20821901502

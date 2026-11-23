@@ -1,0 +1,4 @@
+[2026-11-22 07:03:17 AM IST] job c0_btpcz_pcm_softmode (dft/revision/c0_case.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/c0_btpcz_pcm_softmode, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 07:03:17 AM IST] frequencies: soft-mode check at opt.xyz along the softest modes of <run-dir>/repo/molecules/btpcz/results/btpcz_gas/hessian.npy
+[2026-11-22 11:40:13 AM IST] frequencies: frequencies replaced by a soft-mode check (10 modes of hessian.npy): projected [62.5, 108.6, 150.1, 182.9, 237.2, 273.5, 343.1, 363.6, 409.6, 608.4] cm-1; no imaginary frequency in the soft subspace
+[2026-11-22 11:40:13 AM IST] job c0_btpcz_pcm_softmode finished (peak RSS 113 MB)

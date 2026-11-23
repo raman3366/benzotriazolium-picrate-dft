@@ -1,0 +1,8 @@
+
+===== queue: start c0_btpcz_gas_analysis attempt 1 at 2026-11-22T07:14:07+05:30 =====
+$ export PVBATCH=/bin/false; export DFT_MAX_MEMORY_MB=$(( ${MAX_MEMORY_MB:-8000} / 2 )) NO_AUTO_PCM=1; ./run_case.sh btpcz_gas $THREADS -- --from mwfn
+[run_case] btpcz_gas  threads=4  mem=4000MB  fd=autox2  2026-11-22T01:44:07+00:00
+[pipeline] mwfn: done (2.6 min) 
+[pipeline] plots: done (0.1 min) 
+[pipeline] render: FAILED (0.0 min) exit code 1, see logs/render.log
+[pipeline] report: done (0.0 min) 

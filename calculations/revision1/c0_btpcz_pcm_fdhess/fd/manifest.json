@@ -1,0 +1,8 @@
+{
+  "case": "btpcz_pcm",
+  "opt_xyz_sha256": "1c62d8ce2d4ca5402a87de37f12e0f40dd899a4475eeee713fd8b437f10acd06",
+  "step_bohr": 0.005,
+  "ncol": 99,
+  "grid_level": 4,
+  "pcm_lebedev_order": 29
+}

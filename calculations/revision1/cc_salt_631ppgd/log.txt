@@ -1,0 +1,11 @@
+[2026-11-22 04:35:26 PM IST] job cc_salt_631ppgd (dft/revision/cc_correction.py) on <vm-1>: threads 8, max_memory 22000 MB, scratch <run-dir>/scratch/cc_salt_631ppgd, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 04:35:26 PM IST] 1 geometries (salt); basis 6-31+g**; IEF-PCM eps 78.3553; FNO fractions of the virtual space 0.5
+[2026-11-22 04:40:12 PM IST] salt: E_HF = -1309.4591142065 Ha (15 cycles), nao 490; RI basis {'N': 'heavyaug-cc-pvdz-ri', 'C': 'heavyaug-cc-pvdz-ri', 'O': 'heavyaug-cc-pvdz-ri', 'H': 'heavyaug-cc-pvdz-ri'}; full-space MP2 for the NOs
+[2026-11-22 04:42:06 PM IST] salt: MP2 full space (RI) -3.86123665 Ha (113 s), 64 occ x 401 vir; NO sets [200]
+[2026-11-22 04:42:06 PM IST] salt|f0.500: FNO-CCSD(T) with 200 of 401 virtual NOs (97.34 % of the NO occupation, smallest kept 1.22e-03)
+[2026-11-22 04:43:06 PM IST]   DF-CCSD space: 64 occ x 200 vir, naux 1912; MP2 (same space, RI) -3.56562860 Ha; |F_offdiag| max oo/vv/ov 2.4e-07/1.7e-07/2.9e-07
+[2026-11-22 06:30:28 PM IST]   CCSD -3.57255144 Ha (6484 s); T1 0.0171, D1 0.0792, D2 0.2018
+[2026-11-23 05:06:02 AM IST]   (T) -0.14370706 Ha (38134 s); delta = CCSD(T) - MP2 = -0.15062990 Ha
+[2026-11-23 05:06:02 AM IST] salt|f0.500: delta_CCSD -0.00692284, delta_T -0.14370706, delta -0.15062990 Ha (with scaled (T) -0.16254391); MP2 truncation -0.295608 Ha (12.40 h)
+[2026-11-23 05:06:02 AM IST] salt: all fractions done (12.51 h)
+[2026-11-23 05:06:02 AM IST] job cc_salt_631ppgd finished (peak RSS 20905 MB)

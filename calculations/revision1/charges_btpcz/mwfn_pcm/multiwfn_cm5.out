@@ -1,0 +1,271 @@
+[95m Multiwfn -- A Multifunctional Wavefunction Analyzer
+[0m[32m Version 2026.11.13 (release date is the same as version name)
+[0m Developer: Tian Lu (Beijing Kein Research Center for Natural Sciences)
+ Multiwfn official website: http://sobereva.com/multiwfn
+ Multiwfn English forum: http://sobereva.com/wfnbbs
+ Multiwfn Chinese forum: http://bbs.keinsci.com/wfn
+ ( Number of parallel threads:   4  Current date: 2026-11-22  Time: 01:47:28 )
+ 
+ Both following papers ***MUST BE CITED IN MAIN TEXT*** if Multiwfn is used:
+[36m
+  Tian Lu, Feiwu Chen, J. Comput. Chem., 33, 580 (2012) DOI: 10.1002/jcc.22885
+  Tian Lu, J. Chem. Phys., 161, 082503 (2024) DOI: 10.1063/5.0216272
+[0m
+ See "How to cite Multiwfn.pdf" in Multiwfn binary package for more information
+
+ Warning: You should set OMP_STACKSIZE environment variable as mentioned in Section 2.1.2 of Multiwfn manual!
+ 
+ Please wait...
+ Loading various information of the wavefunction
+ Loading basis set definition...
+ The highest angular moment basis functions is D
+ All D basis functions are spherical harmonic type
+ Loading orbitals...
+ The actual number of orbitals read:       606
+ Converting basis function information to GTF information...
+ Back converting basis function information from Cartesian to spherical type...
+ Generating density matrix...
+ Generating overlap matrix...
+ 
+ Total/Alpha/Beta electrons:    178.0000     89.0000     89.0000
+ Net charge:     0.00000      Expected multiplicity:    1
+ Atoms:     33,  Basis functions:    606,  GTFs:    972
+ This is a restricted single-determinant wavefunction
+ Orbitals from 1 to    89 are occupied
+
+ Loaded <run-dir>/repo/molecules/btpcz/results/btpcz_pcm/final.molden successfully!
+ 
+ Formula: H8 C12 N6 O7      Total atoms:      33
+ Molecule weight:       348.22841 Da
+ Point group: C1 
+ 
+ "q": Exit program gracefully          "r": Load a new file
+                    ************ Main function menu ************
+ 0 Show molecular structure and view orbitals
+ 1 Output all properties at a point       2 Topology analysis
+ 3 Output and plot specific property in a line
+ 4 Output and plot specific property in a plane
+ 5 Output and plot specific property within a spatial region (calc. grid data)
+ 6 Check & modify wavefunction
+ 7 Population analysis and calculation of atomic charges
+ 8 Orbital composition analysis           9 Bond order analysis
+ 10 Plot total DOS, PDOS, OPDOS, local DOS, COHP and photoelectron spectrum
+ 11 Plot IR/Raman/UV-Vis/ECD/VCD/ROA/NMR spectrum
+ 12 Quantitative analysis of molecular surface
+ 13 Process grid data (No grid data is presented currently)
+ 14 Adaptive natural density partitioning (AdNDP) analysis
+ 15 Fuzzy atomic space analysis
+ 16 Charge decomposition analysis (CDA) and plot orbital interaction diagram
+ 17 Basin analysis                       18 Electron excitation analysis
+ 19 Orbital localization analysis        20 Visual study of weak interactions
+ 21 Energy decomposition analysis        22 Conceptual DFT (CDFT) analysis
+ 23 ETS-NOCV analysis                    24 (Hyper)polarizability analysis
+ 25 Electron delocalization and aromaticity analyses
+ 26 Structure and geometry related analyses
+ 100 Other functions (Part 1)            200 Other functions (Part 2)
+ 300 Other functions (Part 3)
+ NOTE: There is a review comprehensively introducing various atomic charges:
+ Tian Lu, Qinxue Chen, Partial Charges, In Exploring Chemical Concepts Through T
+ heory and Computation. WILEY-VCH GmbH: Weinheim (2024); pp. 161-187. DOI: 10.10
+ 02/9783527843435.ch6
+ 
+      ============== Population analysis and atomic charges ==============
+ -2 Calculate interaction energy between fragments based on atomic charges
+ -1 Define fragment
+ 0 Return
+ 1 Hirshfeld atomic charge
+ 2 Voronoi deformation density (VDD) atom population
+ 5 Mulliken atom & basis function population analysis
+ 6 Lowdin atom & basis function population analysis
+ 7 Modified Mulliken atom population defined by Ros & Schuit (SCPA)
+ 8 Modified Mulliken atom population defined by Stout & Politzer
+ 9 Modified Mulliken atom population defined by Bickelhaupt
+ 10 Becke atomic charge with atomic dipole moment correction
+ 11 Atomic dipole corrected Hirshfeld atomic charge (ADCH) (recommended)
+ 12 CHELPG ESP fitting atomic charge
+ 13 Merz-Kollmann (MK) ESP fitting atomic charge
+ 14 AIM atomic charge
+ 15 Hirshfeld-I atomic charge
+ 16 CM5 atomic charge    -16 Generate 1.2*CM5 atomic charge
+ 17 Electronegativity Equalization Method (EEM) atomic charge
+ 18 Restrained ElectroStatic Potential (RESP) atomic charge
+ 19 Gasteiger (PEOE) charge
+ 20 Minimal Basis Iterative Stockholder (MBIS) charge
+ 21 Constrained MBIS (cMBIS)
+ 22 Elliptical Minimal Basis Iterative Stockholder (EMBIS)
+ 23 Asymmetric Elliptical Minimal Basis Iterative Stockholder (AEMBIS)
+ This task requests atomic densities, please select how to obtain them
+ 1 Use built-in sphericalized atomic densities in free-states (more convenient)
+ 2 Provide wavefunction file of involved elements by yourself or invoke Gaussian to automatically calculate them
+ Radial grids:   75    Angular grids:  434   Total:     32550
+ Calculating, please wait...
+ 
+ Hirshfeld charge of atom     1(C ) is  0.10380655
+ Hirshfeld charge of atom     2(C ) is  0.00666946
+ Hirshfeld charge of atom     3(C ) is -0.00694485
+ Hirshfeld charge of atom     4(H ) is  0.06153931
+ Hirshfeld charge of atom     5(C ) is  0.01095425
+ Hirshfeld charge of atom     6(C ) is -0.00665188
+ Hirshfeld charge of atom     7(H ) is  0.05852501
+ Hirshfeld charge of atom     8(C ) is  0.00560237
+ Hirshfeld charge of atom     9(N ) is  0.24854633
+ Hirshfeld charge of atom    10(N ) is  0.24591765
+ Hirshfeld charge of atom    11(N ) is  0.24778080
+ Hirshfeld charge of atom    12(O ) is -0.28233110
+ Hirshfeld charge of atom    13(O ) is -0.24351925
+ Hirshfeld charge of atom    14(O ) is -0.24612013
+ Hirshfeld charge of atom    15(O ) is -0.25018197
+ Hirshfeld charge of atom    16(O ) is -0.25042849
+ Hirshfeld charge of atom    17(O ) is -0.22711294
+ Hirshfeld charge of atom    18(O ) is -0.24640043
+ Hirshfeld charge of atom    19(C ) is  0.05548573
+ Hirshfeld charge of atom    20(C ) is -0.01676068
+ Hirshfeld charge of atom    21(H ) is  0.07717972
+ Hirshfeld charge of atom    22(C ) is -0.01056861
+ Hirshfeld charge of atom    23(H ) is  0.06652680
+ Hirshfeld charge of atom    24(C ) is -0.01243092
+ Hirshfeld charge of atom    25(H ) is  0.06610978
+ Hirshfeld charge of atom    26(C ) is -0.01744650
+ Hirshfeld charge of atom    27(H ) is  0.07358496
+ Hirshfeld charge of atom    28(C ) is  0.04943618
+ Hirshfeld charge of atom    29(N ) is  0.07253841
+ Hirshfeld charge of atom    30(H ) is  0.21391105
+ Hirshfeld charge of atom    31(N ) is -0.00672144
+ Hirshfeld charge of atom    32(N ) is  0.05411794
+ Hirshfeld charge of atom    33(H ) is  0.10633497
+ Summing up all charges:     0.00094808
+ 
+ Total dipole moment from atomic charges:    9.014604 a.u.
+ X/Y/Z of dipole moment vector:   -5.066098   -0.577780    7.433970 a.u.
+ 
+                       ---------- CM5 charges ----------
+ Atom:    1C   CM5 charge:    0.146792  Hirshfeld charge:    0.103807
+ Atom:    2C   CM5 charge:    0.066672  Hirshfeld charge:    0.006669
+ Atom:    3C   CM5 charge:   -0.043642  Hirshfeld charge:   -0.006945
+ Atom:    4H   CM5 charge:    0.132881  Hirshfeld charge:    0.061539
+ Atom:    5C   CM5 charge:    0.068143  Hirshfeld charge:    0.010954
+ Atom:    6C   CM5 charge:   -0.043246  Hirshfeld charge:   -0.006652
+ Atom:    7H   CM5 charge:    0.131096  Hirshfeld charge:    0.058525
+ Atom:    8C   CM5 charge:    0.066339  Hirshfeld charge:    0.005602
+ Atom:    9N   CM5 charge:    0.083359  Hirshfeld charge:    0.248546
+ Atom:   10N   CM5 charge:    0.077896  Hirshfeld charge:    0.245918
+ Atom:   11N   CM5 charge:    0.081426  Hirshfeld charge:    0.247781
+ Atom:   12O   CM5 charge:   -0.349299  Hirshfeld charge:   -0.282331
+ Atom:   13O   CM5 charge:   -0.199412  Hirshfeld charge:   -0.243519
+ Atom:   14O   CM5 charge:   -0.206546  Hirshfeld charge:   -0.246120
+ Atom:   15O   CM5 charge:   -0.211543  Hirshfeld charge:   -0.250182
+ Atom:   16O   CM5 charge:   -0.211781  Hirshfeld charge:   -0.250428
+ Atom:   17O   CM5 charge:   -0.187637  Hirshfeld charge:   -0.227113
+ Atom:   18O   CM5 charge:   -0.208056  Hirshfeld charge:   -0.246400
+ Atom:   19C   CM5 charge:    0.135957  Hirshfeld charge:    0.055486
+ Atom:   20C   CM5 charge:   -0.065366  Hirshfeld charge:   -0.016761
+ Atom:   21H   CM5 charge:    0.134595  Hirshfeld charge:    0.077180
+ Atom:   22C   CM5 charge:   -0.065703  Hirshfeld charge:   -0.010569
+ Atom:   23H   CM5 charge:    0.122544  Hirshfeld charge:    0.066527
+ Atom:   24C   CM5 charge:   -0.067571  Hirshfeld charge:   -0.012431
+ Atom:   25H   CM5 charge:    0.122133  Hirshfeld charge:    0.066110
+ Atom:   26C   CM5 charge:   -0.065918  Hirshfeld charge:   -0.017447
+ Atom:   27H   CM5 charge:    0.131544  Hirshfeld charge:    0.073585
+ Atom:   28C   CM5 charge:    0.130730  Hirshfeld charge:    0.049436
+ Atom:   29N   CM5 charge:   -0.193292  Hirshfeld charge:    0.072538
+ Atom:   30H   CM5 charge:    0.413465  Hirshfeld charge:    0.213911
+ Atom:   31N   CM5 charge:   -0.054512  Hirshfeld charge:   -0.006721
+ Atom:   32N   CM5 charge:   -0.198081  Hirshfeld charge:    0.054118
+ Atom:   33H   CM5 charge:    0.326981  Hirshfeld charge:    0.106335
+ Summing up all CM5 charges:     0.00094808
+ 
+ Total dipole moment from CM5 charges   9.1647159 a.u.
+ X/Y/Z of dipole moment from CM5 charges  -4.81037  -0.54429   7.78178 a.u.
+ 
+ Normalize sum of atomic populations to actual number of electrons...
+ 
+ Final atomic charges:
+ Atom    1(C ):     0.14676095
+ Atom    2(C ):     0.06664024
+ Atom    3(C ):    -0.04367450
+ Atom    4(H ):     0.13287594
+ Atom    5(C ):     0.06811146
+ Atom    6(C ):    -0.04327793
+ Atom    7(H ):     0.13109141
+ Atom    8(C ):     0.06630737
+ Atom    9(N ):     0.08332170
+ Atom   10(N ):     0.07785943
+ Atom   11(N ):     0.08138927
+ Atom   12(O ):    -0.34934325
+ Atom   13(O ):    -0.19945532
+ Atom   14(O ):    -0.20658937
+ Atom   15(O ):    -0.21158636
+ Atom   16(O ):    -0.21182457
+ Atom   17(O ):    -0.18768028
+ Atom   18(O ):    -0.20809983
+ Atom   19(C ):     0.13592528
+ Atom   20(C ):    -0.06539845
+ Atom   21(H ):     0.13459016
+ Atom   22(C ):    -0.06573564
+ Atom   23(H ):     0.12253949
+ Atom   24(C ):    -0.06760341
+ Atom   25(H ):     0.12212834
+ Atom   26(C ):    -0.06595027
+ Atom   27(H ):     0.13153945
+ Atom   28(C ):     0.13069881
+ Atom   29(N ):    -0.19332997
+ Atom   30(H ):     0.41346188
+ Atom   31(N ):    -0.05454989
+ Atom   32(N ):    -0.19811946
+ Atom   33(H ):     0.32697731
+
+ Calculation took up       4 seconds wall clock time
+
+ If outputting atom coordinates with charges to final.chg in current folder? (y/n)
+ 
+      ============== Population analysis and atomic charges ==============
+ -2 Calculate interaction energy between fragments based on atomic charges
+ -1 Define fragment
+ 0 Return
+ 1 Hirshfeld atomic charge
+ 2 Voronoi deformation density (VDD) atom population
+ 5 Mulliken atom & basis function population analysis
+ 6 Lowdin atom & basis function population analysis
+ 7 Modified Mulliken atom population defined by Ros & Schuit (SCPA)
+ 8 Modified Mulliken atom population defined by Stout & Politzer
+ 9 Modified Mulliken atom population defined by Bickelhaupt
+ 10 Becke atomic charge with atomic dipole moment correction
+ 11 Atomic dipole corrected Hirshfeld atomic charge (ADCH) (recommended)
+ 12 CHELPG ESP fitting atomic charge
+ 13 Merz-Kollmann (MK) ESP fitting atomic charge
+ 14 AIM atomic charge
+ 15 Hirshfeld-I atomic charge
+ 16 CM5 atomic charge    -16 Generate 1.2*CM5 atomic charge
+ 17 Electronegativity Equalization Method (EEM) atomic charge
+ 18 Restrained ElectroStatic Potential (RESP) atomic charge
+ 19 Gasteiger (PEOE) charge
+ 20 Minimal Basis Iterative Stockholder (MBIS) charge
+ 21 Constrained MBIS (cMBIS)
+ 22 Elliptical Minimal Basis Iterative Stockholder (EMBIS)
+ 23 Asymmetric Elliptical Minimal Basis Iterative Stockholder (AEMBIS)
+ 
+ "q": Exit program gracefully          "r": Load a new file
+                    ************ Main function menu ************
+ 0 Show molecular structure and view orbitals
+ 1 Output all properties at a point       2 Topology analysis
+ 3 Output and plot specific property in a line
+ 4 Output and plot specific property in a plane
+ 5 Output and plot specific property within a spatial region (calc. grid data)
+ 6 Check & modify wavefunction
+ 7 Population analysis and calculation of atomic charges
+ 8 Orbital composition analysis           9 Bond order analysis
+ 10 Plot total DOS, PDOS, OPDOS, local DOS, COHP and photoelectron spectrum
+ 11 Plot IR/Raman/UV-Vis/ECD/VCD/ROA/NMR spectrum
+ 12 Quantitative analysis of molecular surface
+ 13 Process grid data (No grid data is presented currently)
+ 14 Adaptive natural density partitioning (AdNDP) analysis
+ 15 Fuzzy atomic space analysis
+ 16 Charge decomposition analysis (CDA) and plot orbital interaction diagram
+ 17 Basin analysis                       18 Electron excitation analysis
+ 19 Orbital localization analysis        20 Visual study of weak interactions
+ 21 Energy decomposition analysis        22 Conceptual DFT (CDFT) analysis
+ 23 ETS-NOCV analysis                    24 (Hyper)polarizability analysis
+ 25 Electron delocalization and aromaticity analyses
+ 26 Structure and geometry related analyses
+ 100 Other functions (Part 1)            200 Other functions (Part 2)
+ 300 Other functions (Part 3)

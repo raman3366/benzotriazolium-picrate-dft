@@ -1,0 +1,25 @@
+[2026-11-21 06:06:39 PM IST] job headline_gasgeom (dft/revision/headline.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/headline_gasgeom, smoke False, restart #0; PySCF 2.14.0
+[2026-11-21 06:06:39 PM IST] gas|eps=1: SCF (606 AO, gas), guess <run-dir>/repo/data/r2/molecules/btpc/results/btpc_gas/final.chk
+[2026-11-21 06:06:39 PM IST] initial density from <run-dir>/repo/data/r2/molecules/btpc/results/btpc_gas/final.chk
+[2026-11-21 06:09:10 PM IST] gas|eps=1: E = -1317.2082309382 Ha (4 cycles, 150 s); HOMO -6.8181 (anion), LUMO -3.3421 (cation, cation 99.6 %), gap 3.4760 eV; Delta(cat-an) -0.4464 eV
+[2026-11-21 06:09:10 PM IST] gas eps 1: dE vs stored btpc_gas = -4.00e-10 Ha -> PASS
+[2026-11-21 06:09:10 PM IST] gas|eps=2: SCF (606 AO, IEF-PCM eps=2), guess <run-dir>/queue/out/headline_gasgeom/chk/gas_eps1.chk
+[2026-11-21 06:09:10 PM IST] initial density from <run-dir>/queue/out/headline_gasgeom/chk/gas_eps1.chk
+[2026-11-21 06:22:08 PM IST] gas|eps=2: E = -1317.2245903096 Ha (12 cycles, 777 s); HOMO -6.9144 (anion), LUMO -3.0313 (anion, cation 0.7 %), gap 3.8831 eV; Delta(cat-an) +0.1254 eV
+[2026-11-21 06:22:08 PM IST] gas|eps=4: SCF (606 AO, IEF-PCM eps=4), guess <run-dir>/queue/out/headline_gasgeom/chk/gas_eps2.chk
+[2026-11-21 06:22:08 PM IST] initial density from <run-dir>/queue/out/headline_gasgeom/chk/gas_eps2.chk
+[2026-11-21 06:34:11 PM IST] gas|eps=4: E = -1317.2355947578 Ha (11 cycles, 723 s); HOMO -6.9699 (anion), LUMO -3.1146 (anion, cation 0.3 %), gap 3.8553 eV; Delta(cat-an) +0.5040 eV
+[2026-11-21 06:34:11 PM IST] gas|eps=8: SCF (606 AO, IEF-PCM eps=8), guess <run-dir>/queue/out/headline_gasgeom/chk/gas_eps4.chk
+[2026-11-21 06:34:11 PM IST] initial density from <run-dir>/queue/out/headline_gasgeom/chk/gas_eps4.chk
+[2026-11-21 06:45:21 PM IST] gas|eps=8: E = -1317.2422292892 Ha (10 cycles, 669 s); HOMO -6.9987 (anion), LUMO -3.1613 (anion, cation 0.3 %), gap 3.8374 eV; Delta(cat-an) +0.6424 eV
+[2026-11-21 06:45:21 PM IST] gas|eps=20: SCF (606 AO, IEF-PCM eps=20), guess <run-dir>/queue/out/headline_gasgeom/chk/gas_eps8.chk
+[2026-11-21 06:45:21 PM IST] initial density from <run-dir>/queue/out/headline_gasgeom/chk/gas_eps8.chk
+[2026-11-21 06:55:38 PM IST] gas|eps=20: E = -1317.2467043268 Ha (9 cycles, 616 s); HOMO -7.0159 (anion), LUMO -3.1911 (anion, cation 0.3 %), gap 3.8249 eV; Delta(cat-an) +0.7432 eV
+[2026-11-21 06:55:38 PM IST] gas|eps=78.3553: SCF (606 AO, IEF-PCM eps=78.3553), guess <run-dir>/queue/out/headline_gasgeom/chk/gas_eps20.chk
+[2026-11-21 06:55:38 PM IST] initial density from <run-dir>/queue/out/headline_gasgeom/chk/gas_eps20.chk
+[2026-11-21 07:05:54 PM IST] gas|eps=78.3553: E = -1317.2490931285 Ha (9 cycles, 616 s); HOMO -7.0244 (anion), LUMO -3.2064 (anion, cation 0.3 %), gap 3.8180 eV; Delta(cat-an) +0.7945 eV
+[2026-11-21 07:05:54 PM IST] gas|eps=1.64: SCF (606 AO, IEF-PCM eps=1.64), guess <run-dir>/queue/out/headline_gasgeom/chk/gas_eps2.chk
+[2026-11-21 07:05:54 PM IST] initial density from <run-dir>/queue/out/headline_gasgeom/chk/gas_eps2.chk
+[2026-11-21 07:17:03 PM IST] gas|eps=1.64: E = -1317.2204682810 Ha (10 cycles, 668 s); HOMO -6.8914 (anion), LUMO -3.0111 (cation, cation 72.2 %), gap 3.8803 eV; Delta(cat-an) -0.0184 eV
+[2026-11-21 07:17:03 PM IST] gas: LUMO switches cation->anion at eps ~ 1.679 (f-interpolation; ln-eps 1.682), bracket [1.64, 2.0]
+[2026-11-21 07:17:03 PM IST] job headline_gasgeom finished (peak RSS 9858 MB)

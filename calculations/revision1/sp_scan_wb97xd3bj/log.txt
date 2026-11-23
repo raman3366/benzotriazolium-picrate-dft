@@ -1,0 +1,49 @@
+[2026-11-22 02:03:58 AM IST] job sp_scan_wb97xd3bj (dft/revision/singlepoints.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/sp_scan_wb97xd3bj, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 02:03:58 AM IST] 14 geometries x 1 methods (wb97x-d3bj); gas phase; basis 6-311++g(d,p), grid 4
+[2026-11-22 02:03:58 AM IST] initial density from <run-dir>/queue/out/scan_gas_up/chk/up_1.700.chk
+[2026-11-22 02:10:23 AM IST] up_1.700|wb97x-d3bj: E = -1317.5631063741 Ha (385 s, 13 cycles, LUMO on anion 0.1 %)
+[2026-11-22 02:10:23 AM IST] initial density from <run-dir>/queue/out/sp_scan_wb97xd3bj/chk/up_1.700_wb97x-d3bj.chk
+[2026-11-22 02:16:43 AM IST] up_1.600|wb97x-d3bj: E = -1317.5636915796 Ha (380 s, 13 cycles, LUMO on anion 0.2 %)
+[2026-11-22 02:16:43 AM IST] initial density from <run-dir>/queue/out/sp_scan_wb97xd3bj/chk/up_1.600_wb97x-d3bj.chk
+[2026-11-22 02:23:34 AM IST] up_1.520|wb97x-d3bj: E = -1317.5640692933 Ha (411 s, 14 cycles, LUMO on anion 0.2 %)
+[2026-11-22 02:23:34 AM IST] initial density from <run-dir>/queue/out/sp_scan_wb97xd3bj/chk/up_1.520_wb97x-d3bj.chk
+[2026-11-22 02:30:34 AM IST] up_1.460|wb97x-d3bj: E = -1317.5642748042 Ha (419 s, 14 cycles, LUMO on anion 0.3 %)
+[2026-11-22 02:30:34 AM IST] initial density from <run-dir>/queue/out/sp_scan_wb97xd3bj/chk/up_1.460_wb97x-d3bj.chk
+[2026-11-22 02:36:34 AM IST] min|wb97x-d3bj: E = -1317.5643352726 Ha (361 s, 11 cycles, LUMO on anion 0.3 %)
+[2026-11-22 02:36:34 AM IST] initial density from <run-dir>/queue/out/sp_scan_wb97xd3bj/chk/min_wb97x-d3bj.chk
+[2026-11-22 02:43:13 AM IST] down_1.400|wb97x-d3bj: E = -1317.5643597313 Ha (398 s, 12 cycles, LUMO on anion 0.4 %)
+[2026-11-22 02:43:13 AM IST] initial density from <run-dir>/queue/out/sp_scan_wb97xd3bj/chk/down_1.400_wb97x-d3bj.chk
+[2026-11-22 02:50:19 AM IST] down_1.340|wb97x-d3bj: E = -1317.5642965929 Ha (427 s, 13 cycles, LUMO on anion 0.6 %)
+[2026-11-22 02:50:19 AM IST] initial density from <run-dir>/queue/out/sp_scan_wb97xd3bj/chk/down_1.340_wb97x-d3bj.chk
+[2026-11-22 02:57:17 AM IST] neutral_1.280|wb97x-d3bj: E = -1317.5641629570 Ha (417 s, 13 cycles, LUMO on anion 1.9 %)
+[2026-11-22 02:57:17 AM IST] initial density from <run-dir>/queue/out/sp_scan_wb97xd3bj/chk/neutral_1.280_wb97x-d3bj.chk
+[2026-11-22 03:04:53 AM IST] down_1.230|wb97x-d3bj: E = -1317.5641755235 Ha (456 s, 14 cycles, LUMO on anion 88.2 %)
+[2026-11-22 03:04:53 AM IST] initial density from <run-dir>/queue/out/sp_scan_wb97xd3bj/chk/down_1.230_wb97x-d3bj.chk
+[2026-11-22 03:11:52 AM IST] down_1.180|wb97x-d3bj: E = -1317.5645561922 Ha (419 s, 13 cycles, LUMO on anion 99.3 %)
+[2026-11-22 03:11:52 AM IST] initial density from <run-dir>/queue/out/sp_scan_wb97xd3bj/chk/down_1.180_wb97x-d3bj.chk
+[2026-11-22 03:19:39 AM IST] down_1.130|wb97x-d3bj: E = -1317.5655817483 Ha (467 s, 14 cycles, LUMO on anion 99.5 %)
+[2026-11-22 03:19:39 AM IST] initial density from <run-dir>/queue/out/sp_scan_wb97xd3bj/chk/down_1.130_wb97x-d3bj.chk
+[2026-11-22 03:26:58 AM IST] down_1.080|wb97x-d3bj: E = -1317.5673620242 Ha (439 s, 14 cycles, LUMO on anion 99.6 %)
+[2026-11-22 03:26:58 AM IST] initial density from <run-dir>/queue/out/sp_scan_wb97xd3bj/chk/down_1.080_wb97x-d3bj.chk
+[2026-11-22 03:34:59 AM IST] neutral_1.030|wb97x-d3bj: E = -1317.5689439949 Ha (482 s, 15 cycles, LUMO on anion 99.8 %)
+[2026-11-22 03:34:59 AM IST] initial density from <run-dir>/queue/out/sp_scan_wb97xd3bj/chk/neutral_1.030_wb97x-d3bj.chk
+[2026-11-22 03:42:19 AM IST] neutral_0.980|wb97x-d3bj: E = -1317.5693619250 Ha (439 s, 14 cycles, LUMO on anion 99.8 %)
+[2026-11-22 03:42:19 AM IST]   Relative energies (kcal/mol) per method; zero = the free minimum (min).
+[2026-11-22 03:42:19 AM IST]   
+[2026-11-22 03:42:19 AM IST]   | geometry | r(H...O) A | r(N-H) A | b3lyp_scan | wb97x-d3bj |
+[2026-11-22 03:42:19 AM IST]   |---|---|---|---|---|
+[2026-11-22 03:42:19 AM IST]   | up_1.700 | 1.700 | 1.059 | 0.56 | 0.77 |
+[2026-11-22 03:42:19 AM IST]   | up_1.600 | 1.600 | 1.071 | 0.25 | 0.40 |
+[2026-11-22 03:42:19 AM IST]   | up_1.520 | 1.520 | 1.086 | 0.07 | 0.17 |
+[2026-11-22 03:42:19 AM IST]   | up_1.460 | 1.460 | 1.102 | 0.01 | 0.04 |
+[2026-11-22 03:42:19 AM IST]   | min | 1.437 | 1.109 | 0.00 | 0.00 |
+[2026-11-22 03:42:19 AM IST]   | down_1.400 | 1.400 | 1.123 | 0.02 | -0.01 |
+[2026-11-22 03:42:19 AM IST]   | down_1.340 | 1.340 | 1.152 | 0.12 | 0.02 |
+[2026-11-22 03:42:19 AM IST]   | neutral_1.280 | 1.280 | 1.193 | 0.25 | 0.11 |
+[2026-11-22 03:42:19 AM IST]   | down_1.230 | 1.230 | 1.241 | 0.32 | 0.10 |
+[2026-11-22 03:42:19 AM IST]   | down_1.180 | 1.180 | 1.307 | 0.21 | -0.14 |
+[2026-11-22 03:42:19 AM IST]   | down_1.130 | 1.130 | 1.404 | -0.20 | -0.78 |
+[2026-11-22 03:42:19 AM IST]   | down_1.080 | 1.080 | 1.545 | -0.96 | -1.90 |
+[2026-11-22 03:42:19 AM IST]   | neutral_1.030 | 1.030 | 1.764 | -1.87 | -2.89 |
+[2026-11-22 03:42:19 AM IST]   | neutral_0.980 | 0.980 | 1.951 | -2.04 | -3.15 |
+[2026-11-22 03:42:19 AM IST] job sp_scan_wb97xd3bj finished (peak RSS 6647 MB)

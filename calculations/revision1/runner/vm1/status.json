@@ -1,0 +1,1597 @@
+{
+  "jobs": {
+    "c0_prep": {
+      "def": {
+        "threads": 1,
+        "retries": 0,
+        "id": "c0_prep",
+        "item": "C0 (host preparation for run_case.sh)",
+        "est_hours": 0.01,
+        "command": "if [ ! -x tools/env/bin/python ]; then mkdir -p tools && ln -sfn \"$(dirname \"$(dirname {python})\")\" tools/env; fi; if [ ! -x tools/multiwfn/Multiwfn_noGUI ] && [ -x \"$HOME/r007/multiwfn/Multiwfn_noGUI\" ]; then ln -sfn \"$HOME/r007/multiwfn\" tools/multiwfn; fi; tools/env/bin/python -c 'import pyscf, geometric; print(\"pyscf\", pyscf.__version__, \"geometric\", geometric.__version__)'; ls -l tools/",
+        "source_file": "jobs_main.json",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 12098,
+      "pid_start_ticks": 595518,
+      "start": "2026-11-21T03:10:25+05:30",
+      "end": "2026-11-21T03:10:30+05:30",
+      "rc": 0,
+      "command": "if [ ! -x tools/env/bin/python ]; then mkdir -p tools && ln -sfn \"$(dirname \"$(dirname <run-dir>/env/bin/python)\")\" tools/env; fi; if [ ! -x tools/multiwfn/Multiwfn_noGUI ] && [ -x \"$HOME/r007/multiwfn/Multiwfn_noGUI\" ]; then ln -sfn \"$HOME/r007/multiwfn\" tools/multiwfn; fi; tools/env/bin/python -c 'import pyscf, geometric; print(\"pyscf\", pyscf.__version__, \"geometric\", geometric.__version__)'; ls -l tools/",
+      "scratch": "<run-dir>/scratch/c0_prep",
+      "host": "<vm-1>",
+      "wall_h": 0.001
+    },
+    "c0_btpcz_gas_core": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "c0_btpcz_gas_core",
+        "item": "C0 (P2_1/n ion pair, gas: pre-optimisation, optimisation, proton check, finite-difference frequencies, FMO/cubes/molden)",
+        "depends_on": [
+          "c0_prep"
+        ],
+        "est_hours": 28.5,
+        "est_range_hours": [
+          22.8,
+          35.4
+        ],
+        "cost": "gas: 6-31G(d) pre-optimisation 15-60 steps x 1.8 min (cap 3 h) + 5-40 evaluations x 7.3 min (cap 100 / 12 h) + FD Hessian 198 gradients x 7.3 min (measured 21 Nov) in 33 chunks + fmo ~1 h",
+        "command": "{python} dft/revision/c0_case.py --job {id} --out {root}/out/{id} --case btpcz_gas --freq fd --fd-chunk 3 --preopt-max-hours 3 --opt-maxsteps 100 --opt-max-hours 12 --negligible-stop 10",
+        "note": "resumable: an interruption loses at most one 3-column chunk (6 gradients, ~0.7 h) or one optimisation step; FD worker peak RSS 6.4 GB at MAX_MEMORY_MB 5500 (msi has 7.1 GB)",
+        "source_file": "jobs_main.json",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 12108,
+      "pid_start_ticks": 596018,
+      "start": "2026-11-21T03:10:30+05:30",
+      "end": "2026-11-22T07:03:16+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/c0_case.py --job c0_btpcz_gas_core --out <run-dir>/queue/out/c0_btpcz_gas_core --case btpcz_gas --freq fd --fd-chunk 3 --preopt-max-hours 3 --opt-maxsteps 100 --opt-max-hours 12 --negligible-stop 10",
+      "scratch": "<run-dir>/scratch/c0_btpcz_gas_core",
+      "host": "<vm-1>",
+      "wall_h": 27.88
+    },
+    "c0_btpcz_pcm_core": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "c0_btpcz_pcm_core",
+        "item": "C0 (P2_1/n ion pair, IEF-PCM water: pre-optimisation, optimisation, proton check, FMO/cubes/molden; frequencies in c0_btpcz_pcm_softmode)",
+        "depends_on": [
+          "c0_prep"
+        ],
+        "est_hours": 21.1,
+        "est_range_hours": [
+          11.0,
+          37.5
+        ],
+        "cost": "IEF-PCM: 6-31G(d) pre-optimisation 15-60 steps x 5.2 min (cap 6 h) + 30-100 evaluations x 17.3 min (cap 100 / 30 h) + fmo ~1.2 h",
+        "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/c0_case.py --job {id} --out {root}/out/{id} --case btpcz_pcm --freq none --preopt-max-hours 6 --opt-maxsteps 100 --opt-max-hours 30 --negligible-stop 10",
+        "note": "resumable (rerun continues); stops early on a stall (gradient criteria met for 10 evaluations with < 1e-6 Ha spread); at a cap it is accepted only on the btpc_pcm rule, otherwise it fails and waits for the user (raise --opt-max-hours to continue)",
+        "source_file": "jobs_main.json",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 12427,
+      "pid_start_ticks": 618175,
+      "start": "2026-11-21T03:14:11+05:30",
+      "end": "2026-11-21T18:05:53+05:30",
+      "rc": 0,
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/c0_case.py --job c0_btpcz_pcm_core --out <run-dir>/queue/out/c0_btpcz_pcm_core --case btpcz_pcm --freq none --preopt-max-hours 6 --opt-maxsteps 100 --opt-max-hours 30 --negligible-stop 10",
+      "scratch": "<run-dir>/scratch/c0_btpcz_pcm_core",
+      "host": "<vm-1>",
+      "wall_h": 14.862
+    },
+    "scan_tors_b3lyp": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "scan_tors_b3lyp",
+        "item": "6 (relaxed gas scan of C1-O1...N4-C12, -180 to -60 deg in 15 deg steps, B3LYP)",
+        "est_hours": 16.9,
+        "est_range_hours": [
+          36.5,
+          93.1
+        ],
+        "cost": "9 points x 10-25 gas evaluations x 7.3 min (msi)",
+        "command": "{python} dft/revision/conf_scan.py --job {id} --out {root}/out/{id} --disp none --start stored --grid=-180:-60:15",
+        "est_hours_msi": 16.9,
+        "source_file": "jobs_piserver.json",
+        "est_hours_piserver": 56.6,
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 12429,
+      "pid_start_ticks": 618175,
+      "start": "2026-11-21T03:14:11+05:30",
+      "end": "2026-11-22T04:47:16+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/conf_scan.py --job scan_tors_b3lyp --out <run-dir>/queue/out/scan_tors_b3lyp --disp none --start stored --grid=-180:-60:15",
+      "scratch": "<run-dir>/scratch/scan_tors_b3lyp",
+      "host": "<vm-1>",
+      "wall_h": 25.552
+    },
+    "opt_d3_gas": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "opt_d3_gas",
+        "item": "5 (B3LYP-D3(BJ) gas re-optimisation, seeded with the stored gas Hessian, FMO at the minimum)",
+        "est_hours": 5.2,
+        "est_range_hours": [
+          9.4,
+          26.1
+        ],
+        "cost": "20-60 gas evaluations x 7.3 min (msi) + final analysis",
+        "command": "{python} dft/revision/opt_d3.py --job {id} --out {root}/out/{id} --model gas --disp d3bj --seed-hessian auto",
+        "est_hours_msi": 5.2,
+        "source_file": "jobs_piserver.json",
+        "est_hours_piserver": 17.4,
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 12431,
+      "pid_start_ticks": 618175,
+      "start": "2026-11-21T03:14:11+05:30",
+      "end": "2026-11-21T04:10:36+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/opt_d3.py --job opt_d3_gas --out <run-dir>/queue/out/opt_d3_gas --model gas --disp d3bj --seed-hessian auto",
+      "scratch": "<run-dir>/scratch/opt_d3_gas",
+      "host": "<vm-1>",
+      "wall_h": 0.94
+    },
+    "opt_d3_pcm": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "opt_d3_pcm",
+        "item": "4 (converged IEF-PCM minimum, B3LYP-D3(BJ), seeded with the stored PCM Hessian)",
+        "est_hours": 18.0,
+        "est_range_hours": [
+          9.3,
+          30.7
+        ],
+        "cost": "30-100 PCM evaluations x 17.3 min + final analysis 0.7 h; capped at 30 h",
+        "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/opt_d3.py --job {id} --out {root}/out/{id} --model pcm --disp d3bj --seed-hessian auto --max-hours 30",
+        "note": "item 4 wants all five criteria, so no stall stop here: at the 30 h cap the job fails (resumable) and the user decides (continue with a larger --max-hours, or accept on forces with --negligible-stop 10)",
+        "source_file": "jobs_main.json",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 12433,
+      "pid_start_ticks": 618175,
+      "start": "2026-11-21T03:14:11+05:30",
+      "end": "2026-11-22T02:34:26+05:30",
+      "rc": 0,
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/opt_d3.py --job opt_d3_pcm --out <run-dir>/queue/out/opt_d3_pcm --model pcm --disp d3bj --seed-hessian auto --max-hours 30",
+      "scratch": "<run-dir>/scratch/opt_d3_pcm",
+      "host": "<vm-1>",
+      "wall_h": 23.338
+    },
+    "scan_gas_neutral": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "scan_gas_neutral",
+        "est_hours": 13.9,
+        "command": "{python} dft/revision/proton_scan.py --job {id} --out {root}/out/{id} --case btpc_gas --chains neutral",
+        "est_range_hours": [
+          10.9,
+          23.6
+        ],
+        "source_file": "jobs_proton.json",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 12435,
+      "pid_start_ticks": 618176,
+      "start": "2026-11-21T03:14:11+05:30",
+      "end": "2026-11-22T02:03:57+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/proton_scan.py --job scan_gas_neutral --out <run-dir>/queue/out/scan_gas_neutral --case btpc_gas --chains neutral",
+      "scratch": "<run-dir>/scratch/scan_gas_neutral",
+      "host": "<vm-1>",
+      "wall_h": 22.83
+    },
+    "scan_gas_down": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "scan_gas_down",
+        "est_hours": 12.7,
+        "command": "{python} dft/revision/proton_scan.py --job {id} --out {root}/out/{id} --case btpc_gas --chains down",
+        "est_range_hours": [
+          8.5,
+          21.2
+        ],
+        "source_file": "jobs_proton.json",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 12437,
+      "pid_start_ticks": 618176,
+      "start": "2026-11-21T03:14:11+05:30",
+      "end": "2026-11-21T22:00:33+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/proton_scan.py --job scan_gas_down --out <run-dir>/queue/out/scan_gas_down --case btpc_gas --chains down",
+      "scratch": "<run-dir>/scratch/scan_gas_down",
+      "host": "<vm-1>",
+      "wall_h": 18.773
+    },
+    "neutral_start_pcm": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "neutral_start_pcm",
+        "est_hours": 17.3,
+        "command": "{python} dft/revision/neutral_start.py --job {id} --out {root}/out/{id} --system btpc --models pcm",
+        "est_range_hours": [
+          8.7,
+          28.8
+        ],
+        "source_file": "jobs_proton.json",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 12439,
+      "pid_start_ticks": 618176,
+      "start": "2026-11-21T03:14:11+05:30",
+      "end": "2026-11-21T21:16:53+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/neutral_start.py --job neutral_start_pcm --out <run-dir>/queue/out/neutral_start_pcm --system btpc --models pcm",
+      "scratch": "<run-dir>/scratch/neutral_start_pcm",
+      "host": "<vm-1>",
+      "wall_h": 18.045
+    },
+    "scan_gas_up": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "scan_gas_up",
+        "est_hours": 7.4,
+        "command": "{python} dft/revision/proton_scan.py --job {id} --out {root}/out/{id} --case btpc_gas --chains up",
+        "est_range_hours": [
+          5.0,
+          12.3
+        ],
+        "source_file": "jobs_proton.json",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 13043,
+      "pid_start_ticks": 956673,
+      "start": "2026-11-21T04:10:36+05:30",
+      "end": "2026-11-21T14:32:05+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/proton_scan.py --job scan_gas_up --out <run-dir>/queue/out/scan_gas_up --case btpc_gas --chains up",
+      "scratch": "<run-dir>/scratch/scan_gas_up",
+      "host": "<vm-1>",
+      "wall_h": 10.358
+    },
+    "neutral_start_gas": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "neutral_start_gas",
+        "est_hours": 4.8,
+        "command": "{python} dft/revision/neutral_start.py --job {id} --out {root}/out/{id} --system btpc --models gas",
+        "est_range_hours": [
+          2.4,
+          7.3
+        ],
+        "source_file": "jobs_proton.json",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 18729,
+      "pid_start_ticks": 4685544,
+      "start": "2026-11-21T14:32:05+05:30",
+      "end": "2026-11-21T19:11:09+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/neutral_start.py --job neutral_start_gas --out <run-dir>/queue/out/neutral_start_gas --system btpc --models gas",
+      "scratch": "<run-dir>/scratch/neutral_start_gas",
+      "host": "<vm-1>",
+      "wall_h": 4.651
+    },
+    "charges_stored": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "charges_stored",
+        "item": "3 (Hirshfeld/CM5 in place of Mulliken)",
+        "est_hours": 0.1,
+        "est_range_hours": [
+          0.1,
+          0.2
+        ],
+        "cost": "Hirshfeld/CM5 from the stored wavefunctions (1.3 min measured on msi)",
+        "command": "{python} dft/revision/charges.py --job {id} --out {root}/out/{id} --source stored --multiwfn auto",
+        "source_file": "jobs_main.json",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 20821,
+      "pid_start_ticks": 5968379,
+      "start": "2026-11-21T18:05:53+05:30",
+      "end": "2026-11-21T18:06:38+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/charges.py --job charges_stored --out <run-dir>/queue/out/charges_stored --source stored --multiwfn auto",
+      "scratch": "<run-dir>/scratch/charges_stored",
+      "host": "<vm-1>",
+      "wall_h": 0.013
+    },
+    "headline_gasgeom": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "headline_gasgeom",
+        "item": "3 (cross single point + permittivity series at the gas minimum)",
+        "est_hours": 1.7,
+        "est_range_hours": [
+          1.2,
+          2.6
+        ],
+        "cost": "1 gas + 6-7 PCM SCFs chained by permittivity",
+        "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/headline.py --job {id} --out {root}/out/{id} --geom gas --refine 1",
+        "source_file": "jobs_main.json",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 20839,
+      "pid_start_ticks": 5972883,
+      "start": "2026-11-21T18:06:38+05:30",
+      "end": "2026-11-21T19:17:05+05:30",
+      "rc": 0,
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/headline.py --job headline_gasgeom --out <run-dir>/queue/out/headline_gasgeom --geom gas --refine 1",
+      "scratch": "<run-dir>/scratch/headline_gasgeom",
+      "host": "<vm-1>",
+      "wall_h": 1.174
+    },
+    "headline_pcmgeom": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "headline_pcmgeom",
+        "item": "3 (cross single point + permittivity series at the IEF-PCM minimum)",
+        "est_hours": 1.7,
+        "est_range_hours": [
+          1.2,
+          2.6
+        ],
+        "cost": "1 gas + 6-7 PCM SCFs chained by permittivity",
+        "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/headline.py --job {id} --out {root}/out/{id} --geom pcm --refine 1",
+        "source_file": "jobs_main.json",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 22003,
+      "pid_start_ticks": 6359982,
+      "start": "2026-11-21T19:11:09+05:30",
+      "end": "2026-11-21T20:25:02+05:30",
+      "rc": 0,
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/headline.py --job headline_pcmgeom --out <run-dir>/queue/out/headline_pcmgeom --geom pcm --refine 1",
+      "scratch": "<run-dir>/scratch/headline_pcmgeom",
+      "host": "<vm-1>",
+      "wall_h": 1.232
+    },
+    "deltascf_gasgeom": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "deltascf_gasgeom",
+        "item": "3 (Delta-SCF N+1/N-1 at the gas minimum, in gas and in IEF-PCM)",
+        "est_hours": 4.0,
+        "est_range_hours": [
+          2.5,
+          6.0
+        ],
+        "cost": "2 RKS + 6 UKS (gas and PCM)",
+        "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/deltascf.py --job {id} --out {root}/out/{id} --combos gas/gas,gas/pcm --plus cation,anion --minus homo",
+        "source_file": "jobs_main.json",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 22029,
+      "pid_start_ticks": 6395535,
+      "start": "2026-11-21T19:17:05+05:30",
+      "end": "2026-11-21T22:23:36+05:30",
+      "rc": 0,
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/deltascf.py --job deltascf_gasgeom --out <run-dir>/queue/out/deltascf_gasgeom --combos gas/gas,gas/pcm --plus cation,anion --minus homo",
+      "scratch": "<run-dir>/scratch/deltascf_gasgeom",
+      "host": "<vm-1>",
+      "wall_h": 3.109
+    },
+    "deltascf_pcmgeom": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "deltascf_pcmgeom",
+        "item": "3 (Delta-SCF N+1/N-1 at the IEF-PCM minimum, in IEF-PCM and in gas)",
+        "est_hours": 4.0,
+        "est_range_hours": [
+          2.5,
+          6.0
+        ],
+        "cost": "2 RKS + 6 UKS (PCM and gas)",
+        "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/deltascf.py --job {id} --out {root}/out/{id} --combos pcm/pcm,pcm/gas --plus cation,anion --minus homo",
+        "source_file": "jobs_main.json",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 22709,
+      "pid_start_ticks": 6803288,
+      "start": "2026-11-21T20:25:02+05:30",
+      "end": "2026-11-21T23:38:53+05:30",
+      "rc": 0,
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/deltascf.py --job deltascf_pcmgeom --out <run-dir>/queue/out/deltascf_pcmgeom --combos pcm/pcm,pcm/gas --plus cation,anion --minus homo",
+      "scratch": "<run-dir>/scratch/deltascf_pcmgeom",
+      "host": "<vm-1>",
+      "wall_h": 3.231
+    },
+    "td_free": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "td_free",
+        "item": "7 (free picrate and neutral benzotriazole optimised in IEF-PCM; TD-DFT B3LYP and CAM-B3LYP)",
+        "est_hours": 2.0,
+        "est_range_hours": [
+          1.0,
+          3.5
+        ],
+        "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/tddft.py --job {id} --out {root}/out/{id} --systems picrate-pcm,bta-pcm --xc b3lyp,camb3lyp --nstates 20 --tda",
+        "note": "runs before the ion-pair TD-DFT jobs: its timing (233 and 366 basis functions) calibrates their estimates",
+        "note_rpa": "full TD-DFT: replace --tda by --rpa (about 3x the cost: 3.3x the trial vectors in the msi test)",
+        "source_file": "jobs_main.json",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 23314,
+      "pid_start_ticks": 7114379,
+      "start": "2026-11-21T21:16:53+05:30",
+      "end": "2026-11-22T01:03:35+05:30",
+      "rc": 0,
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/tddft.py --job td_free --out <run-dir>/queue/out/td_free --systems picrate-pcm,bta-pcm --xc b3lyp,camb3lyp --nstates 20 --tda",
+      "scratch": "<run-dir>/scratch/td_free",
+      "host": "<vm-1>",
+      "wall_h": 3.778
+    },
+    "td_pair_b3lyp": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "td_pair_b3lyp",
+        "item": "7 (TD-DFT (TDA) B3LYP, 20 singlets, ion pair in gas and IEF-PCM, non-equilibrium LR-PCM)",
+        "est_hours": 6.0,
+        "est_range_hours": [
+          4.0,
+          10.0
+        ],
+        "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/tddft.py --job {id} --out {root}/out/{id} --systems pair-gas,pair-pcm --xc b3lyp --nstates 20 --tda",
+        "note_rpa": "full TD-DFT: replace --tda by --rpa (about 3x the cost: 3.3x the trial vectors in the msi test)",
+        "source_file": "jobs_main.json",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 23865,
+      "pid_start_ticks": 7376355,
+      "start": "2026-11-21T22:00:33+05:30",
+      "end": "2026-11-22T06:09:29+05:30",
+      "rc": 0,
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/tddft.py --job td_pair_b3lyp --out <run-dir>/queue/out/td_pair_b3lyp --systems pair-gas,pair-pcm --xc b3lyp --nstates 20 --tda",
+      "scratch": "<run-dir>/scratch/td_pair_b3lyp",
+      "host": "<vm-1>",
+      "wall_h": 8.149
+    },
+    "td_pair_camb3lyp": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "td_pair_camb3lyp",
+        "item": "7 (TD-DFT (TDA) CAM-B3LYP, 20 singlets, ion pair in gas and IEF-PCM)",
+        "est_hours": 7.0,
+        "est_range_hours": [
+          4.5,
+          12.0
+        ],
+        "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/tddft.py --job {id} --out {root}/out/{id} --systems pair-gas,pair-pcm --xc camb3lyp --nstates 20 --tda",
+        "note_rpa": "full TD-DFT: replace --tda by --rpa (about 3x the cost: 3.3x the trial vectors in the msi test)",
+        "source_file": "jobs_main.json",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 24057,
+      "pid_start_ticks": 7514620,
+      "start": "2026-11-21T22:23:36+05:30",
+      "end": "2026-11-22T11:28:50+05:30",
+      "rc": 0,
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/tddft.py --job td_pair_camb3lyp --out <run-dir>/queue/out/td_pair_camb3lyp --systems pair-gas,pair-pcm --xc camb3lyp --nstates 20 --tda",
+      "scratch": "<run-dir>/scratch/td_pair_camb3lyp",
+      "host": "<vm-1>",
+      "wall_h": 13.087
+    },
+    "softmode_d3_pcm": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "softmode_d3_pcm",
+        "item": "4 (Hessian check along the 10 softest modes at the D3(BJ) IEF-PCM minimum; 21 PCM gradients)",
+        "depends_on": [
+          "opt_d3_pcm"
+        ],
+        "est_hours": 5.3,
+        "est_range_hours": [
+          4.3,
+          6.1
+        ],
+        "cost": "x0 SCF + 21 PCM gradients x 14.7 min",
+        "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/softmode_check.py --job {id} --out {root}/out/{id} --geom {root}/out/opt_d3_pcm --model pcm --disp d3bj --ref-hessian auto --nmodes 10 --step 0.02",
+        "source_file": "jobs_main.json",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 28450,
+      "pid_start_ticks": 9019671,
+      "start": "2026-11-22T02:34:26+05:30",
+      "end": "2026-11-22T07:48:05+05:30",
+      "rc": 0,
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/softmode_check.py --job softmode_d3_pcm --out <run-dir>/queue/out/softmode_d3_pcm --geom <run-dir>/queue/out/opt_d3_pcm --model pcm --disp d3bj --ref-hessian auto --nmodes 10 --step 0.02",
+      "scratch": "<run-dir>/scratch/softmode_d3_pcm",
+      "host": "<vm-1>",
+      "wall_h": 5.228
+    },
+    "c0_btpcz_pcm_softmode": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "c0_btpcz_pcm_softmode",
+        "item": "C0 (Hessian check of the btpcz_pcm minimum along the 10 softest modes of the btpcz_gas FD Hessian; replaces the full PCM FD Hessian, see c0_btpcz_pcm_fdhess)",
+        "depends_on": [
+          "c0_btpcz_gas_core",
+          "c0_btpcz_pcm_core"
+        ],
+        "est_hours": 5.2,
+        "est_range_hours": [
+          4.3,
+          6.1
+        ],
+        "cost": "x0 SCF + 20 displaced PCM gradients x 14.7 min",
+        "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/c0_case.py --job {id} --out {root}/out/{id} --case btpcz_pcm --stages frequencies --freq softmode --ref-hessian molecules/btpcz/results/btpcz_gas/hessian.npy --nmodes 10",
+        "source_file": "jobs_main.json",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 32942,
+      "pid_start_ticks": 10632656,
+      "start": "2026-11-22T07:03:16+05:30",
+      "end": "2026-11-22T11:40:17+05:30",
+      "rc": 0,
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/c0_case.py --job c0_btpcz_pcm_softmode --out <run-dir>/queue/out/c0_btpcz_pcm_softmode --case btpcz_pcm --stages frequencies --freq softmode --ref-hessian molecules/btpcz/results/btpcz_gas/hessian.npy --nmodes 10",
+      "scratch": "<run-dir>/scratch/c0_btpcz_pcm_softmode",
+      "host": "<vm-1>",
+      "wall_h": 4.617
+    },
+    "c0_btpcz_gas_analysis": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "c0_btpcz_gas_analysis",
+        "item": "C0 (Multiwfn analyses, plots, render, RESULTS.md for btpcz_gas)",
+        "depends_on": [
+          "c0_btpcz_gas_core"
+        ],
+        "est_hours": 1.0,
+        "est_range_hours": [
+          0.5,
+          1.5
+        ],
+        "command": "export PVBATCH=/bin/false; export DFT_MAX_MEMORY_MB=$(( ${MAX_MEMORY_MB:-8000} / 2 )) NO_AUTO_PCM=1; ./run_case.sh btpcz_gas $THREADS -- --from mwfn",
+        "source_file": "jobs_main.json",
+        "note_fix": "22 Nov: no ParaView on the VM; PVBATCH=/bin/false makes the render stage fail cleanly instead of crashing pipeline.py on its macOS fallback path; matplotlib added to the VM env for the plots stage",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 33052,
+      "pid_start_ticks": 10697744,
+      "start": "2026-11-22T07:14:07+05:30",
+      "end": "2026-11-22T07:16:52+05:30",
+      "rc": 0,
+      "command": "export PVBATCH=/bin/false; export DFT_MAX_MEMORY_MB=$(( ${MAX_MEMORY_MB:-8000} / 2 )) NO_AUTO_PCM=1; ./run_case.sh btpcz_gas $THREADS -- --from mwfn",
+      "scratch": "<run-dir>/scratch/c0_btpcz_gas_analysis",
+      "host": "<vm-1>",
+      "wall_h": 0.046
+    },
+    "c0_btpcz_pcm_analysis": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "c0_btpcz_pcm_analysis",
+        "item": "C0 (Multiwfn analyses, plots, render, RESULTS.md for btpcz_pcm)",
+        "depends_on": [
+          "c0_btpcz_pcm_core"
+        ],
+        "est_hours": 1.0,
+        "est_range_hours": [
+          0.5,
+          1.5
+        ],
+        "command": "export PVBATCH=/bin/false; export DFT_MAX_MEMORY_MB=$(( ${MAX_MEMORY_MB:-8000} / 2 )) NO_AUTO_PCM=1; ./run_case.sh btpcz_pcm $THREADS -- --from mwfn",
+        "note": "no freq.json for btpcz_pcm unless c0_btpcz_pcm_fdhess runs: RESULTS.md (dft/report.py, unchanged) then has no frequency table and its methods sentence wrongly says \"analytically\"; the soft-mode result is in softmode_check.json",
+        "source_file": "jobs_main.json",
+        "note_fix": "22 Nov: no ParaView on the VM; PVBATCH=/bin/false makes the render stage fail cleanly instead of crashing pipeline.py on its macOS fallback path; matplotlib added to the VM env for the plots stage",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 27181,
+      "pid_start_ticks": 8474556,
+      "start": "2026-11-22T01:03:35+05:30",
+      "end": "2026-11-22T01:06:15+05:30",
+      "rc": 0,
+      "command": "export PVBATCH=/bin/false; export DFT_MAX_MEMORY_MB=$(( ${MAX_MEMORY_MB:-8000} / 2 )) NO_AUTO_PCM=1; ./run_case.sh btpcz_pcm $THREADS -- --from mwfn",
+      "scratch": "<run-dir>/scratch/c0_btpcz_pcm_analysis",
+      "host": "<vm-1>",
+      "wall_h": 0.045,
+      "note": "retry requested 2026-11-22T00:41:09+05:30"
+    },
+    "charges_btpcz": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "charges_btpcz",
+        "item": "C0 + 3 (Hirshfeld/CM5 of the P2_1/n minima from their final.chk)",
+        "depends_on": [
+          "c0_btpcz_gas_core",
+          "c0_btpcz_pcm_core"
+        ],
+        "est_hours": 0.1,
+        "est_range_hours": [
+          0.1,
+          0.3
+        ],
+        "command": "{python} dft/revision/charges.py --job {id} --out {root}/out/{id} --case btpcz --source gas=chk:molecules/btpcz/results/btpcz_gas/final.chk,pcm=chk:molecules/btpcz/results/btpcz_pcm/final.chk --multiwfn auto",
+        "source_file": "jobs_main.json",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 33132,
+      "pid_start_ticks": 10714288,
+      "start": "2026-11-22T07:16:52+05:30",
+      "end": "2026-11-22T07:17:37+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/charges.py --job charges_btpcz --out <run-dir>/queue/out/charges_btpcz --case btpcz --source gas=chk:molecules/btpcz/results/btpcz_gas/final.chk,pcm=chk:molecules/btpcz/results/btpcz_pcm/final.chk --multiwfn auto",
+      "scratch": "<run-dir>/scratch/charges_btpcz",
+      "host": "<vm-1>",
+      "wall_h": 0.013
+    },
+    "sp8_pbe0": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "sp8_pbe0",
+        "item": "8 (PBE0 at both minima, gas and IEF-PCM: energies and LUMO location; lowest priority)",
+        "est_hours": 1.2,
+        "est_range_hours": [
+          0.9,
+          1.6
+        ],
+        "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/headline.py --job {id} --out {root}/out/{id} --geom gas,pcm --eps 1,78.3553 --xc pbe0 --refine 0",
+        "source_file": "jobs_main.json",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 24898,
+      "pid_start_ticks": 7998370,
+      "start": "2026-11-21T23:44:13+05:30",
+      "end": "2026-11-22T00:23:17+05:30",
+      "rc": 0,
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/headline.py --job sp8_pbe0 --out <run-dir>/queue/out/sp8_pbe0 --geom gas,pcm --eps 1,78.3553 --xc pbe0 --refine 0",
+      "scratch": "<run-dir>/scratch/sp8_pbe0",
+      "host": "<vm-1>",
+      "wall_h": 0.651
+    },
+    "sp8_camb3lyp": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "sp8_camb3lyp",
+        "item": "8 (CAM-B3LYP at both minima, gas and IEF-PCM: energies and LUMO location; lowest priority)",
+        "est_hours": 1.5,
+        "est_range_hours": [
+          1.1,
+          2.0
+        ],
+        "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/headline.py --job {id} --out {root}/out/{id} --geom gas,pcm --eps 1,78.3553 --xc camb3lyp --refine 0",
+        "source_file": "jobs_main.json",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 25563,
+      "pid_start_ticks": 8232747,
+      "start": "2026-11-22T00:23:17+05:30",
+      "end": "2026-11-22T01:06:05+05:30",
+      "rc": 0,
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/headline.py --job sp8_camb3lyp --out <run-dir>/queue/out/sp8_camb3lyp --geom gas,pcm --eps 1,78.3553 --xc camb3lyp --refine 0",
+      "scratch": "<run-dir>/scratch/sp8_camb3lyp",
+      "host": "<vm-1>",
+      "wall_h": 0.714
+    },
+    "headline_btpcz": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "headline_btpcz",
+        "item": "C0 + 3 (cross single points and permittivity series at the P2_1/n minima; optional)",
+        "depends_on": [
+          "c0_btpcz_gas_core",
+          "c0_btpcz_pcm_core"
+        ],
+        "priority": "optional",
+        "est_hours": 3.0,
+        "est_range_hours": [
+          2.0,
+          4.4
+        ],
+        "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/headline.py --job {id} --out {root}/out/{id} --case btpcz --geom gas,pcm --refine 1",
+        "source_file": "jobs_main.json",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 33154,
+      "pid_start_ticks": 10718791,
+      "start": "2026-11-22T07:17:37+05:30",
+      "end": "2026-11-22T09:20:59+05:30",
+      "rc": 0,
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/headline.py --job headline_btpcz --out <run-dir>/queue/out/headline_btpcz --case btpcz --geom gas,pcm --refine 1",
+      "scratch": "<run-dir>/scratch/headline_btpcz",
+      "host": "<vm-1>",
+      "wall_h": 2.056
+    },
+    "c0_btpcz_pcm_fdhess": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "c0_btpcz_pcm_fdhess",
+        "item": "C0 (full finite-difference IEF-PCM Hessian of btpcz_pcm; optional, cut first: does not fit the calendar at mid estimates)",
+        "depends_on": [
+          "c0_btpcz_pcm_core"
+        ],
+        "priority": "optional (cut candidate)",
+        "est_hours": 48.8,
+        "est_range_hours": [
+          40.1,
+          57.5
+        ],
+        "cost": "reference SCF + 198 PCM gradients x 14.7 min in 33 chunks",
+        "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} {python} dft/revision/c0_case.py --job {id} --out {root}/out/{id} --case btpcz_pcm --stages frequencies --freq fd --fd-chunk 3",
+        "source_file": "jobs_main.json",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 27244,
+      "pid_start_ticks": 8489587,
+      "start": "2026-11-22T01:06:05+05:30",
+      "end": "2026-11-22T17:55:22+05:30",
+      "rc": 0,
+      "command": "MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/c0_case.py --job c0_btpcz_pcm_fdhess --out <run-dir>/queue/out/c0_btpcz_pcm_fdhess --case btpcz_pcm --stages frequencies --freq fd --fd-chunk 3",
+      "scratch": "<run-dir>/scratch/c0_btpcz_pcm_fdhess",
+      "host": "<vm-1>",
+      "wall_h": 16.821
+    },
+    "sp_scan_wb97xd3bj": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "sp_scan_wb97xd3bj",
+        "est_hours": 3.0,
+        "depends_on": [
+          "scan_gas_down",
+          "scan_gas_neutral",
+          "scan_gas_up"
+        ],
+        "command": "{python} dft/revision/singlepoints.py --job {id} --out {root}/out/{id} --scan {root}/out/scan_gas_up --scan {root}/out/scan_gas_down --scan {root}/out/scan_gas_neutral --methods wb97x-d3bj",
+        "source_file": "jobs_proton.json",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 27995,
+      "pid_start_ticks": 8836785,
+      "start": "2026-11-22T02:03:57+05:30",
+      "end": "2026-11-22T03:42:19+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/singlepoints.py --job sp_scan_wb97xd3bj --out <run-dir>/queue/out/sp_scan_wb97xd3bj --scan <run-dir>/queue/out/scan_gas_up --scan <run-dir>/queue/out/scan_gas_down --scan <run-dir>/queue/out/scan_gas_neutral --methods wb97x-d3bj",
+      "scratch": "<run-dir>/scratch/sp_scan_wb97xd3bj",
+      "host": "<vm-1>",
+      "wall_h": 1.64
+    },
+    "sp_scan_m062x": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "sp_scan_m062x",
+        "est_hours": 2.6,
+        "depends_on": [
+          "scan_gas_down",
+          "scan_gas_neutral",
+          "scan_gas_up"
+        ],
+        "command": "{python} dft/revision/singlepoints.py --job {id} --out {root}/out/{id} --scan {root}/out/scan_gas_up --scan {root}/out/scan_gas_down --scan {root}/out/scan_gas_neutral --methods m062x --grid-check-level 5",
+        "source_file": "jobs_proton.json",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 28266,
+      "pid_start_ticks": 8958014,
+      "start": "2026-11-22T02:24:10+05:30",
+      "end": "2026-11-22T04:53:21+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/singlepoints.py --job sp_scan_m062x --out <run-dir>/queue/out/sp_scan_m062x --scan <run-dir>/queue/out/scan_gas_up --scan <run-dir>/queue/out/scan_gas_down --scan <run-dir>/queue/out/scan_gas_neutral --methods m062x --grid-check-level 5",
+      "scratch": "<run-dir>/scratch/sp_scan_m062x",
+      "host": "<vm-1>",
+      "wall_h": 2.487
+    },
+    "sp_scan_dfmp2": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "sp_scan_dfmp2",
+        "est_hours": 2.5,
+        "depends_on": [
+          "scan_gas_down",
+          "scan_gas_neutral",
+          "scan_gas_up"
+        ],
+        "command": "export MAX_MEMORY_MB=16000; {python} dft/revision/singlepoints.py --job {id} --out {root}/out/{id} --scan {root}/out/scan_gas_up --scan {root}/out/scan_gas_down --scan {root}/out/scan_gas_neutral --methods dfmp2 --mp2-aux aug-cc-pvtz-ri",
+        "source_file": "jobs_proton.json",
+        "note_fix": "22 Nov: DF-MP2 now energy-only (with_t2=False in singlepoints.py; t2 amplitudes would need ~8.6 GB) and a 16 GB cap; the first two attempts raised MemoryError",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 32253,
+      "pid_start_ticks": 10484601,
+      "start": "2026-11-22T06:38:35+05:30",
+      "end": "2026-11-22T07:14:07+05:30",
+      "rc": 0,
+      "command": "export MAX_MEMORY_MB=16000; <run-dir>/env/bin/python dft/revision/singlepoints.py --job sp_scan_dfmp2 --out <run-dir>/queue/out/sp_scan_dfmp2 --scan <run-dir>/queue/out/scan_gas_up --scan <run-dir>/queue/out/scan_gas_down --scan <run-dir>/queue/out/scan_gas_neutral --methods dfmp2 --mp2-aux aug-cc-pvtz-ri",
+      "scratch": "<run-dir>/scratch/sp_scan_dfmp2",
+      "host": "<vm-1>",
+      "wall_h": 0.592,
+      "note": "retry requested 2026-11-22T06:38:32+05:30"
+    },
+    "sp_scan_pbe0": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "sp_scan_pbe0",
+        "est_hours": 1.5,
+        "depends_on": [
+          "scan_gas_down",
+          "scan_gas_neutral",
+          "scan_gas_up"
+        ],
+        "command": "{python} dft/revision/singlepoints.py --job {id} --out {root}/out/{id} --scan {root}/out/scan_gas_up --scan {root}/out/scan_gas_down --scan {root}/out/scan_gas_neutral --methods pbe0",
+        "source_file": "jobs_proton.json",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 29558,
+      "pid_start_ticks": 9447489,
+      "start": "2026-11-22T03:45:44+05:30",
+      "end": "2026-11-22T05:06:32+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/singlepoints.py --job sp_scan_pbe0 --out <run-dir>/queue/out/sp_scan_pbe0 --scan <run-dir>/queue/out/scan_gas_up --scan <run-dir>/queue/out/scan_gas_down --scan <run-dir>/queue/out/scan_gas_neutral --methods pbe0",
+      "scratch": "<run-dir>/scratch/sp_scan_pbe0",
+      "host": "<vm-1>",
+      "wall_h": 1.347
+    },
+    "sp_scan_camb3lyp": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "sp_scan_camb3lyp",
+        "est_hours": 3.0,
+        "depends_on": [
+          "scan_gas_down",
+          "scan_gas_neutral",
+          "scan_gas_up"
+        ],
+        "command": "{python} dft/revision/singlepoints.py --job {id} --out {root}/out/{id} --scan {root}/out/scan_gas_up --scan {root}/out/scan_gas_down --scan {root}/out/scan_gas_neutral --methods cam-b3lyp",
+        "source_file": "jobs_proton.json",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 30244,
+      "pid_start_ticks": 9816653,
+      "start": "2026-11-22T04:47:16+05:30",
+      "end": "2026-11-22T06:25:26+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/singlepoints.py --job sp_scan_camb3lyp --out <run-dir>/queue/out/sp_scan_camb3lyp --scan <run-dir>/queue/out/scan_gas_up --scan <run-dir>/queue/out/scan_gas_down --scan <run-dir>/queue/out/scan_gas_neutral --methods cam-b3lyp",
+      "scratch": "<run-dir>/scratch/sp_scan_camb3lyp",
+      "host": "<vm-1>",
+      "wall_h": 1.636
+    },
+    "sp_min_pcm": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "sp_min_pcm",
+        "est_hours": 2.5,
+        "command": "export MAX_MEMORY_MB=16000; {python} dft/revision/singlepoints.py --job {id} --out {root}/out/{id} --xyz {repo}/molecules/btpc/results/btpc_pcm/opt.xyz --solvent water --methods wb97x-d3bj,m062x,pbe0,cam-b3lyp,dfmp2 --no-grid-check",
+        "source_file": "jobs_proton.json",
+        "note_fix": "22 Nov: DF-MP2 now energy-only (with_t2=False in singlepoints.py; t2 amplitudes would need ~8.6 GB) and a 16 GB cap; the first two attempts raised MemoryError",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 32258,
+      "pid_start_ticks": 10484614,
+      "start": "2026-11-22T06:38:36+05:30",
+      "end": "2026-11-22T06:41:49+05:30",
+      "rc": 0,
+      "command": "export MAX_MEMORY_MB=16000; <run-dir>/env/bin/python dft/revision/singlepoints.py --job sp_min_pcm --out <run-dir>/queue/out/sp_min_pcm --xyz <run-dir>/repo/molecules/btpc/results/btpc_pcm/opt.xyz --solvent water --methods wb97x-d3bj,m062x,pbe0,cam-b3lyp,dfmp2 --no-grid-check",
+      "scratch": "<run-dir>/scratch/sp_min_pcm",
+      "host": "<vm-1>",
+      "wall_h": 0.054,
+      "note": "retry requested 2026-11-22T06:38:32+05:30"
+    },
+    "dvr_gas_b3lyp": {
+      "def": {
+        "threads": 1,
+        "retries": 1,
+        "id": "dvr_gas_b3lyp",
+        "est_hours": 0.02,
+        "depends_on": [
+          "scan_gas_down",
+          "scan_gas_neutral",
+          "scan_gas_up"
+        ],
+        "command": "{python} dft/revision/dvr.py --job {id} --out {root}/out/{id} --scan {root}/out/scan_gas_up --scan {root}/out/scan_gas_down --scan {root}/out/scan_gas_neutral --selftest",
+        "source_file": "jobs_proton.json",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 30424,
+      "pid_start_ticks": 9868709,
+      "start": "2026-11-22T04:55:57+05:30",
+      "end": "2026-11-22T04:56:02+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/dvr.py --job dvr_gas_b3lyp --out <run-dir>/queue/out/dvr_gas_b3lyp --scan <run-dir>/queue/out/scan_gas_up --scan <run-dir>/queue/out/scan_gas_down --scan <run-dir>/queue/out/scan_gas_neutral --selftest",
+      "scratch": "<run-dir>/scratch/dvr_gas_b3lyp",
+      "host": "<vm-1>",
+      "wall_h": 0.001
+    },
+    "dvr_gas_all": {
+      "def": {
+        "threads": 1,
+        "retries": 1,
+        "id": "dvr_gas_all",
+        "est_hours": 0.05,
+        "depends_on": [
+          "sp_scan_wb97xd3bj",
+          "sp_scan_m062x",
+          "sp_scan_dfmp2",
+          "sp_scan_pbe0",
+          "sp_scan_camb3lyp",
+          "scan_gas_oside",
+          "sp_oside_all"
+        ],
+        "command": "{python} dft/revision/dvr.py --job {id} --out {root}/out/{id} --scan {root}/out/scan_gas_up --scan {root}/out/scan_gas_down --scan {root}/out/scan_gas_neutral --scan {root}/out/scan_gas_oside --sp {root}/out/sp_scan_wb97xd3bj --sp {root}/out/sp_scan_m062x --sp {root}/out/sp_scan_dfmp2 --sp {root}/out/sp_scan_pbe0 --sp {root}/out/sp_scan_camb3lyp --selftest --sp {root}/out/sp_oside_all",
+        "source_file": "jobs_proton.json",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "note": "retry requested 2026-11-22T06:38:32+05:30",
+      "pgid": 41789,
+      "pid_start_ticks": 13126570,
+      "start": "2026-11-22T13:58:55+05:30",
+      "end": "2026-11-22T13:59:20+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/dvr.py --job dvr_gas_all --out <run-dir>/queue/out/dvr_gas_all --scan <run-dir>/queue/out/scan_gas_up --scan <run-dir>/queue/out/scan_gas_down --scan <run-dir>/queue/out/scan_gas_neutral --scan <run-dir>/queue/out/scan_gas_oside --sp <run-dir>/queue/out/sp_scan_wb97xd3bj --sp <run-dir>/queue/out/sp_scan_m062x --sp <run-dir>/queue/out/sp_scan_dfmp2 --sp <run-dir>/queue/out/sp_scan_pbe0 --sp <run-dir>/queue/out/sp_scan_camb3lyp --selftest --sp <run-dir>/queue/out/sp_oside_all",
+      "scratch": "<run-dir>/scratch/dvr_gas_all",
+      "host": "<vm-1>",
+      "wall_h": 0.007
+    },
+    "softmode_d3_gas": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "softmode_d3_gas",
+        "item": "5 (soft-mode check at the D3(BJ) gas minimum; 21 gas gradients)",
+        "depends_on": [
+          "opt_d3_gas"
+        ],
+        "est_hours": 2.6,
+        "est_range_hours": [
+          7.7,
+          9.7
+        ],
+        "cost": "x0 SCF + 20 gas gradients x 7.3 min (msi)",
+        "command": "{python} dft/revision/softmode_check.py --job {id} --out {root}/out/{id} --geom {root}/out/opt_d3_gas --model gas --disp d3bj --ref-hessian auto --nmodes 10 --step 0.02",
+        "est_hours_msi": 2.6,
+        "source_file": "jobs_piserver.json",
+        "est_hours_piserver": 8.7,
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 30428,
+      "pid_start_ticks": 9869210,
+      "start": "2026-11-22T04:56:02+05:30",
+      "end": "2026-11-22T07:23:33+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/softmode_check.py --job softmode_d3_gas --out <run-dir>/queue/out/softmode_d3_gas --geom <run-dir>/queue/out/opt_d3_gas --model gas --disp d3bj --ref-hessian auto --nmodes 10 --step 0.02",
+      "scratch": "<run-dir>/scratch/softmode_d3_gas",
+      "host": "<vm-1>",
+      "wall_h": 2.459
+    },
+    "scan_tors_d3": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "scan_tors_d3",
+        "item": "6 (the same scan with B3LYP-D3(BJ), from the D3(BJ) gas minimum; cut first if time is short)",
+        "depends_on": [
+          "opt_d3_gas"
+        ],
+        "priority": "last; cut first if time is short",
+        "est_hours": 16.9,
+        "est_range_hours": [
+          36.5,
+          93.1
+        ],
+        "cost": "9 points x 10-25 gas evaluations x 7.3 min (msi)",
+        "command": "{python} dft/revision/conf_scan.py --job {id} --out {root}/out/{id} --disp d3bj --start {root}/out/opt_d3_gas --grid=-180:-120:15",
+        "est_hours_msi": 16.9,
+        "source_file": "jobs_piserver.json",
+        "est_hours_piserver": 56.6,
+        "note_split": "22 Nov 9:45 am: restricted to the down chain (-120 to -180); the up chain (-105 to -60) runs in parallel as scan_tors_d3_up",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 35396,
+      "pid_start_ticks": 11593496,
+      "start": "2026-11-22T09:43:24+05:30",
+      "end": "2026-11-22T17:31:53+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/conf_scan.py --job scan_tors_d3 --out <run-dir>/queue/out/scan_tors_d3 --disp d3bj --start <run-dir>/queue/out/opt_d3_gas --grid=-180:-120:15",
+      "scratch": "<run-dir>/scratch/scan_tors_d3",
+      "host": "<vm-1>",
+      "note": "22 Nov 9:50 am: stopped and re-queued as the down chain only (scan_tors_d3_up takes -105 to -60)",
+      "wall_h": 7.808
+    },
+    "scan_gas_oside": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "scan_gas_oside",
+        "est_hours": 2.5,
+        "command": "{python} dft/revision/proton_scan.py --job {id} --out {root}/out/{id} --case btpc_gas --chains neutral --points 0.90,0.94 --neutral-to 0.94",
+        "note": "22 Nov: O-side extension of the gas proton scan (H...O 0.90, 0.94 A) so the DVR brackets the O-side well (dvr_gas_b3lyp warned: lowest point at the O end, 24 % of the ground state outside the range)",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 32676,
+      "pid_start_ticks": 10503942,
+      "start": "2026-11-22T06:41:49+05:30",
+      "end": "2026-11-22T12:53:00+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/proton_scan.py --job scan_gas_oside --out <run-dir>/queue/out/scan_gas_oside --case btpc_gas --chains neutral --points 0.90,0.94 --neutral-to 0.94",
+      "scratch": "<run-dir>/scratch/scan_gas_oside",
+      "host": "<vm-1>",
+      "wall_h": 6.186
+    },
+    "sp_oside_all": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "sp_oside_all",
+        "est_hours": 1.5,
+        "depends_on": [
+          "scan_gas_oside"
+        ],
+        "command": "export MAX_MEMORY_MB=16000; {python} dft/revision/singlepoints.py --job {id} --out {root}/out/{id} --scan {root}/out/scan_gas_oside --methods wb97x-d3bj,m062x,pbe0,cam-b3lyp,dfmp2 --mp2-aux aug-cc-pvtz-ri",
+        "note": "22 Nov: functional and DF-MP2 single points at the two O-side points",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 40841,
+      "pid_start_ticks": 12731034,
+      "start": "2026-11-22T12:53:00+05:30",
+      "end": "2026-11-22T13:58:55+05:30",
+      "rc": 0,
+      "command": "export MAX_MEMORY_MB=16000; <run-dir>/env/bin/python dft/revision/singlepoints.py --job sp_oside_all --out <run-dir>/queue/out/sp_oside_all --scan <run-dir>/queue/out/scan_gas_oside --methods wb97x-d3bj,m062x,pbe0,cam-b3lyp,dfmp2 --mp2-aux aug-cc-pvtz-ri",
+      "scratch": "<run-dir>/scratch/sp_oside_all",
+      "host": "<vm-1>",
+      "wall_h": 1.099
+    },
+    "scan_tors_d3_up": {
+      "def": {
+        "threads": 12,
+        "retries": 1,
+        "id": "scan_tors_d3_up",
+        "est_hours": 7.0,
+        "depends_on": [
+          "opt_d3_gas"
+        ],
+        "command": "{python} dft/revision/conf_scan.py --job {id} --out {root}/out/{id} --disp d3bj --start {root}/out/opt_d3_gas --grid=-105:-75:15",
+        "note": "22 Nov: up chain of scan_tors_d3 (-105 to -60), split off to run in parallel; same start minimum and settings",
+        "note_split2": "22 Nov ~4 pm: after -90 converged, restricted to -105..-75 at 12 threads; -60 runs in parallel as scan_tors_d3_up60",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 44829,
+      "pid_start_ticks": 13827941,
+      "start": "2026-11-22T15:55:49+05:30",
+      "end": "2026-11-22T18:28:32+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/conf_scan.py --job scan_tors_d3_up --out <run-dir>/queue/out/scan_tors_d3_up --disp d3bj --start <run-dir>/queue/out/opt_d3_gas --grid=-105:-75:15",
+      "scratch": "<run-dir>/scratch/scan_tors_d3_up",
+      "host": "<vm-1>",
+      "note": "22 Nov 3:52 pm: re-queued as -105..-75 at 12 threads (-60 in scan_tors_d3_up60)",
+      "wall_h": 2.545
+    },
+    "sp_neutral_pcm": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "sp_neutral_pcm",
+        "est_hours": 2.5,
+        "command": "export MAX_MEMORY_MB=16000; {python} dft/revision/singlepoints.py --job {id} --out {root}/out/{id} --neutral {root}/out/neutral_start_pcm --solvent water --methods wb97x-d3bj,m062x,pbe0,cam-b3lyp,dfmp2 --no-grid-check",
+        "note": "22 Nov: functional and DF-MP2 single points at the IEF-PCM neutral (O1-H) minimum, to pair with sp_min_pcm (ionic PCM minimum): is the salt kept in water beyond B3LYP?",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 35400,
+      "pid_start_ticks": 11593496,
+      "start": "2026-11-22T09:43:24+05:30",
+      "end": "2026-11-22T10:54:36+05:30",
+      "rc": 0,
+      "command": "export MAX_MEMORY_MB=16000; <run-dir>/env/bin/python dft/revision/singlepoints.py --job sp_neutral_pcm --out <run-dir>/queue/out/sp_neutral_pcm --neutral <run-dir>/queue/out/neutral_start_pcm --solvent water --methods wb97x-d3bj,m062x,pbe0,cam-b3lyp,dfmp2 --no-grid-check",
+      "scratch": "<run-dir>/scratch/sp_neutral_pcm",
+      "host": "<vm-1>",
+      "wall_h": 1.187
+    },
+    "fdh1": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "fdh1",
+        "est_hours": 5.0,
+        "depends_on": [
+          "c0_btpcz_pcm_core"
+        ],
+        "command": "{python} dft/revision/fd_helper.py --fd-dir {root}/out/c0_btpcz_pcm_fdhess/fd --case btpcz_pcm --tag {id} --chunk 3 --gap 3 --step 0.005",
+        "note": "22 Nov: extra worker for c0_btpcz_pcm_fdhess (chunks from the end; see fd_helper.py)",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 35402,
+      "pid_start_ticks": 11593497,
+      "start": "2026-11-22T09:43:24+05:30",
+      "end": "2026-11-22T15:55:49+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/fd_helper.py --fd-dir <run-dir>/queue/out/c0_btpcz_pcm_fdhess/fd --case btpcz_pcm --tag fdh1 --chunk 3 --gap 3 --step 0.005",
+      "scratch": "<run-dir>/scratch/fdh1",
+      "host": "<vm-1>",
+      "wall_h": 6.207
+    },
+    "fdh2": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "fdh2",
+        "est_hours": 5.0,
+        "depends_on": [
+          "c0_btpcz_pcm_core"
+        ],
+        "command": "{python} dft/revision/fd_helper.py --fd-dir {root}/out/c0_btpcz_pcm_fdhess/fd --case btpcz_pcm --tag {id} --chunk 3 --gap 3 --step 0.005",
+        "note": "22 Nov: extra worker for c0_btpcz_pcm_fdhess (chunks from the end; see fd_helper.py)",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 36815,
+      "pid_start_ticks": 12020692,
+      "start": "2026-11-22T10:54:36+05:30",
+      "end": "2026-11-22T15:55:19+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/fd_helper.py --fd-dir <run-dir>/queue/out/c0_btpcz_pcm_fdhess/fd --case btpcz_pcm --tag fdh2 --chunk 3 --gap 3 --step 0.005",
+      "scratch": "<run-dir>/scratch/fdh2",
+      "host": "<vm-1>",
+      "wall_h": 5.012
+    },
+    "fdh3": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "fdh3",
+        "est_hours": 5.0,
+        "depends_on": [
+          "c0_btpcz_pcm_core"
+        ],
+        "command": "{python} dft/revision/fd_helper.py --fd-dir {root}/out/c0_btpcz_pcm_fdhess/fd --case btpcz_pcm --tag {id} --chunk 3 --gap 3 --step 0.005",
+        "note": "22 Nov: extra worker for c0_btpcz_pcm_fdhess (chunks from the end; see fd_helper.py)",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 37172,
+      "pid_start_ticks": 12226061,
+      "start": "2026-11-22T11:28:50+05:30",
+      "end": "2026-11-22T16:23:49+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/fd_helper.py --fd-dir <run-dir>/queue/out/c0_btpcz_pcm_fdhess/fd --case btpcz_pcm --tag fdh3 --chunk 3 --gap 3 --step 0.005",
+      "scratch": "<run-dir>/scratch/fdh3",
+      "host": "<vm-1>",
+      "wall_h": 4.917
+    },
+    "fdh4": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "fdh4",
+        "est_hours": 5.0,
+        "depends_on": [
+          "c0_btpcz_pcm_core"
+        ],
+        "command": "{python} dft/revision/fd_helper.py --fd-dir {root}/out/c0_btpcz_pcm_fdhess/fd --case btpcz_pcm --tag {id} --chunk 3 --gap 3 --step 0.005",
+        "note": "22 Nov: extra worker for c0_btpcz_pcm_fdhess (chunks from the end; see fd_helper.py)",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 37292,
+      "pid_start_ticks": 12294721,
+      "start": "2026-11-22T11:40:17+05:30",
+      "end": "2026-11-22T16:35:25+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/fd_helper.py --fd-dir <run-dir>/queue/out/c0_btpcz_pcm_fdhess/fd --case btpcz_pcm --tag fdh4 --chunk 3 --gap 3 --step 0.005",
+      "scratch": "<run-dir>/scratch/fdh4",
+      "host": "<vm-1>",
+      "wall_h": 4.919
+    },
+    "fdh5": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "fdh5",
+        "est_hours": 5.0,
+        "depends_on": [
+          "c0_btpcz_pcm_core"
+        ],
+        "command": "{python} dft/revision/fd_helper.py --fd-dir {root}/out/c0_btpcz_pcm_fdhess/fd --case btpcz_pcm --tag {id} --chunk 3 --gap 3 --step 0.005",
+        "note": "22 Nov: extra worker for c0_btpcz_pcm_fdhess (chunks from the end; see fd_helper.py)",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 41794,
+      "pid_start_ticks": 13129072,
+      "start": "2026-11-22T13:59:20+05:30",
+      "end": "2026-11-22T16:22:14+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/fd_helper.py --fd-dir <run-dir>/queue/out/c0_btpcz_pcm_fdhess/fd --case btpcz_pcm --tag fdh5 --chunk 3 --gap 3 --step 0.005",
+      "scratch": "<run-dir>/scratch/fdh5",
+      "host": "<vm-1>",
+      "wall_h": 2.382
+    },
+    "scan_tors_d3_up60": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "scan_tors_d3_up60",
+        "est_hours": 2.5,
+        "depends_on": [
+          "opt_d3_gas"
+        ],
+        "command": "{python} dft/revision/conf_scan.py --job {id} --out {root}/out/{id} --disp d3bj --start {root}/out/scan_tors_d3_up/points/p-90.0.xyz --grid=-60:-60:15",
+        "note": "22 Nov: the -60 point of the D3(BJ) torsion scan, started from the converged -90 point (30 deg step) in parallel with -75; energies vs start are relative to p-90, re-referenced to the opt_d3_gas minimum in the analysis",
+        "note_threads": "22 Nov ~4:05 pm: back to 4 threads so the CCSD(T) jobs (priority, the user chose option A) get the cores",
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 55518,
+      "pid_start_ticks": 13986481,
+      "start": "2026-11-22T16:22:14+05:30",
+      "end": "2026-11-22T19:47:49+05:30",
+      "rc": 0,
+      "command": "<run-dir>/env/bin/python dft/revision/conf_scan.py --job scan_tors_d3_up60 --out <run-dir>/queue/out/scan_tors_d3_up60 --disp d3bj --start <run-dir>/queue/out/scan_tors_d3_up/points/p-90.0.xyz --grid=-60:-60:15",
+      "scratch": "<run-dir>/scratch/scan_tors_d3_up60",
+      "host": "<vm-1>",
+      "wall_h": 3.426
+    },
+    "cc_salt_631gd": {
+      "def": {
+        "threads": 10,
+        "retries": 1,
+        "id": "cc_salt_631gd",
+        "est_hours": 3.0,
+        "command": "export MAX_MEMORY_MB=24000; {python} dft/revision/cc_correction.py --job {id} --out {root}/out/{id} --xyz {repo}/molecules/btpc/results/btpc_pcm/opt.xyz --labels salt --solvent water --basis '6-31g*' --fno-fracs 0.5,0.65",
+        "note": "22 Nov: CCSD(T)-MP2 correction (FNO 50 and 65 % of the virtuals) in IEF-PCM water, PTE reference as the DF-MP2 numbers; option A; 0.8 only if the series has not settled",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 58302,
+      "pid_start_ticks": 14744219,
+      "start": "2026-11-22T18:28:32+05:30",
+      "end": "2026-11-23T06:07:00+05:30",
+      "rc": 0,
+      "command": "export MAX_MEMORY_MB=24000; <run-dir>/env/bin/python dft/revision/cc_correction.py --job cc_salt_631gd --out <run-dir>/queue/out/cc_salt_631gd --xyz <run-dir>/repo/molecules/btpc/results/btpc_pcm/opt.xyz --labels salt --solvent water --basis '6-31g*' --fno-fracs 0.5,0.65",
+      "scratch": "<run-dir>/scratch/cc_salt_631gd",
+      "host": "<vm-1>",
+      "wall_h": 11.641
+    },
+    "cc_neutral_631gd": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "cc_neutral_631gd",
+        "est_hours": 4.5,
+        "command": "export MAX_MEMORY_MB=24000; {python} dft/revision/cc_correction.py --job {id} --out {root}/out/{id} --xyz {root}/out/sp_neutral_pcm/geoms/neutral_pcm.xyz --labels neutral --solvent water --basis '6-31g*' --fno-fracs 0.5",
+        "note": "22 Nov 9:45 pm: split; this job is the 50 % set only, at 4 threads so it starts now (65 % set in cc_neutral_631gd_f065). CCSD(T)-MP2 correction in IEF-PCM water, PTE reference as the DF-MP2 numbers; option A",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 63137,
+      "pid_start_ticks": 15898025,
+      "start": "2026-11-22T21:40:50+05:30",
+      "end": "2026-11-22T23:36:49+05:30",
+      "rc": 0,
+      "command": "export MAX_MEMORY_MB=24000; <run-dir>/env/bin/python dft/revision/cc_correction.py --job cc_neutral_631gd --out <run-dir>/queue/out/cc_neutral_631gd --xyz <run-dir>/queue/out/sp_neutral_pcm/geoms/neutral_pcm.xyz --labels neutral --solvent water --basis '6-31g*' --fno-fracs 0.5",
+      "scratch": "<run-dir>/scratch/cc_neutral_631gd",
+      "host": "<vm-1>",
+      "wall_h": 1.933
+    },
+    "sp_gas_pcmgeoms": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "sp_gas_pcmgeoms",
+        "est_hours": 0.5,
+        "command": "export MAX_MEMORY_MB=16000; {python} dft/revision/singlepoints.py --job {id} --out {root}/out/{id} --xyz {repo}/molecules/btpc/results/btpc_pcm/opt.xyz --xyz {root}/out/sp_neutral_pcm/geoms/neutral_pcm.xyz --methods dfmp2 --mp2-aux aug-cc-pvtz-ri",
+        "note": "22 Nov: gas-phase DF-MP2/6-311++G(d,p) at the two IEF-PCM geometries (review: separates the solvent-polarised orbitals from the gas-phase MP2 preference)",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 55706,
+      "pid_start_ticks": 13995989,
+      "start": "2026-11-22T16:23:49+05:30",
+      "end": "2026-11-22T16:30:55+05:30",
+      "rc": 0,
+      "command": "export MAX_MEMORY_MB=16000; <run-dir>/env/bin/python dft/revision/singlepoints.py --job sp_gas_pcmgeoms --out <run-dir>/queue/out/sp_gas_pcmgeoms --xyz <run-dir>/repo/molecules/btpc/results/btpc_pcm/opt.xyz --xyz <run-dir>/queue/out/sp_neutral_pcm/geoms/neutral_pcm.xyz --methods dfmp2 --mp2-aux aug-cc-pvtz-ri",
+      "scratch": "<run-dir>/scratch/sp_gas_pcmgeoms",
+      "host": "<vm-1>",
+      "wall_h": 0.118
+    },
+    "cc_salt_631ppgd": {
+      "def": {
+        "threads": 8,
+        "retries": 1,
+        "id": "cc_salt_631ppgd",
+        "est_hours": 4.0,
+        "command": "export MAX_MEMORY_MB=22000; {python} dft/revision/cc_correction.py --job {id} --out {root}/out/{id} --xyz {repo}/molecules/btpc/results/btpc_pcm/opt.xyz --labels salt --solvent water --basis '6-31+g**' --fno-fracs 0.5",
+        "note": "22 Nov: primary basis for the CC correction (diffuse + p on H, review), FNO 50 %",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 55757,
+      "pid_start_ticks": 14065587,
+      "start": "2026-11-22T16:35:25+05:30",
+      "end": "2026-11-23T05:06:03+05:30",
+      "rc": 0,
+      "command": "export MAX_MEMORY_MB=22000; <run-dir>/env/bin/python dft/revision/cc_correction.py --job cc_salt_631ppgd --out <run-dir>/queue/out/cc_salt_631ppgd --xyz <run-dir>/repo/molecules/btpc/results/btpc_pcm/opt.xyz --labels salt --solvent water --basis '6-31+g**' --fno-fracs 0.5",
+      "scratch": "<run-dir>/scratch/cc_salt_631ppgd",
+      "host": "<vm-1>",
+      "wall_h": 12.511
+    },
+    "cc_neutral_631ppgd": {
+      "def": {
+        "threads": 8,
+        "retries": 1,
+        "id": "cc_neutral_631ppgd",
+        "est_hours": 4.0,
+        "command": "export MAX_MEMORY_MB=22000; {python} dft/revision/cc_correction.py --job {id} --out {root}/out/{id} --xyz {root}/out/sp_neutral_pcm/geoms/neutral_pcm.xyz --labels neutral --solvent water --basis '6-31+g**' --fno-fracs 0.5",
+        "note": "22 Nov: primary basis for the CC correction (diffuse + p on H, review), FNO 50 %",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 57379,
+      "pid_start_ticks": 14545212,
+      "start": "2026-11-22T17:55:22+05:30",
+      "end": "2026-11-23T06:00:05+05:30",
+      "rc": 0,
+      "command": "export MAX_MEMORY_MB=22000; <run-dir>/env/bin/python dft/revision/cc_correction.py --job cc_neutral_631ppgd --out <run-dir>/queue/out/cc_neutral_631ppgd --xyz <run-dir>/queue/out/sp_neutral_pcm/geoms/neutral_pcm.xyz --labels neutral --solvent water --basis '6-31+g**' --fno-fracs 0.5",
+      "scratch": "<run-dir>/scratch/cc_neutral_631ppgd",
+      "host": "<vm-1>",
+      "wall_h": 12.079
+    },
+    "cc_gas_631gd": {
+      "def": {
+        "threads": 6,
+        "retries": 1,
+        "id": "cc_gas_631gd",
+        "est_hours": 2.0,
+        "command": "export MAX_MEMORY_MB=22000; {python} dft/revision/cc_correction.py --job {id} --out {root}/out/{id} --xyz {repo}/molecules/btpc/results/btpc_pcm/opt.xyz --xyz {root}/out/sp_neutral_pcm/geoms/neutral_pcm.xyz --labels salt,neutral --basis '6-31g*' --fno-fracs 0.5",
+        "note": "22 Nov: gas-phase CC correction at the two IEF-PCM geometries (cross-check of the PTE value)",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 61068,
+      "pid_start_ticks": 15219916,
+      "start": "2026-11-22T19:47:49+05:30",
+      "end": "2026-11-23T05:00:02+05:30",
+      "rc": 0,
+      "command": "export MAX_MEMORY_MB=22000; <run-dir>/env/bin/python dft/revision/cc_correction.py --job cc_gas_631gd --out <run-dir>/queue/out/cc_gas_631gd --xyz <run-dir>/repo/molecules/btpc/results/btpc_pcm/opt.xyz --xyz <run-dir>/queue/out/sp_neutral_pcm/geoms/neutral_pcm.xyz --labels salt,neutral --basis '6-31g*' --fno-fracs 0.5",
+      "scratch": "<run-dir>/scratch/cc_gas_631gd",
+      "host": "<vm-1>",
+      "wall_h": 9.204
+    },
+    "cc_neutral_631gd_f065": {
+      "def": {
+        "threads": 4,
+        "retries": 1,
+        "id": "cc_neutral_631gd_f065",
+        "est_hours": 6.0,
+        "command": "export MAX_MEMORY_MB=24000; {python} dft/revision/cc_correction.py --job {id} --out {root}/out/{id} --xyz {root}/out/sp_neutral_pcm/geoms/neutral_pcm.xyz --labels neutral --solvent water --basis '6-31g*' --fno-fracs 0.65",
+        "note": "22 Nov 9:45 pm: split from cc_neutral_631gd; 65 % of the virtuals, pairs with the salt 65 % set in cc_salt_631gd; 23 Nov 12:40 am: 4 threads (4-thread runs proved fastest on the loaded VM: (T) 4664 s at 4 threads vs 7573 s at 10)",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 66401,
+      "pid_start_ticks": 16961434,
+      "start": "2026-11-23T00:38:04+05:30",
+      "end": "2026-11-23T04:49:37+05:30",
+      "rc": 0,
+      "command": "export MAX_MEMORY_MB=24000; <run-dir>/env/bin/python dft/revision/cc_correction.py --job cc_neutral_631gd_f065 --out <run-dir>/queue/out/cc_neutral_631gd_f065 --xyz <run-dir>/queue/out/sp_neutral_pcm/geoms/neutral_pcm.xyz --labels neutral --solvent water --basis '6-31g*' --fno-fracs 0.65",
+      "scratch": "<run-dir>/scratch/cc_neutral_631gd_f065",
+      "host": "<vm-1>",
+      "wall_h": 4.193
+    }
+  },
+  "order": [
+    "c0_prep",
+    "c0_btpcz_gas_core",
+    "c0_btpcz_pcm_core",
+    "scan_tors_b3lyp",
+    "opt_d3_gas",
+    "opt_d3_pcm",
+    "scan_gas_neutral",
+    "scan_gas_down",
+    "neutral_start_pcm",
+    "scan_gas_up",
+    "neutral_start_gas",
+    "charges_stored",
+    "headline_gasgeom",
+    "headline_pcmgeom",
+    "deltascf_gasgeom",
+    "deltascf_pcmgeom",
+    "td_free",
+    "td_pair_b3lyp",
+    "td_pair_camb3lyp",
+    "softmode_d3_pcm",
+    "c0_btpcz_pcm_softmode",
+    "c0_btpcz_gas_analysis",
+    "c0_btpcz_pcm_analysis",
+    "charges_btpcz",
+    "sp8_pbe0",
+    "sp8_camb3lyp",
+    "headline_btpcz",
+    "c0_btpcz_pcm_fdhess",
+    "sp_scan_wb97xd3bj",
+    "sp_scan_m062x",
+    "sp_scan_dfmp2",
+    "sp_scan_pbe0",
+    "sp_scan_camb3lyp",
+    "sp_min_pcm",
+    "dvr_gas_b3lyp",
+    "dvr_gas_all",
+    "softmode_d3_gas",
+    "scan_tors_d3",
+    "scan_gas_oside",
+    "sp_oside_all",
+    "scan_tors_d3_up",
+    "sp_neutral_pcm",
+    "fdh1",
+    "fdh2",
+    "fdh3",
+    "fdh4",
+    "fdh5",
+    "scan_tors_d3_up60",
+    "cc_salt_631gd",
+    "cc_neutral_631gd",
+    "sp_gas_pcmgeoms",
+    "cc_salt_631ppgd",
+    "cc_neutral_631ppgd",
+    "cc_gas_631gd",
+    "cc_neutral_631gd_f065"
+  ],
+  "updated": "2026-11-23T06:07:00+05:30",
+  "runner": {
+    "pid": 66400,
+    "host": "<vm-1>",
+    "started": "2026-11-23T00:38:04+05:30",
+    "slots": 8,
+    "threads": 36,
+    "scratch_root": "<run-dir>/scratch",
+    "ended": "2026-11-23T06:07:00+05:30"
+  }
+}

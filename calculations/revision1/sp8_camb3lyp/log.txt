@@ -1,0 +1,16 @@
+[2026-11-22 12:23:18 AM IST] job sp8_camb3lyp (dft/revision/headline.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/sp8_camb3lyp, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 12:23:18 AM IST] gas|eps=1: SCF (606 AO, gas), guess <run-dir>/repo/data/r2/molecules/btpc/results/btpc_gas/final.chk
+[2026-11-22 12:23:18 AM IST] initial density from <run-dir>/repo/data/r2/molecules/btpc/results/btpc_gas/final.chk
+[2026-11-22 12:30:07 AM IST] gas|eps=1: E = -1316.6554066666 Ha (12 cycles, 409 s); HOMO -8.1519 (anion), LUMO -2.0798 (cation, cation 99.6 %), gap 6.0721 eV; Delta(cat-an) -0.4213 eV
+[2026-11-22 12:30:07 AM IST] gas|eps=78.3553: SCF (606 AO, IEF-PCM eps=78.3553), guess <run-dir>/queue/out/sp8_camb3lyp/chk/gas_eps1.chk
+[2026-11-22 12:30:07 AM IST] initial density from <run-dir>/queue/out/sp8_camb3lyp/chk/gas_eps1.chk
+[2026-11-22 12:44:39 AM IST] gas|eps=78.3553: E = -1316.6967027026 Ha (12 cycles, 870 s); HOMO -8.3411 (anion), LUMO -1.9588 (anion, cation 0.4 %), gap 6.3823 eV; Delta(cat-an) +0.7967 eV
+[2026-11-22 12:44:39 AM IST] gas: LUMO switches cation->anion at eps ~ 1.519 (f-interpolation; ln-eps 4.520), bracket [1.0, 78.3553]
+[2026-11-22 12:44:39 AM IST] pcm|eps=1: SCF (606 AO, gas), guess <run-dir>/repo/data/r2/molecules/btpc/results/btpc_pcm/final.chk
+[2026-11-22 12:44:39 AM IST] initial density from <run-dir>/repo/data/r2/molecules/btpc/results/btpc_pcm/final.chk
+[2026-11-22 12:51:41 AM IST] pcm|eps=1: E = -1316.6457071261 Ha (13 cycles, 422 s); HOMO -7.7539 (anion), LUMO -2.5890 (cation, cation 100.0 %), gap 5.1649 eV; Delta(cat-an) -1.1696 eV
+[2026-11-22 12:51:42 AM IST] pcm|eps=78.3553: SCF (606 AO, IEF-PCM eps=78.3553), guess <run-dir>/queue/out/sp8_camb3lyp/chk/pcm_eps1.chk
+[2026-11-22 12:51:42 AM IST] initial density from <run-dir>/queue/out/sp8_camb3lyp/chk/pcm_eps1.chk
+[2026-11-22 01:06:03 AM IST] pcm|eps=78.3553: E = -1316.6994159927 Ha (12 cycles, 861 s); HOMO -8.1958 (anion), LUMO -1.9231 (anion, cation 0.2 %), gap 6.2727 eV; Delta(cat-an) +0.6167 eV
+[2026-11-22 01:06:03 AM IST] pcm: LUMO switches cation->anion at eps ~ 2.828 (f-interpolation; ln-eps 17.383), bracket [1.0, 78.3553]
+[2026-11-22 01:06:03 AM IST] job sp8_camb3lyp finished (peak RSS 9823 MB)

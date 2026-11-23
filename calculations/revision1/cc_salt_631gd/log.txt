@@ -1,0 +1,16 @@
+[2026-11-22 06:28:32 PM IST] job cc_salt_631gd (dft/revision/cc_correction.py) on <vm-1>: threads 10, max_memory 24000 MB, scratch <run-dir>/scratch/cc_salt_631gd, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 06:28:32 PM IST] 1 geometries (salt); basis 6-31g*; IEF-PCM eps 78.3553; FNO fractions of the virtual space 0.5,0.65
+[2026-11-22 06:30:41 PM IST] salt: E_HF = -1309.3932681790 Ha (15 cycles), nao 366; RI basis {'C': 'cc-pvdz-ri', 'O': 'cc-pvdz-ri', 'H': 'cc-pvdz-ri', 'N': 'cc-pvdz-ri'}; full-space MP2 for the NOs
+[2026-11-22 06:31:50 PM IST] salt: MP2 full space (RI) -3.76591787 Ha (69 s), 64 occ x 277 vir; NO sets [138, 180]
+[2026-11-22 06:31:50 PM IST] salt|f0.500: FNO-CCSD(T) with 138 of 277 virtual NOs (93.02 % of the NO occupation, smallest kept 3.75e-03)
+[2026-11-22 06:32:16 PM IST]   DF-CCSD space: 64 occ x 138 vir, naux 1512; MP2 (same space, RI) -3.04486607 Ha; |F_offdiag| max oo/vv/ov 1.6e-07/1.1e-07/2.7e-07
+[2026-11-22 07:15:02 PM IST]   CCSD -3.04538515 Ha (2585 s); T1 0.0152, D1 0.0706, D2 0.2006
+[2026-11-22 09:21:15 PM IST]   (T) -0.10247087 Ha (7573 s); delta = CCSD(T) - MP2 = -0.10298995 Ha
+[2026-11-22 09:21:15 PM IST] salt|f0.500: delta_CCSD -0.00051908, delta_T -0.10247087, delta -0.10298995 Ha (with scaled (T) -0.12725598); MP2 truncation -0.721052 Ha (2.82 h)
+[2026-11-22 09:21:15 PM IST] salt|f0.650: FNO-CCSD(T) with 180 of 277 virtual NOs (97.06 % of the NO occupation, smallest kept 1.64e-03)
+[2026-11-22 09:21:51 PM IST]   DF-CCSD space: 64 occ x 180 vir, naux 1512; MP2 (same space, RI) -3.42912476 Ha; |F_offdiag| max oo/vv/ov 1.6e-07/1.1e-07/2.7e-07
+[2026-11-22 11:55:19 PM IST]   CCSD -3.43845017 Ha (9228 s); T1 0.0168, D1 0.0785, D2 0.2017
+[2026-11-23 06:06:55 AM IST]   (T) -0.13183663 Ha (22296 s); delta = CCSD(T) - MP2 = -0.14116204 Ha
+[2026-11-23 06:06:56 AM IST] salt|f0.650: delta_CCSD -0.00932541, delta_T -0.13183663, delta -0.14116204 Ha (with scaled (T) -0.15411044); MP2 truncation -0.336793 Ha (8.76 h)
+[2026-11-23 06:06:56 AM IST] salt: all fractions done (11.64 h)
+[2026-11-23 06:06:56 AM IST] job cc_salt_631gd finished (peak RSS 17849 MB)

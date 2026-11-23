@@ -1,0 +1,64 @@
+{
+  "jobs": {
+    "cc_salt_631gd_f080": {
+      "def": {
+        "threads": 16,
+        "retries": 1,
+        "id": "cc_salt_631gd_f080",
+        "est_hours": 4.0,
+        "command": "export MAX_MEMORY_MB=40000; {python} dft/revision/cc_correction.py --job {id} --out {root}/out/{id} --xyz {repo}/molecules/btpc/results/btpc_pcm/opt.xyz --labels salt --solvent water --basis '6-31g*' --fno-fracs 0.8",
+        "note": "23 Nov 2026: user 'Go for an 80% run now'; FNO 80 % of the virtuals (222 of 277), completes the 6-31G* 50/65/80 series in IEF-PCM water (PTE reference as the DF-MP2 numbers)",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 9013,
+      "pid_start_ticks": 17030,
+      "start": "2026-11-23T08:10:07+05:30",
+      "end": "2026-11-23T13:14:17+05:30",
+      "rc": 0,
+      "command": "export MAX_MEMORY_MB=40000; <run-dir>/env/bin/python dft/revision/cc_correction.py --job cc_salt_631gd_f080 --out <run-dir>/queue/out/cc_salt_631gd_f080 --xyz <run-dir>/repo/molecules/btpc/results/btpc_pcm/opt.xyz --labels salt --solvent water --basis '6-31g*' --fno-fracs 0.8",
+      "scratch": "<run-dir>/scratch/cc_salt_631gd_f080",
+      "host": "<vm-2>",
+      "wall_h": 5.07
+    },
+    "cc_neutral_631gd_f080": {
+      "def": {
+        "threads": 16,
+        "retries": 1,
+        "id": "cc_neutral_631gd_f080",
+        "est_hours": 4.0,
+        "command": "export MAX_MEMORY_MB=40000; {python} dft/revision/cc_correction.py --job {id} --out {root}/out/{id} --xyz {root}/out/sp_neutral_pcm/geoms/neutral_pcm.xyz --labels neutral --solvent water --basis '6-31g*' --fno-fracs 0.8",
+        "note": "23 Nov 2026: user 'Go for an 80% run now'; FNO 80 % of the virtuals (222 of 277), completes the 6-31G* 50/65/80 series in IEF-PCM water (PTE reference as the DF-MP2 numbers)",
+        "depends_on": [],
+        "env": {}
+      },
+      "state": "done",
+      "attempts": 1,
+      "pgid": 9014,
+      "pid_start_ticks": 17030,
+      "start": "2026-11-23T08:10:07+05:30",
+      "end": "2026-11-23T13:18:22+05:30",
+      "rc": 0,
+      "command": "export MAX_MEMORY_MB=40000; <run-dir>/env/bin/python dft/revision/cc_correction.py --job cc_neutral_631gd_f080 --out <run-dir>/queue/out/cc_neutral_631gd_f080 --xyz <run-dir>/queue/out/sp_neutral_pcm/geoms/neutral_pcm.xyz --labels neutral --solvent water --basis '6-31g*' --fno-fracs 0.8",
+      "scratch": "<run-dir>/scratch/cc_neutral_631gd_f080",
+      "host": "<vm-2>",
+      "wall_h": 5.138
+    }
+  },
+  "order": [
+    "cc_salt_631gd_f080",
+    "cc_neutral_631gd_f080"
+  ],
+  "updated": "2026-11-23T13:18:22+05:30",
+  "runner": {
+    "pid": 9012,
+    "host": "<vm-2>",
+    "started": "2026-11-23T08:10:07+05:30",
+    "slots": 2,
+    "threads": 32,
+    "scratch_root": "<run-dir>/scratch",
+    "ended": "2026-11-23T13:18:22+05:30"
+  }
+}

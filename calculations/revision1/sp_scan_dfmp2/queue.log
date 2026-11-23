@@ -1,0 +1,148 @@
+
+===== queue: start sp_scan_dfmp2 attempt 1 at 2026-11-22T03:42:19+05:30 =====
+$ <run-dir>/env/bin/python dft/revision/singlepoints.py --job sp_scan_dfmp2 --out <run-dir>/queue/out/sp_scan_dfmp2 --scan <run-dir>/queue/out/scan_gas_up --scan <run-dir>/queue/out/scan_gas_down --scan <run-dir>/queue/out/scan_gas_neutral --methods dfmp2 --mp2-aux aug-cc-pvtz-ri
+[2026-11-22 03:42:19 AM IST] job sp_scan_dfmp2 (dft/revision/singlepoints.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/sp_scan_dfmp2, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 03:42:20 AM IST] 14 geometries x 1 methods (dfmp2); gas phase; basis 6-311++g(d,p), grid 4
+[2026-11-22 03:42:20 AM IST] initial density from <run-dir>/queue/out/scan_gas_up/chk/up_1.700.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+ERROR: Insufficient memory for holding t2 incore. Please rerun with `with_t2 = False`.
+[2026-11-22 03:44:47 AM IST] ERROR MemoryError: 
+Traceback (most recent call last):
+  File "<run-dir>/repo/dft/revision/rev_common.py", line 620, in main_wrapper
+    ok = run(job, args)
+         ^^^^^^^^^^^^^^
+  File "<run-dir>/repo/dft/revision/singlepoints.py", line 321, in run
+    rec, prev_chk = mp2_point(job, g, case, L, args, prev_chk, key, logf)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<run-dir>/repo/dft/revision/singlepoints.py", line 204, in mp2_point
+    e_corr = pt.kernel()[0]
+             ^^^^^^^^^^^
+  File "<run-dir>/env/lib/python3.11/site-packages/pyscf/mp/mp2.py", line 639, in kernel
+    self.e_corr, self.t2 = self.init_amps(mo_energy, mo_coeff, eris, with_t2)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<run-dir>/env/lib/python3.11/site-packages/pyscf/mp/dfmp2.py", line 185, in init_amps
+    return kernel(self, mo_energy, mo_coeff, eris, with_t2)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<run-dir>/env/lib/python3.11/site-packages/pyscf/mp/dfmp2.py", line 61, in kernel
+    raise MemoryError
+MemoryError
+
+[2026-11-22 03:44:47 AM IST] job sp_scan_dfmp2 FAILED (peak RSS 7108 MB)
+
+===== queue: start sp_scan_dfmp2 attempt 2 at 2026-11-22T03:44:49+05:30 =====
+$ <run-dir>/env/bin/python dft/revision/singlepoints.py --job sp_scan_dfmp2 --out <run-dir>/queue/out/sp_scan_dfmp2 --scan <run-dir>/queue/out/scan_gas_up --scan <run-dir>/queue/out/scan_gas_down --scan <run-dir>/queue/out/scan_gas_neutral --methods dfmp2 --mp2-aux aug-cc-pvtz-ri
+[2026-11-22 03:44:50 AM IST] job sp_scan_dfmp2 (dft/revision/singlepoints.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/sp_scan_dfmp2, smoke False, restart #1; PySCF 2.14.0
+[2026-11-22 03:44:50 AM IST] 14 geometries x 1 methods (dfmp2); gas phase; basis 6-311++g(d,p), grid 4
+[2026-11-22 03:44:50 AM IST] initial density from <run-dir>/queue/out/sp_scan_dfmp2/chk/up_1.700_dfmp2.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+ERROR: Insufficient memory for holding t2 incore. Please rerun with `with_t2 = False`.
+[2026-11-22 03:45:42 AM IST] ERROR MemoryError: 
+Traceback (most recent call last):
+  File "<run-dir>/repo/dft/revision/rev_common.py", line 620, in main_wrapper
+    ok = run(job, args)
+         ^^^^^^^^^^^^^^
+  File "<run-dir>/repo/dft/revision/singlepoints.py", line 321, in run
+    rec, prev_chk = mp2_point(job, g, case, L, args, prev_chk, key, logf)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<run-dir>/repo/dft/revision/singlepoints.py", line 204, in mp2_point
+    e_corr = pt.kernel()[0]
+             ^^^^^^^^^^^
+  File "<run-dir>/env/lib/python3.11/site-packages/pyscf/mp/mp2.py", line 639, in kernel
+    self.e_corr, self.t2 = self.init_amps(mo_energy, mo_coeff, eris, with_t2)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<run-dir>/env/lib/python3.11/site-packages/pyscf/mp/dfmp2.py", line 185, in init_amps
+    return kernel(self, mo_energy, mo_coeff, eris, with_t2)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<run-dir>/env/lib/python3.11/site-packages/pyscf/mp/dfmp2.py", line 61, in kernel
+    raise MemoryError
+MemoryError
+
+[2026-11-22 03:45:42 AM IST] job sp_scan_dfmp2 FAILED (peak RSS 7095 MB)
+
+===== queue: start sp_scan_dfmp2 attempt 1 at 2026-11-22T06:38:35+05:30 =====
+$ export MAX_MEMORY_MB=16000; <run-dir>/env/bin/python dft/revision/singlepoints.py --job sp_scan_dfmp2 --out <run-dir>/queue/out/sp_scan_dfmp2 --scan <run-dir>/queue/out/scan_gas_up --scan <run-dir>/queue/out/scan_gas_down --scan <run-dir>/queue/out/scan_gas_neutral --methods dfmp2 --mp2-aux aug-cc-pvtz-ri
+[2026-11-22 06:38:36 AM IST] job sp_scan_dfmp2 (dft/revision/singlepoints.py) on <vm-1>: threads 4, max_memory 16000 MB, scratch <run-dir>/scratch/sp_scan_dfmp2, smoke False, restart #2; PySCF 2.14.0
+[2026-11-22 06:38:36 AM IST] 14 geometries x 1 methods (dfmp2); gas phase; basis 6-311++g(d,p), grid 4
+[2026-11-22 06:38:36 AM IST] initial density from <run-dir>/queue/out/sp_scan_dfmp2/chk/up_1.700_dfmp2.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 06:40:07 AM IST] up_1.700|dfmp2: E = -1313.8292509958 Ha (91 s, E_HF -1309.69180440, E_corr -4.13744659)
+[2026-11-22 06:40:07 AM IST] initial density from <run-dir>/queue/out/sp_scan_dfmp2/chk/up_1.700_dfmp2.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 06:42:51 AM IST] up_1.600|dfmp2: E = -1313.8304328711 Ha (164 s, E_HF -1309.69184541, E_corr -4.13858746)
+[2026-11-22 06:42:51 AM IST] initial density from <run-dir>/queue/out/sp_scan_dfmp2/chk/up_1.600_dfmp2.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 06:45:33 AM IST] up_1.520|dfmp2: E = -1313.8314440703 Ha (162 s, E_HF -1309.69158094, E_corr -4.13986313)
+[2026-11-22 06:45:33 AM IST] initial density from <run-dir>/queue/out/sp_scan_dfmp2/chk/up_1.520_dfmp2.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 06:48:10 AM IST] up_1.460|dfmp2: E = -1313.8323223010 Ha (157 s, E_HF -1309.69114854, E_corr -4.14117376)
+[2026-11-22 06:48:10 AM IST] initial density from <run-dir>/queue/out/sp_scan_dfmp2/chk/up_1.460_dfmp2.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 06:50:35 AM IST] min|dfmp2: E = -1313.8325907235 Ha (145 s, E_HF -1309.69092792, E_corr -4.14166280)
+[2026-11-22 06:50:35 AM IST] initial density from <run-dir>/queue/out/sp_scan_dfmp2/chk/min_dfmp2.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 06:53:05 AM IST] down_1.400|dfmp2: E = -1313.8329632608 Ha (149 s, E_HF -1309.69048873, E_corr -4.14247453)
+[2026-11-22 06:53:05 AM IST] initial density from <run-dir>/queue/out/sp_scan_dfmp2/chk/down_1.400_dfmp2.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 06:55:41 AM IST] down_1.340|dfmp2: E = -1313.8336002120 Ha (156 s, E_HF -1309.68964606, E_corr -4.14395415)
+[2026-11-22 06:55:41 AM IST] initial density from <run-dir>/queue/out/sp_scan_dfmp2/chk/down_1.340_dfmp2.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 06:58:14 AM IST] neutral_1.280|dfmp2: E = -1313.8344604147 Ha (153 s, E_HF -1309.68874286, E_corr -4.14571756)
+[2026-11-22 06:58:14 AM IST] initial density from <run-dir>/queue/out/sp_scan_dfmp2/chk/neutral_1.280_dfmp2.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 07:00:51 AM IST] down_1.230|dfmp2: E = -1313.8353456165 Ha (156 s, E_HF -1309.68824780, E_corr -4.14709782)
+[2026-11-22 07:00:51 AM IST] initial density from <run-dir>/queue/out/sp_scan_dfmp2/chk/down_1.230_dfmp2.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 07:03:24 AM IST] down_1.180|dfmp2: E = -1313.8364576802 Ha (154 s, E_HF -1309.68848192, E_corr -4.14797576)
+[2026-11-22 07:03:24 AM IST] initial density from <run-dir>/queue/out/sp_scan_dfmp2/chk/down_1.180_dfmp2.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 07:06:08 AM IST] down_1.130|dfmp2: E = -1313.8379696599 Ha (164 s, E_HF -1309.69004210, E_corr -4.14792756)
+WARN: Large deviations found between the input molecule and the molecule from chkfile
+Initial guess density matrix may have large error.
+[2026-11-22 07:06:08 AM IST] initial density from <run-dir>/queue/out/sp_scan_dfmp2/chk/down_1.130_dfmp2.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 07:08:47 AM IST] down_1.080|dfmp2: E = -1313.8393354319 Ha (159 s, E_HF -1309.69338613, E_corr -4.14594930)
+WARN: Large deviations found between the input molecule and the molecule from chkfile
+Initial guess density matrix may have large error.
+[2026-11-22 07:08:47 AM IST] initial density from <run-dir>/queue/out/sp_scan_dfmp2/chk/down_1.080_dfmp2.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 07:11:31 AM IST] neutral_1.030|dfmp2: E = -1313.8399589577 Ha (164 s, E_HF -1309.69813553, E_corr -4.14182343)
+WARN: Large deviations found between the input molecule and the molecule from chkfile
+Initial guess density matrix may have large error.
+[2026-11-22 07:11:31 AM IST] initial density from <run-dir>/queue/out/sp_scan_dfmp2/chk/neutral_1.030_dfmp2.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 07:14:03 AM IST] neutral_0.980|dfmp2: E = -1313.8403486960 Ha (152 s, E_HF -1309.70163412, E_corr -4.13871457)
+[2026-11-22 07:14:03 AM IST]   Relative energies (kcal/mol) per method; zero = the free minimum (min).
+[2026-11-22 07:14:03 AM IST]   
+[2026-11-22 07:14:03 AM IST]   | geometry | r(H...O) A | r(N-H) A | b3lyp_scan | dfmp2 | scs-mp2 |
+[2026-11-22 07:14:03 AM IST]   |---|---|---|---|---|---|
+[2026-11-22 07:14:03 AM IST]   | up_1.700 | 1.700 | 1.059 | 0.56 | 2.10 | 1.73 |
+[2026-11-22 07:14:03 AM IST]   | up_1.600 | 1.600 | 1.071 | 0.25 | 1.35 | 1.09 |
+[2026-11-22 07:14:03 AM IST]   | up_1.520 | 1.520 | 1.086 | 0.07 | 0.72 | 0.57 |
+[2026-11-22 07:14:03 AM IST]   | up_1.460 | 1.460 | 1.102 | 0.01 | 0.17 | 0.12 |
+[2026-11-22 07:14:03 AM IST]   | min | 1.437 | 1.109 | 0.00 | 0.00 | 0.00 |
+[2026-11-22 07:14:03 AM IST]   | down_1.400 | 1.400 | 1.123 | 0.02 | -0.23 | -0.15 |
+[2026-11-22 07:14:03 AM IST]   | down_1.340 | 1.340 | 1.152 | 0.12 | -0.63 | -0.42 |
+[2026-11-22 07:14:03 AM IST]   | neutral_1.280 | 1.280 | 1.193 | 0.25 | -1.17 | -0.82 |
+[2026-11-22 07:14:03 AM IST]   | down_1.230 | 1.230 | 1.241 | 0.32 | -1.73 | -1.29 |
+[2026-11-22 07:14:03 AM IST]   | down_1.180 | 1.180 | 1.307 | 0.21 | -2.43 | -1.98 |
+[2026-11-22 07:14:03 AM IST]   | down_1.130 | 1.130 | 1.404 | -0.20 | -3.38 | -3.05 |
+[2026-11-22 07:14:03 AM IST]   | down_1.080 | 1.080 | 1.545 | -0.96 | -4.23 | -4.23 |
+[2026-11-22 07:14:03 AM IST]   | neutral_1.030 | 1.030 | 1.764 | -1.87 | -4.62 | -5.20 |
+[2026-11-22 07:14:03 AM IST]   | neutral_0.980 | 0.980 | 1.951 | -2.04 | -4.87 | -5.80 |
+[2026-11-22 07:14:03 AM IST] job sp_scan_dfmp2 finished (peak RSS 12924 MB)

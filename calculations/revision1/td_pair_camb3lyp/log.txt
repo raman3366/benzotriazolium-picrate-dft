@@ -1,0 +1,4 @@
+[2026-11-21 10:23:36 PM IST] job td_pair_camb3lyp (dft/revision/tddft.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/td_pair_camb3lyp, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 04:41:26 AM IST] pair-gas/camb3lyp: 20 states in 22131 s (TDA); S1 3.735 eV (332 nm, f 0.1371, CT 0.01); lowest bright S1 3.735 eV (332 nm, f 0.137)
+[2026-11-22 11:28:47 AM IST] pair-pcm/camb3lyp: 20 states in 23455 s (PCMTDA); S1 3.532 eV (351 nm, f 0.2448, CT 0.00); lowest bright S1 3.532 eV (351 nm, f 0.245)
+[2026-11-22 11:28:47 AM IST] job td_pair_camb3lyp finished (peak RSS 12107 MB)

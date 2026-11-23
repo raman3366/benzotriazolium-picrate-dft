@@ -1,0 +1,22 @@
+
+===== queue: start c0_btpcz_pcm_fdhess attempt 1 at 2026-11-22T01:06:05+05:30 =====
+$ MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/c0_case.py --job c0_btpcz_pcm_fdhess --out <run-dir>/queue/out/c0_btpcz_pcm_fdhess --case btpcz_pcm --stages frequencies --freq fd --fd-chunk 3
+[2026-11-22 01:06:06 AM IST] job c0_btpcz_pcm_fdhess (dft/revision/c0_case.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/c0_btpcz_pcm_fdhess, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 01:06:06 AM IST] frequencies: reference SCF (conv_tol 1e-10 from opt.chk -> final.chk)
+[2026-11-22 01:12:15 AM IST] frequencies: reference E = -1317.2537338944 Ha (368 s, grid 4, Lebedev 29)
+[2026-11-22 02:28:07 AM IST] frequencies: chunk cols_000_003 done (6 gradients, 75.9 min); 1/33 chunks
+[2026-11-22 03:53:50 AM IST] frequencies: chunk cols_003_006 done (6 gradients, 85.7 min); 2/33 chunks
+[2026-11-22 05:16:09 AM IST] frequencies: chunk cols_006_009 done (6 gradients, 82.3 min); 3/33 chunks
+[2026-11-22 06:26:51 AM IST] frequencies: chunk cols_009_012 done (6 gradients, 70.7 min); 4/33 chunks
+[2026-11-22 07:47:08 AM IST] frequencies: chunk cols_012_015 done (6 gradients, 80.3 min); 5/33 chunks
+[2026-11-22 08:55:09 AM IST] frequencies: chunk cols_015_018 done (6 gradients, 68.0 min); 6/33 chunks
+[2026-11-22 09:56:36 AM IST] frequencies: chunk cols_018_021 done (6 gradients, 61.4 min); 7/33 chunks
+[2026-11-22 11:07:57 AM IST] frequencies: chunk cols_021_024 done (6 gradients, 71.4 min); 9/33 chunks
+[2026-11-22 12:21:15 PM IST] frequencies: chunk cols_024_027 done (6 gradients, 73.3 min); 12/33 chunks
+[2026-11-22 01:29:56 PM IST] frequencies: chunk cols_027_030 done (6 gradients, 68.7 min); 16/33 chunks
+[2026-11-22 02:37:45 PM IST] frequencies: chunk cols_030_033 done (6 gradients, 67.8 min); 20/33 chunks
+[2026-11-22 03:43:43 PM IST] frequencies: chunk cols_033_036 done (6 gradients, 66.0 min); 26/33 chunks
+[2026-11-22 04:48:25 PM IST] frequencies: chunk cols_036_039 done (6 gradients, 64.7 min); 32/33 chunks
+[2026-11-22 05:55:17 PM IST] frequencies: chunk cols_039_042 done (6 gradients, 66.9 min); 33/33 chunks
+[2026-11-22 05:55:17 PM IST] frequencies: frequencies (finite-difference (gradients, step 0.005 Bohr, dft/_fd_worker.py in 33 sequential chunks of 3 columns x 4 threads; dft/revision/c0_case.py)): 0 imaginary, lowest 5.5 cm-1, 1003 min; lowest [ 5.5 11.6 23.9 41.5 47.1 52.5] cm-1; TR residual 0.00 cm-1
+[2026-11-22 05:55:17 PM IST] job c0_btpcz_pcm_fdhess finished (peak RSS 120 MB)

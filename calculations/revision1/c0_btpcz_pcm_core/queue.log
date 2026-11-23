@@ -1,0 +1,14 @@
+
+===== queue: start c0_btpcz_pcm_core attempt 1 at 2026-11-21T03:14:11+05:30 =====
+$ MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/c0_case.py --job c0_btpcz_pcm_core --out <run-dir>/queue/out/c0_btpcz_pcm_core --case btpcz_pcm --freq none --preopt-max-hours 6 --opt-maxsteps 100 --opt-max-hours 30 --negligible-stop 10
+[2026-11-21 03:14:12 AM IST] job c0_btpcz_pcm_core (dft/revision/c0_case.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/c0_btpcz_pcm_core, smoke False, restart #0; PySCF 2.14.0
+[2026-11-21 03:14:12 AM IST] preopt: B3LYP/6-31g(d), GAU_LOOSE, from the crystal pair
+[2026-11-21 04:58:17 AM IST] preopt: pre-optimisation at B3LYP/6-31g(d): converged (GAU_LOOSE) after 21 steps, 104.1 min (dft/revision/c0_case.py)
+[2026-11-21 04:58:17 AM IST] optimize: from preopt.xyz, cap 100 evaluations, 30.0 h, stall stop 10
+[2026-11-21 05:40:33 PM IST] optimize: optimisation converged in 55 steps, 762.2 min, E = -1317.25373389 Ha
+[2026-11-21 05:40:33 PM IST] proton_check: ./run_case.sh btpcz_pcm 4 -- --stage proton_check
+[2026-11-21 05:40:34 PM IST] proton_check: done in 0.0 min
+[2026-11-21 05:40:34 PM IST] frequencies: --freq none; skipped
+[2026-11-21 05:40:34 PM IST] fmo: ./run_case.sh btpcz_pcm 4 -- --stage fmo
+[2026-11-21 06:05:51 PM IST] fmo: done in 25.3 min
+[2026-11-21 06:05:51 PM IST] job c0_btpcz_pcm_core finished (peak RSS 114 MB)

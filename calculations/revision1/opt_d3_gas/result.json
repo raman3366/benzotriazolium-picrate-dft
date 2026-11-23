@@ -1,0 +1,692 @@
+{
+  "job": "opt_d3_gas",
+  "script": "dft/revision/opt_d3.py",
+  "argv": [
+    "dft/revision/opt_d3.py",
+    "--job",
+    "opt_d3_gas",
+    "--out",
+    "<run-dir>/queue/out/opt_d3_gas",
+    "--model",
+    "gas",
+    "--disp",
+    "d3bj",
+    "--seed-hessian",
+    "auto"
+  ],
+  "smoke": false,
+  "status": "done",
+  "started": "2026-11-21T03:14:12+05:30",
+  "restarts": 0,
+  "last_start": "2026-11-21T03:14:12+05:30",
+  "finished": "2026-11-21T04:10:34+05:30",
+  "host": {
+    "hostname": "<vm-1>",
+    "machine": "x86_64",
+    "cpu": "AMD EPYC 7B13",
+    "cpu_count": 32,
+    "ram_mb": 128799
+  },
+  "threads": 4,
+  "max_memory_mb": 8000,
+  "scratch": "<run-dir>/scratch/opt_d3_gas",
+  "software": {
+    "python": "3.11.16",
+    "pyscf": "2.14.0",
+    "numpy": "2.4.6",
+    "executable": "<run-dir>/env/bin/python",
+    "prefix": "<run-dir>/env",
+    "scipy": "1.17.1",
+    "h5py": "3.16.0",
+    "geometric": "1.1.1",
+    "libxc": "7.1.2",
+    "pyscf-dispersion": "1.5.0",
+    "conda_builds": {
+      "pyscf": "2.14.0 py311h990ede3_1302",
+      "pyscf-dispersion": "1.5.0 py311h5df2867_0",
+      "libxc-c": "7.1.2 cpu_hed2233d_2",
+      "libcint": "6.1.3 h64ba90f_2",
+      "libopenblas": "0.3.34 pthreads_hf13c14d_2",
+      "libblas": "3.11.0 12_h4a7cf45_openblas",
+      "numpy": "2.4.6 py311h2e04523_0",
+      "scipy": "1.17.1 py311hbe70eeb_1",
+      "geometric": "1.1.1 pyhd8ed1ab_0",
+      "python": "3.11.16 h5f976f7_2_cpython",
+      "_x86_64-microarch-level": "3 3_x86_64_v3"
+    }
+  },
+  "script_sha256": {
+    "opt_d3.py": "55f98eee80e65f45cb72f529f0bb42d13dfe3e4aee2a5d1d4b3be1ffe1294f98",
+    "rev_common.py": "fba929added9222d92adeca239e64fcb87eaaeefe6511ad436c2624eba72515a"
+  },
+  "settings": {
+    "basis": "6-311++g(d,p)",
+    "grid_level": 4,
+    "lebedev_order": 29,
+    "conv_tol": 1e-10,
+    "xc": "b3lyp",
+    "disp": "d3bj",
+    "model": "gas",
+    "solvent": null,
+    "scf_conv_tol_opt": 1e-09,
+    "conv_tol_final": 1e-10,
+    "geometric_criteria": {
+      "convergence_energy": 1e-06,
+      "convergence_grms": 0.0003,
+      "convergence_gmax": 0.00045,
+      "convergence_drms": 0.0012,
+      "convergence_dmax": 0.0018
+    },
+    "criteria_name": "GAU (geomeTRIC defaults = Gaussian)",
+    "all_five_required": true,
+    "maxsteps_total": 300,
+    "max_hours_total": null,
+    "negligible_stop": null,
+    "optimizer": "geomeTRIC (TRIC) via pyscf.geomopt.geometric_solver.kernel",
+    "pcm_method": null
+  },
+  "inputs": {
+    "case": {
+      "path": "molecules/btpc/cases/btpc_gas.json",
+      "sha256": "2bfe9b766a4937b7bc9179ec861e86d5d3aac512a1687588a16f26ffff25aebc"
+    },
+    "start_geometry": {
+      "path": "molecules/btpc/results/btpc_gas/opt.xyz",
+      "sha256": "3129d65de911de6f889286e346f85ee4c70ced9cac2f79a5ff4d75b793483a00"
+    },
+    "seed_hessian": {
+      "path": "data/r2/molecules/btpc/results/btpc_gas/hessian.npy",
+      "sha256": "879a720c157a3a84322beea7a7bf89f6614c56750428dab84e9cb53ae1543113"
+    }
+  },
+  "items": {
+    "opt": {
+      "start": "<run-dir>/repo/molecules/btpc/results/btpc_gas/opt.xyz",
+      "seed_hessian": {
+        "n_internal_eigenvalues_floored": 0,
+        "lowest_internal_eigenvalues": [
+          5.422081487555517e-05,
+          0.00016623503062155042,
+          0.00048010823695501836,
+          0.0009494107438261993,
+          0.001619678720476613,
+          0.001727362811673462,
+          0.0019523789138689914,
+          0.0024629868024483663
+        ],
+        "floor_Ha_bohr2": 5e-05,
+        "external_curvature_Ha_bohr2": 0.05,
+        "n_external": 6,
+        "path": "<run-dir>/repo/data/r2/molecules/btpc/results/btpc_gas/hessian.npy"
+      },
+      "history": [
+        {
+          "step": 0,
+          "E_Ha": -1317.2812769730592,
+          "dE_Ha": null,
+          "grms": 0.0005423277916033782,
+          "gmax": 0.0016504451980568623,
+          "gmax_cart": 0.0013381811485033126,
+          "grms_cart": 0.0003131130964712257,
+          "wall_s": 610.1
+        },
+        {
+          "step": 1,
+          "E_Ha": -1317.281485576686,
+          "dE_Ha": -0.00020860362678831734,
+          "grms": 0.0001459861103981331,
+          "gmax": 0.00039380634523578973,
+          "drms_A": 0.10349223575280514,
+          "dmax_A": 0.19831481824250183,
+          "gmax_cart": 0.0002987454628817716,
+          "grms_cart": 8.428512013630857e-05,
+          "wall_s": 458.2
+        },
+        {
+          "step": 2,
+          "E_Ha": -1317.2814755393651,
+          "dE_Ha": 1.0037320862466004e-05,
+          "grms": 0.00013731120074082117,
+          "gmax": 0.00032502695830684627,
+          "drms_A": 0.13260963272113332,
+          "dmax_A": 0.24639631540629522,
+          "gmax_cart": 0.0003074089341579544,
+          "grms_cart": 7.927665871046384e-05,
+          "wall_s": 486.2
+        },
+        {
+          "step": 3,
+          "E_Ha": -1317.2814985539428,
+          "dE_Ha": -2.3014577664071112e-05,
+          "grms": 2.0582949763929593e-05,
+          "gmax": 7.071307432410274e-05,
+          "drms_A": 0.0662915870885597,
+          "dmax_A": 0.12554604326698549,
+          "gmax_cart": 5.572602326522098e-05,
+          "grms_cart": 1.1883571586921296e-05,
+          "wall_s": 464.1
+        },
+        {
+          "step": 4,
+          "E_Ha": -1317.2814987258964,
+          "dE_Ha": -1.7195361579069868e-07,
+          "grms": 1.6662484638342957e-05,
+          "gmax": 6.216888463660913e-05,
+          "drms_A": 0.02274543558816982,
+          "dmax_A": 0.04185663892285693,
+          "gmax_cart": 5.8383008180301854e-05,
+          "grms_cart": 9.620089991315309e-06,
+          "wall_s": 435.4
+        },
+        {
+          "step": 5,
+          "E_Ha": -1317.2814989808905,
+          "dE_Ha": -2.549941200413741e-07,
+          "grms": 4.873429474990822e-06,
+          "gmax": 1.4358433478355257e-05,
+          "drms_A": 0.0046078007210888245,
+          "dmax_A": 0.008080568274952002,
+          "gmax_cart": 1.2317060192791043e-05,
+          "grms_cart": 2.8136758192626076e-06,
+          "wall_s": 395.5
+        },
+        {
+          "step": 6,
+          "E_Ha": -1317.281498972093,
+          "dE_Ha": 8.797542250249535e-09,
+          "grms": 4.26613390720924e-06,
+          "gmax": 1.4067863922249824e-05,
+          "drms_A": 0.00041791437959294537,
+          "dmax_A": 0.000721099439790975,
+          "gmax_cart": 1.0647097842794435e-05,
+          "grms_cart": 2.463053559726245e-06,
+          "wall_s": 345.4
+        }
+      ],
+      "n_atoms": 33,
+      "nao": 606,
+      "settings": {
+        "method": "DFRKS",
+        "xc": "b3lyp-d3bj",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-09,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "C": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "H": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "converged": true,
+      "accepted": true,
+      "converged_on": "geomeTRIC criteria (all five)",
+      "stop_reason": null,
+      "steps": 7,
+      "wall_min": 53.25,
+      "wall_min_total": 53.25,
+      "E_final_Ha": -1317.281498972093,
+      "last_step": {
+        "step": 6,
+        "E_Ha": -1317.281498972093,
+        "dE_Ha": 8.797542250249535e-09,
+        "grms": 4.26613390720924e-06,
+        "gmax": 1.4067863922249824e-05,
+        "drms_A": 0.00041791437959294537,
+        "dmax_A": 0.000721099439790975,
+        "gmax_cart": 1.0647097842794435e-05,
+        "grms_cart": 2.463053559726245e-06,
+        "wall_s": 345.4
+      },
+      "rmsd_vs_start_A": 0.06505707113400963,
+      "geometry": {
+        "d_N...O_A": 2.4726015393019383,
+        "d_H-N_A": 1.1001039001296178,
+        "d_H...O_A": 1.45984756358707,
+        "angle_N-H...O_deg": 149.67087892548741,
+        "proton_transferred": false,
+        "hbond_labels": "N4-H4N...O1",
+        "torsion_atoms": [
+          4,
+          0,
+          18,
+          21
+        ],
+        "torsion_labels": "C1-O1-N4-C12",
+        "torsion_deg": -120.6929479452067,
+        "inter_ring_angle_deg": 27.58199914269246
+      },
+      "xyz": "opt.xyz",
+      "rmsd_vs_stored_B3LYP_min_A": 0.06505707113400963,
+      "geometry_stored_B3LYP_min": {
+        "d_N...O_A": 2.4782348029104186,
+        "d_H-N_A": 1.1093441720006072,
+        "d_H...O_A": 1.436973010173838,
+        "angle_N-H...O_deg": 153.21490812474585,
+        "proton_transferred": false,
+        "hbond_labels": "N4-H4N...O1",
+        "torsion_atoms": [
+          4,
+          0,
+          18,
+          21
+        ],
+        "torsion_labels": "C1-O1-N4-C12",
+        "torsion_deg": -117.82529648966084,
+        "inter_ring_angle_deg": 29.122679852051665
+      },
+      "status": "done",
+      "at": "2026-11-21T04:07:27+05:30"
+    },
+    "final": {
+      "E_Ha": -1317.2814989722692,
+      "scf_cycles": 4,
+      "scf_wall_s": 174.3,
+      "settings": {
+        "method": "DFRKS",
+        "xc": "b3lyp-d3bj",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "C": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "H": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_mo": 602,
+      "E_solvation_Ha": null,
+      "frontier": {
+        "n_occ": 89,
+        "n_mo": 602,
+        "orbitals": {
+          "HOMO-1": {
+            "index": 87,
+            "eV": -7.738217917211115,
+            "mulliken": {
+              "anion": 97.657,
+              "cation": 2.343
+            },
+            "lowdin": {
+              "anion": 97.226,
+              "cation": 2.774
+            },
+            "on": "anion"
+          },
+          "HOMO": {
+            "index": 88,
+            "eV": -6.824447355323786,
+            "mulliken": {
+              "anion": 99.416,
+              "cation": 0.584
+            },
+            "lowdin": {
+              "anion": 99.17,
+              "cation": 0.83
+            },
+            "on": "anion"
+          },
+          "LUMO": {
+            "index": 89,
+            "eV": -3.3347153270491585,
+            "mulliken": {
+              "anion": 0.42,
+              "cation": 99.58
+            },
+            "lowdin": {
+              "anion": 0.666,
+              "cation": 99.334
+            },
+            "on": "cation"
+          },
+          "LUMO+1": {
+            "index": 90,
+            "eV": -2.926674738314882,
+            "mulliken": {
+              "anion": 99.582,
+              "cation": 0.418
+            },
+            "lowdin": {
+              "anion": 99.639,
+              "cation": 0.361
+            },
+            "on": "anion"
+          },
+          "LUMO+2": {
+            "index": 91,
+            "eV": -2.5648566600159235,
+            "mulliken": {
+              "anion": 99.72,
+              "cation": 0.28
+            },
+            "lowdin": {
+              "anion": 99.64,
+              "cation": 0.36
+            },
+            "on": "anion"
+          },
+          "LUMO+3": {
+            "index": 92,
+            "eV": -2.438930187137435,
+            "mulliken": {
+              "anion": 99.103,
+              "cation": 0.897
+            },
+            "lowdin": {
+              "anion": 98.859,
+              "cation": 1.141
+            },
+            "on": "anion"
+          }
+        },
+        "HOMO_eV": -6.824447355323786,
+        "LUMO_eV": -3.3347153270491585,
+        "gap_eV": 3.489732028274627,
+        "LUMO_on": "cation",
+        "HOMO_on": "anion",
+        "lowest_virtual_on": {
+          "cation": {
+            "index": 89,
+            "label": "LUMO",
+            "eV": -3.3347153270491585,
+            "share_pct": 99.58
+          },
+          "anion": {
+            "index": 90,
+            "label": "LUMO+1",
+            "eV": -2.926674738314882,
+            "share_pct": 99.582
+          }
+        },
+        "highest_occupied_on": {
+          "anion": {
+            "index": 88,
+            "label": "HOMO",
+            "eV": -6.824447355323786,
+            "share_pct": 99.416
+          },
+          "cation": {
+            "index": 83,
+            "label": "HOMO-5",
+            "eV": -8.381129677127346,
+            "share_pct": 62.473
+          }
+        },
+        "delta_virt_cation_minus_anion_eV": -0.4080405887342766
+      },
+      "descriptors_fmo_py": {
+        "HOMO_eV": -6.824447355323786,
+        "LUMO_eV": -3.3347153270491585,
+        "gap_eV": 3.489732028274627,
+        "IP_eV": 6.824447355323786,
+        "EA_eV": 3.3347153270491585,
+        "electronegativity_chi_eV": 5.079581341186472,
+        "chemical_potential_mu_eV": -5.079581341186472,
+        "hardness_eta_eV": 1.7448660141373136,
+        "softness_S_eV-1": 0.286554953760852,
+        "electrophilicity_omega_eV": 7.393732926389395
+      },
+      "dipole_debye": {
+        "total": 16.154006469888312,
+        "vector": [
+          11.469529632224766,
+          -10.568924263228247,
+          4.207095787221479
+        ]
+      },
+      "E_dispersion_Ha": -0.07348644605962638,
+      "E_without_dispersion_Ha": -1317.2080125262096,
+      "charges": {
+        "mulliken": {
+          "anion": -0.8721639230841711,
+          "cation": 0.8721639230840944
+        },
+        "lowdin": {
+          "anion": -0.7299655286701208,
+          "cation": 0.7299655286700619
+        },
+        "hirshfeld": {
+          "anion": -0.5767896823499518,
+          "cation": 0.5767886127671079
+        },
+        "cm5": {
+          "anion": -0.6447098645936666,
+          "cation": 0.6447087950108227
+        }
+      },
+      "charges_atoms": {
+        "mulliken": [
+          -0.43511334451446615,
+          -0.33561150943906437,
+          0.013757531191156858,
+          0.5385914775232683,
+          0.48269177266873786,
+          -0.04134757889273466,
+          -0.2320417449560681,
+          0.04096303426460146,
+          -0.6143853678324218,
+          -0.4430580279237821,
+          -0.2790284690758096,
+          -0.23793722444223775,
+          -0.00299875383524828,
+          0.0032344801560597602,
+          0.02228495643269124,
+          0.04238791093613159,
+          0.3106497735890885,
+          0.2947971610659261,
+          -0.49265412372726836,
+          -0.21530737585049842,
+          0.043067169473236966,
+          -0.04606154932087314,
+          0.3801777503905406,
+          -0.20717442124478325,
+          -0.3452412865438843,
+          -0.20123360193536666,
+          -0.09027196119384673,
+          0.3449063331064274,
+          0.18268983438112152,
+          0.20914818053012918,
+          0.19694541517314612,
+          0.714515234852524,
+          0.3986583249934895
+        ],
+        "lowdin": [
+          -0.26133793977500375,
+          0.1706149894657525,
+          -0.20162780213603604,
+          -0.06739545560914095,
+          0.023765847642345683,
+          -0.05498367411305427,
+          0.06039971470249217,
+          -0.17442881478013916,
+          -0.08578300428221919,
+          0.062449886366601426,
+          0.1633220929145054,
+          0.15833194450001908,
+          -0.18682813161070477,
+          -0.18475143363542657,
+          -0.16227984592523548,
+          -0.19360192082429784,
+          0.10283925268673877,
+          0.10132876574268224,
+          0.11407180008062046,
+          0.10545181814187377,
+          -0.039472963700587727,
+          -0.041791075625575935,
+          0.07356132496100898,
+          0.01774046644503091,
+          -0.013657638048172771,
+          -0.005833767384817001,
+          -0.029730482081140153,
+          0.0960160455423833,
+          0.06858750170341688,
+          0.06803660953401525,
+          0.06453820669310362,
+          0.12156312249485135,
+          0.130884559914051
+        ],
+        "hirshfeld": [
+          -0.24982767037198705,
+          0.21806465522956042,
+          -0.19829916920448198,
+          -0.0008946660585387178,
+          0.09718170515711311,
+          0.0039010517254940424,
+          -0.027600489222574076,
+          -0.19077088327274616,
+          0.007048987452350275,
+          -0.028239595315416643,
+          0.2226864629627432,
+          0.21946816963146443,
+          -0.19836719751775966,
+          -0.19716998298912713,
+          -0.18907399019219362,
+          -0.18497514345070343,
+          0.058647105358875184,
+          0.06143096772797607,
+          0.026195919986322203,
+          0.008064752883065296,
+          0.04643343607963768,
+          0.050400489253051184,
+          0.010159088473280065,
+          -0.017742660854110248,
+          -0.021914408834344812,
+          -0.020145569472254543,
+          -0.04364347044526529,
+          0.05258447417484835,
+          0.06506609152514553,
+          0.06778649335534481,
+          0.06480425802764156,
+          0.09971783250952104,
+          0.18902188610522508
+        ],
+        "cm5": [
+          -0.33479619395858407,
+          0.0515414521575448,
+          -0.16149211112936987,
+          0.05918018401318162,
+          0.1387392443546649,
+          0.0632456578882993,
+          -0.06456345238872976,
+          -0.1518274570286523,
+          0.06209174078435282,
+          -0.0650612517274552,
+          0.05688399011756151,
+          0.05237429583452674,
+          -0.15921655436369458,
+          -0.15788784461231115,
+          -0.14830248723052858,
+          -0.14940538175519874,
+          0.1313901934634576,
+          0.1323961109872684,
+          -0.2087074486085182,
+          -0.2590256579392266,
+          0.12562016536725013,
+          0.13152110451909613,
+          -0.03491510036492969,
+          -0.06566996489080446,
+          -0.07701245277868668,
+          -0.07534842272922027,
+          -0.09236773710128234,
+          0.12126473476638049,
+          0.12237362012112338,
+          0.12398272919179498,
+          0.12087906339025029,
+          0.3211808262721758,
+          0.3909333357954197
+        ]
+      },
+      "charge_proton_H": {
+        "mulliken": 0.714515234852524,
+        "lowdin": 0.12156312249485135,
+        "hirshfeld": 0.09971783250952104,
+        "cm5": 0.3211808262721758
+      },
+      "molden": "final.molden",
+      "geometry": {
+        "d_N...O_A": 2.472601539335936,
+        "d_H-N_A": 1.1001039033435795,
+        "d_H...O_A": 1.4598475590002855,
+        "angle_N-H...O_deg": 149.67087917629655,
+        "proton_transferred": false,
+        "hbond_labels": "N4-H4N...O1",
+        "torsion_atoms": [
+          4,
+          0,
+          18,
+          21
+        ],
+        "torsion_labels": "C1-O1-N4-C12",
+        "torsion_deg": -120.69294753206759,
+        "inter_ring_angle_deg": 27.58199906596734
+      },
+      "from_converged_optimisation": true,
+      "from_accepted_optimisation": true,
+      "opt_xyz_sha256": "c7a292a994569158fd4becf3f42b9a312bbce897ea47d954e1da92ca3b0e18cf",
+      "status": "done",
+      "at": "2026-11-21T04:10:34+05:30"
+    }
+  },
+  "timings": {
+    "opt": 3195.0
+  },
+  "error": null,
+  "summary": {
+    "converged": true,
+    "accepted": true,
+    "converged_on": "geomeTRIC criteria (all five)",
+    "stop_reason": null,
+    "steps": 7,
+    "E_opt_Ha": -1317.281498972093,
+    "E_final_sp_Ha": -1317.2814989722692,
+    "E_dispersion_Ha": -0.07348644605962638,
+    "HOMO_eV": -6.824447355323786,
+    "LUMO_eV": -3.3347153270491585,
+    "LUMO_on": "cation",
+    "geometry": {
+      "d_N...O_A": 2.4726015393019383,
+      "d_H-N_A": 1.1001039001296178,
+      "d_H...O_A": 1.45984756358707,
+      "angle_N-H...O_deg": 149.67087892548741,
+      "proton_transferred": false,
+      "hbond_labels": "N4-H4N...O1",
+      "torsion_atoms": [
+        4,
+        0,
+        18,
+        21
+      ],
+      "torsion_labels": "C1-O1-N4-C12",
+      "torsion_deg": -120.6929479452067,
+      "inter_ring_angle_deg": 27.58199914269246
+    },
+    "rmsd_vs_stored_B3LYP_min_A": 0.06505707113400963,
+    "rmsd_vs_start_A": 0.06505707113400963
+  },
+  "peak_rss_mb": 7682.1
+}

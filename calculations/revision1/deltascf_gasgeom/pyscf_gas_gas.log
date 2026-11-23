@@ -1,0 +1,1834 @@
+#INFO: **** input file is <run-dir>/repo/dft/revision/deltascf.py ****
+"""
+Delta-SCF check of where an added electron (N+1) and a removed electron (N-1) go in the BTPC ion pair (plan section 5,
+item 3): an orbital-independent test of the LUMO-location claim.
+
+For each (geometry, model) combination -- default all four of {gas minimum, PCM minimum} x {gas phase, IEF-PCM water},
+i.e. the two published calculations and the two cross combinations -- the script computes
+  N     neutral RKS (from the stored final.chk where one exists),
+  N+1   UKS anion doublet at the same geometry (vertical), from one or more initial guesses that put the extra electron
+        in the lowest cation-localised virtual, the lowest picrate-localised virtual, or the neutral LUMO,
+  N-1   UKS cation doublet, hole in the neutral HOMO (or the highest cation/picrate-localised occupied orbital),
+and reports Delta-SCF vertical electron affinity EA = E(N) - E(N+1) and ionisation energy IE = E(N-1) - E(N) (lowest
+state of each charge), Koopmans values for comparison, <S^2>, and fragment spin and charge (Mulliken, Loewdin,
+Hirshfeld) with the change of fragment charge from N.  With aufbau occupations an initial guess on the "wrong"
+fragment may still relax to the other one; that is reported (start fragment vs final spin location).  --mom keeps the
+initial occupation (maximum-overlap method) to obtain both localised states and their energy difference.
+In IEF-PCM the continuum is fully relaxed for each charge state (equilibrium solvation at fixed geometry).
+
+Level of theory: B3LYP/6-311++G(d,p), density fitting, grid 4, IEF-PCM Lebedev 29 (rev_common.py), conv_tol 1e-10
+for N, 1e-9 for the doublets, max_cycle 150 with a level-shifted retry.
+Usage:
+  python dft/revision/deltascf.py --job dscf --out <dir> [--combos gas/gas,pcm/pcm,gas/pcm,pcm/gas]
+         [--plus cation,anion] [--minus homo] [--mom] [--no-hirshfeld] [--case btpc] [--smoke]
+  combo = <geometry>/<model>; geometry gas|pcm|label=path.xyz, model gas|pcm.
+--smoke: STO-3G, grid 2, Lebedev 17, loose convergence, combos gas/gas,pcm/pcm.
+"""
+import sys, pathlib, argparse, time
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import rev_common as rc          # first: pins the thread pools
+import numpy as np
+import headline as hl
+import charges as ch
+
+CONV_DOUBLET = 1e-9
+
+
+def parser():
+    p = rc.add_common_args(argparse.ArgumentParser(description=__doc__.split('\n')[1]))
+    p.add_argument('--combos', default=None, help='comma list of geometry/model (default all four)')
+    p.add_argument('--plus', default='cation,anion', help='N+1 initial guesses: cation, anion, lumo')
+    p.add_argument('--minus', default='homo', help='N-1 initial guesses: homo, cation, anion')
+    p.add_argument('--mom', action='store_true', help='also run each guess with the maximum-overlap method')
+    p.add_argument('--no-hirshfeld', action='store_true')
+    p.add_argument('--case', default='btpc')
+    p.add_argument('--xc', default=rc.XC)
+    return p
+
+
+def pick_orbital(fr, kind, plus):
+    """Index of the neutral MO that receives the electron (N+1) or loses it (N-1)."""
+    if plus:
+        if kind == 'lumo':
+            return fr['n_occ']
+        o = fr['lowest_virtual_on'].get(kind)
+    else:
+        if kind == 'homo':
+            return fr['n_occ'] - 1
+        o = fr['highest_occupied_on'].get(kind)
+    return None if o is None else o['index']
+
+
+def uks_guess(C, nocc, k, plus):
+    """UKS density from RKS orbitals: alpha gets orbital k as well (N+1), or beta loses orbital k (N-1)."""
+    nmo = C.shape[1]
+    occ_a = np.zeros(nmo); occ_b = np.zeros(nmo)
+    occ_a[:nocc] = 1; occ_b[:nocc] = 1
+    if plus:
+        occ_a[k] = 1
+    else:
+        occ_b[k] = 0
+    dm = np.array([(C * occ_a) @ C.T, (C * occ_b) @ C.T])
+    return dm, (occ_a, occ_b)
+
+
+def run(job, args):
+    lv = hl.level(args.smoke)
+    combos = (args.combos or ('gas/gas,pcm/pcm' if args.smoke else 'gas/gas,pcm/pcm,gas/pcm,pcm/gas')).split(',')
+    plus_guesses = [g.strip() for g in args.plus.split(',') if g.strip()]
+    minus_guesses = [g.strip() for g in args.minus.split(',') if g.strip()]
+    job.r['settings'] = {**lv, 'xc': args.xc, 'conv_tol_doublet': 1e-6 if args.smoke else CONV_DOUBLET,
+                         'combos': combos, 'plus_guesses': plus_guesses, 'minus_guesses': minus_guesses,
+                         'mom': args.mom, 'pcm': f'{rc.PCM_METHOD} water eps {rc.SOLVENT_EPS["water"]}, equilibrium '
+                         'solvation for each charge state', 'density_fit': True, 'auxbasis': 'PySCF default',
+                         'spin_convention': 'mol.spin = 2S = 1 for both doublets'}
+    job.save()
+    case = rc.load_case(f'{args.case}_gas')
+    frags = rc.fragments(case)
+    conv_d = 1e-6 if args.smoke else CONV_DOUBLET
+    free_cache = {}
+
+    def analyse(mol, mf, dm):
+        out = {k: {'fragments': v['fragments'], **({'spin_fragments': v['spin_fragments']} if 'spin_fragments' in v
+                                                   else {})}
+               for k, v in hl.populations(mol, dm, frags).items()}
+        if not args.no_hirshfeld:
+            key = (mol.basis if isinstance(mol.basis, str) else str(mol.basis), args.xc)
+            if key not in free_cache:
+                free_cache[key] = ch.free_atom_dms(mol, xc=args.xc)
+            h = ch.hirshfeld_charges(mol, dm, mf.grids, free_cache[key])
+            q = np.array(h['charges'])
+            out['hirshfeld'] = {'fragments': {f: float(q[a].sum()) for f, a in frags.items()}}
+            if 'spins' in h:
+                s = np.array(h['spins'])
+                out['hirshfeld']['spin_fragments'] = {f: float(s[a].sum()) for f, a in frags.items()}
+        return out
+
+    summary = {}
+    for combo in combos:
+        gspec, model = combo.strip().split('/')
+        glabel, gpath, gmodel = hl.resolve_geom(gspec, args.case)
+        solvent = None if model == 'gas' else 'water'
+        tag = f'{glabel}/{model}'
+        job.input_file(f'geometry_{glabel}', gpath)
+
+        def build(charge, spin):
+            mol = rc.mol_for_case(case, gpath, charge=charge, spin=spin, basis=lv['basis'], verbose=4 if not args.smoke else 3,
+                                  output=job.out / f'pyscf_{glabel}_{model}.log')
+            return mol
+
+        # ---- N (neutral, RKS)
+        kN = f'{tag}|N'
+        chkN = job.chk_dir / f'{glabel}_{model}_N.chk'
+        mol = build(0, 0)
+        mfN = rc.make_mf(mol, xc=args.xc, solvent=solvent, conv_tol=lv['conv_tol'], grid_level=lv['grid_level'],
+                         lebedev_order=lv['lebedev_order'], chkfile=chkN)
+        guess = chkN if chkN.exists() else None
+        if guess is None and not args.smoke:
+            d = hl.stored_dir(f'{args.case}_{model}') or None
+            if d and (d / 'final.chk').exists():
+                guess = d / 'final.chk'
+        if job.done(kN) and chkN.exists():
+            # rebuild the neutral orbitals cheaply from the checkpoint (needed for the guesses)
+            wall = rc.run_scf(mfN, chk_guess=chkN, log=job.log)
+            recN = job.get(kN)
+        else:
+            recN = {'geometry': glabel, 'xyz': str(gpath), 'model': model, 'charge': 0, 'spin': 0,
+                    'settings': rc.settings_of(mfN)}
+            job.put(kN, recN, status='running')
+            job.log(f'{kN}: RKS ({mol.nao} AO), guess {guess or "minao"}')
+            wall = rc.run_scf(mfN, chk_guess=guess, log=job.log)
+            fr = hl.frontier(mfN, frags)
+            recN.update({'E_Ha': float(mfN.e_tot), 'scf_cycles': mfN._cycles, 'scf_wall_s': round(wall, 1),
+                         'frontier': fr, 'populations': analyse(mol, mfN, mfN.make_rdm1())})
+            job.put(kN, recN)
+            job.r['timings'][kN] = round(wall, 1)
+            job.log(f"{kN}: E = {mfN.e_tot:.10f} Ha ({mfN._cycles} cycles, {wall:.0f} s); LUMO on {fr['LUMO_on']}, "
+                    f"HOMO on {fr['HOMO_on']}")
+        frN = recN['frontier']
+        C = np.asarray(mfN.mo_coeff); nocc = frN['n_occ']
+
+        # ---- N+1 and N-1 (UKS doublets)
+        results = {'N+1': [], 'N-1': []}
+        for plus, glist in ((True, plus_guesses), (False, minus_guesses)):
+            state = 'N+1' if plus else 'N-1'
+            used = set()
+            for g in glist:
+                k = pick_orbital(frN, g, plus)
+                if k is None:
+                    job.log(f'{tag} {state}: no orbital for guess {g!r}; skipped')
+                    continue
+                for mode in (['aufbau', 'mom'] if args.mom else ['aufbau']):
+                    if (k, mode) in used:
+                        job.log(f'{tag} {state}: guess {g!r} is orbital {k}, already done ({mode}); skipped')
+                        continue
+                    used.add((k, mode))
+                    key = f'{tag}|{state}|{g}|{mode}'
+                    if job.done(key):
+                        results[state].append(job.get(key)); continue
+                    charge = -1 if plus else +1
+                    molD = build(charge, 1)
+                    chk = job.chk_dir / f"{glabel}_{model}_{state.replace('+', 'p').replace('-', 'm')}_{g}_{mode}.chk"
+                    mf = rc.make_mf(molD, xc=args.xc, solvent=solvent, conv_tol=conv_d, grid_level=lv['grid_level'],
+                                    lebedev_order=lv['lebedev_order'], restricted=False, chkfile=chk)
+                    dm0, (oa, ob) = uks_guess(C, nocc, k, plus)
+                    if mode == 'mom':
+                        from pyscf import scf
+                        mf = scf.addons.mom_occ(mf, (C, C), (oa, ob))
+                    start_frag = hl.frag_of_share({f: 100 * rc.mo_fragment_share(mol, C[:, k], a) for f, a in frags.items()})
+                    rec = {'geometry': glabel, 'model': model, 'state': state, 'charge': charge, 'spin': 1,
+                           'guess': g, 'guess_orbital_index': int(k), 'guess_orbital_on': start_frag, 'mode': mode,
+                           'settings': rc.settings_of(mf)}
+                    job.put(key, rec, status='running')
+                    job.log(f'{key}: UKS doublet, electron {"added to" if plus else "removed from"} MO {k} '
+                            f'({start_frag}), {mode}')
+                    t = time.time()
+                    attempts = []
+                    try:
+                        if chk.exists():
+                            rc.run_scf(mf, chk_guess=chk, log=job.log)
+                        else:
+                            rc.run_scf(mf, dm0=dm0, log=job.log)
+                        attempts.append({'level_shift': 0, 'cycles': mf._cycles})
+                    except RuntimeError as ex:
+                        attempts.append({'level_shift': 0, 'cycles': mf.max_cycle, 'error': str(ex)})
+                        job.log(f'{key}: not converged; retry with level shift 0.25 Ha from the last density')
+                        dm_last = mf.make_rdm1()
+                        mf.level_shift = 0.25
+                        rc.run_scf(mf, dm0=dm_last, log=job.log)
+                        attempts.append({'level_shift': 0.25, 'cycles': mf._cycles})
+                        mf.level_shift = 0
+                        rc.run_scf(mf, dm0=mf.make_rdm1(), log=job.log)      # polish without the shift
+                        attempts.append({'level_shift': 0, 'cycles': mf._cycles, 'polish': True})
+                    wall = time.time() - t
+                    s2, mult = mf.spin_square()
+                    dm = mf.make_rdm1()
+                    pops = analyse(molD, mf, dm)
+                    # where did the unpaired electron end up?  (Mulliken spin; Hirshfeld if computed)
+                    sp = (pops.get('hirshfeld') or pops['mulliken'])['spin_fragments']
+                    end_frag = max(sp, key=lambda f: abs(sp[f]))
+                    na = int(round(mf.mo_occ[0].sum())); nb = int(round(mf.mo_occ[1].sum()))
+                    # the orbital of the added electron (alpha HOMO) or of the hole (beta LUMO)
+                    s_idx, s_spin, s_lab = (na - 1, 0, 'alpha HOMO') if plus else (nb, 1, 'beta LUMO')
+                    soc = mf.mo_coeff[s_spin][:, s_idx]
+                    somo_sh = {f: round(100 * rc.mo_fragment_share(molD, soc, a), 2) for f, a in frags.items()}
+                    dq = {m: {f: pops[m]['fragments'][f] - recN['populations'][m]['fragments'][f] for f in frags}
+                          for m in pops if m in recN['populations']}
+                    rec.update({'E_Ha': float(mf.e_tot), 'S2': float(s2), 'multiplicity': float(mult),
+                                'scf_attempts': attempts, 'scf_wall_s': round(wall, 1), 'populations': pops,
+                                'delta_charge_vs_N': dq, 'spin_on': end_frag,
+                                'stayed_on_guess_fragment': end_frag == start_frag,
+                                'unpaired_orbital': s_lab,
+                                'unpaired_orbital_eV': float(mf.mo_energy[s_spin][s_idx] * rc.HARTREE_EV),
+                                'unpaired_orbital_shares_mulliken_pct': somo_sh})
+                    job.put(key, rec)
+                    job.r['timings'][key] = round(wall, 1)
+                    job.log(f"{key}: E = {mf.e_tot:.10f} Ha, <S2> {s2:.4f}, spin on {end_frag} "
+                            f"({', '.join(f'{f} {v:+.3f}' for f, v in sp.items())}), {wall:.0f} s")
+                    molD.stdout.close()
+                    results[state].append(job.get(key))
+        # ---- Delta-SCF numbers for this combination
+        EN = recN['E_Ha']
+        s = {'E_N_Ha': EN, 'koopmans_IP_eV': -frN['HOMO_eV'], 'koopmans_EA_eV': -frN['LUMO_eV'],
+             'LUMO_on': frN['LUMO_on'], 'HOMO_on': frN['HOMO_on']}
+        for state, lst in results.items():
+            lst = [r for r in lst if r and r.get('status') == 'done']
+            if not lst:
+                continue
+            best = min(lst, key=lambda r: r['E_Ha'])
+            s[f'{state}_states'] = [{'guess': r['guess'], 'mode': r['mode'], 'E_Ha': r['E_Ha'], 'spin_on': r['spin_on'],
+                                     'S2': r['S2'], 'E_rel_eV': (r['E_Ha'] - best['E_Ha']) * rc.HARTREE_EV}
+                                    for r in lst]
+            s[f'{state}_lowest'] = {'guess': best['guess'], 'mode': best['mode'], 'spin_on': best['spin_on']}
+            if state == 'N+1':
+                s['deltaSCF_EA_eV'] = (EN - best['E_Ha']) * rc.HARTREE_EV
+                s['added_electron_on'] = best['spin_on']
+            else:
+                s['deltaSCF_IE_eV'] = (best['E_Ha'] - EN) * rc.HARTREE_EV
+                s['hole_on'] = best['spin_on']
+        summary[tag] = s
+        job.log(f"{tag}: EA(dSCF) {s.get('deltaSCF_EA_eV', float('nan')):.3f} eV (electron on {s.get('added_electron_on')}),"
+                f" IE(dSCF) {s.get('deltaSCF_IE_eV', float('nan')):.3f} eV (hole on {s.get('hole_on')}); Koopmans "
+                f"EA {s['koopmans_EA_eV']:.3f}, IP {s['koopmans_IP_eV']:.3f} eV; LUMO on {s['LUMO_on']}")
+        mol.stdout.close()
+        job.r['summary'] = summary
+        job.save()
+    return True
+
+
+if __name__ == '__main__':
+    rc.install_sigterm_handler()
+    rc.main_wrapper(parser, run, __file__)
+#INFO: ******************** input file end ********************
+
+
+System: uname_result(system='Linux', node='<vm-1>', release='7.0.0-1017-gcp', version='#19~24.04.1-Ubuntu SMP PREEMPT Thu Oct 29 22:34:06 UTC 2026', machine='x86_64')  Threads 4
+Python 3.11.16 (main, Sep  2 2026, 23:39:52) [GCC 15.3.0]
+numpy 2.4.6  scipy 1.17.1  h5py 3.16.0
+Date: Sat Nov 21 13:47:06 2026
+PySCF version 2.14.0
+PySCF path  <run-dir>/env/lib/python3.11/site-packages/pyscf
+
+[ENV] PYSCF_TMPDIR <run-dir>/scratch/deltascf_gasgeom
+[CONFIG] conf_file None
+[INPUT] verbose = 4
+[INPUT] num. atoms = 33
+[INPUT] num. electrons = 178
+[INPUT] charge = 0
+[INPUT] spin (= nelec alpha-beta = 2S) = 0
+[INPUT] symmetry False subgroup None
+[INPUT] Mole.unit = angstrom
+[INPUT] Symbol           X                Y                Z      unit          X                Y                Z       unit  Magmom
+[INPUT]  1 O     -0.758190720000  -0.146469680000   0.405752490000 AA   -1.432772810987  -0.276787580753   0.766761080460 Bohr   0.0
+[INPUT]  2 N     -0.387069340000   2.474275380000   1.668986690000 AA   -0.731455043816   4.675702824954   3.153927749644 Bohr   0.0
+[INPUT]  3 O      0.538537480000   1.700803360000   1.918482650000 AA    1.017688345013   3.214052542140   3.625406783230 Bohr   0.0
+[INPUT]  4 C     -1.192502020000   2.224790000000   0.476186450000 AA   -2.253502220791   4.204243784671   0.899861974729 Bohr   0.0
+[INPUT]  5 C     -1.261371930000   0.896925280000  -0.093064000000 AA   -2.383647488914   1.694943133399  -0.175865472057 Bohr   0.0
+[INPUT]  6 C     -2.063614580000   0.839511440000  -1.295553660000 AA   -3.899666382859   1.586446700039  -2.448241597078 Bohr   0.0
+[INPUT]  7 C     -2.761696110000   1.906264570000  -1.809630690000 AA   -5.218849287177   3.602317958262  -3.419706390708 Bohr   0.0
+[INPUT]  8 O     -0.657973870000   3.453660710000   2.354884050000 AA   -1.243390411420   6.526472869071   4.450085909607 Bohr   0.0
+[INPUT]  9 C     -2.656691930000   3.148151000000  -1.181974990000 AA   -5.020420145042   5.949143188776  -2.233609017186 Bohr   0.0
+[INPUT] 10 C     -1.880335340000   3.308073060000  -0.043579670000 AA   -3.553318814941   6.251352083452  -0.082353640899 Bohr   0.0
+[INPUT] 11 N     -2.161340730000  -0.430300140000  -2.027420520000 AA   -4.084342041568  -0.813149415962  -3.831269522123 Bohr   0.0
+[INPUT] 12 N     -3.365049990000   4.297774680000  -1.739865160000 AA   -6.359022876570   8.121617090290  -3.287868646073 Bohr   0.0
+[INPUT] 13 O     -4.041973620000   4.114750050000  -2.747757880000 AA   -7.638223144517   7.775750665540  -5.192509849816 Bohr   0.0
+[INPUT] 14 O     -3.243196220000   5.377467060000  -1.169568520000 AA   -6.128752624025  10.161939987270  -2.210164186713 Bohr   0.0
+[INPUT] 15 O     -3.251151630000  -0.730124010000  -2.499116070000 AA   -6.143786170133  -1.379734415869  -4.722644925799 Bohr   0.0
+[INPUT] 16 O     -1.141838680000  -1.100679930000  -2.158862010000 AA   -2.157762383635  -2.079983618505  -4.079657939628 Bohr   0.0
+[INPUT] 17 H     -1.808702250000   4.273035690000   0.437970670000 AA   -3.417951893385   8.074867174592   0.827644616892 Bohr   0.0
+[INPUT] 18 H     -3.373423250000   1.790405690000  -2.693723670000 AA   -6.374846044740   3.383376405963  -5.090399991558 Bohr   0.0
+[INPUT] 19 N      1.245795220000  -1.081521450000   1.524397330000 AA    2.354211773092  -2.043779338342   2.880693458718 Bohr   0.0
+[INPUT] 20 N      2.837932300000  -1.874109290000   2.630757610000 AA    5.362914807057  -3.541553285603   4.971411383015 Bohr   0.0
+[INPUT] 21 C      2.851060060000  -2.603088670000   1.465979410000 AA    5.387722678086  -4.919124664258   2.770299589151 Bohr   0.0
+[INPUT] 22 C      1.780400010000  -2.068280560000   0.732391800000 AA    3.364468411073  -3.908483807162   1.384019917877 Bohr   0.0
+[INPUT] 23 N      1.872094790000  -0.966000560000   2.650790930000 AA    3.537746432325  -1.825476494576   5.009268871181 Bohr   0.0
+[INPUT] 24 C      1.434770110000  -2.540206640000  -0.541712440000 AA    2.711322559612  -4.800294849402  -1.023688149870 Bohr   0.0
+[INPUT] 25 C      2.218396700000  -3.567495960000  -1.030696590000 AA    4.192162198639  -6.741590314892  -1.947734272623 Bohr   0.0
+[INPUT] 26 C      3.300928330000  -4.106976300000  -0.291102580000 AA    6.237850500518  -7.761060407080  -0.550104150354 Bohr   0.0
+[INPUT] 27 C      3.643153470000  -3.643758900000   0.966789470000 AA    6.884562288059  -6.885706384946   1.826967318413 Bohr   0.0
+[INPUT] 28 H      0.602146420000  -2.114056890000  -1.088302230000 AA    1.137891820687  -3.994988533850  -2.056593155453 Bohr   0.0
+[INPUT] 29 H      4.470428130000  -4.061573900000   1.525594310000 AA    8.447884825252  -7.675262305682   2.882955423095 Bohr   0.0
+[INPUT] 30 H      2.001426640000  -3.976931450000  -2.009647700000 AA    3.782148208008  -7.515311256669  -3.797683759862 Bohr   0.0
+[INPUT] 31 H      3.879240750000  -4.912104920000  -0.728380430000 AA    7.330702588752  -9.282532993929  -1.376439527193 Bohr   0.0
+[INPUT] 32 H      0.382070860000  -0.453204720000   1.224659430000 AA    0.722009285577  -0.856432799160   2.314270918566 Bohr   0.0
+[INPUT] 33 H      3.446344300000  -1.933090440000   3.435381540000 AA    6.512646857956  -3.653011505615   6.491930243987 Bohr   0.0
+
+nuclear repulsion = 2127.93144867434
+number of shells = 290
+number of NR pGTOs = 947
+number of NR cGTOs = 606
+basis = 6-311++g(d,p)
+ecp = {}
+CPU time:         0.96
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+
+
+******** <class 'pyscf.df.df_jk.DFRKS'> ********
+method = DFRKS
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-10
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/deltascf_gasgeom/chk/gas_gas_N.chk
+max_memory 8000 MB (current use 140 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x7d62a3c936a0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x7d62a3c93600>
+small_rho_cutoff = 0
+Set gradient conv threshold to 1e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+init E= -1317.20823093815
+
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.250558671228497  LUMO = -0.122819204273318  gap/eV = 3.47597
+cycle= 1 E= -1317.20823093794  delta_E= 2.09e-10  |g|= 3.45e-05  |ddm|= 0.000289
+  HOMO = -0.250560413356606  LUMO = -0.122820759934635  gap/eV = 3.47597
+cycle= 2 E= -1317.20823093583  delta_E= 2.11e-09  |g|= 0.000109  |ddm|= 0.000908
+  HOMO = -0.250559273875041  LUMO = -0.122819594922144  gap/eV = 3.47597
+cycle= 3 E= -1317.20823093816  delta_E= -2.33e-09  |g|= 4.7e-06  |ddm|= 0.000692
+  HOMO = -0.250559156597546  LUMO = -0.122819589216761  gap/eV = 3.47597
+cycle= 4 E= -1317.20823093817  delta_E= -7.73e-12  |g|= 5.96e-07  |ddm|= 2.5e-05
+  HOMO = -0.250559131017962  LUMO = -0.122819574546631  gap/eV = 3.47597
+Extra cycle  E= -1317.20823093817  delta_E= -4.55e-13  |g|= 1.76e-06  |ddm|= 1.05e-05
+converged SCF energy = -1317.20823093817
+#INFO: **** input file is <run-dir>/repo/dft/revision/deltascf.py ****
+"""
+Delta-SCF check of where an added electron (N+1) and a removed electron (N-1) go in the BTPC ion pair (plan section 5,
+item 3): an orbital-independent test of the LUMO-location claim.
+
+For each (geometry, model) combination -- default all four of {gas minimum, PCM minimum} x {gas phase, IEF-PCM water},
+i.e. the two published calculations and the two cross combinations -- the script computes
+  N     neutral RKS (from the stored final.chk where one exists),
+  N+1   UKS anion doublet at the same geometry (vertical), from one or more initial guesses that put the extra electron
+        in the lowest cation-localised virtual, the lowest picrate-localised virtual, or the neutral LUMO,
+  N-1   UKS cation doublet, hole in the neutral HOMO (or the highest cation/picrate-localised occupied orbital),
+and reports Delta-SCF vertical electron affinity EA = E(N) - E(N+1) and ionisation energy IE = E(N-1) - E(N) (lowest
+state of each charge), Koopmans values for comparison, <S^2>, and fragment spin and charge (Mulliken, Loewdin,
+Hirshfeld) with the change of fragment charge from N.  With aufbau occupations an initial guess on the "wrong"
+fragment may still relax to the other one; that is reported (start fragment vs final spin location).  --mom keeps the
+initial occupation (maximum-overlap method) to obtain both localised states and their energy difference.
+In IEF-PCM the continuum is fully relaxed for each charge state (equilibrium solvation at fixed geometry).
+
+Level of theory: B3LYP/6-311++G(d,p), density fitting, grid 4, IEF-PCM Lebedev 29 (rev_common.py), conv_tol 1e-10
+for N, 1e-9 for the doublets, max_cycle 150 with a level-shifted retry.
+Usage:
+  python dft/revision/deltascf.py --job dscf --out <dir> [--combos gas/gas,pcm/pcm,gas/pcm,pcm/gas]
+         [--plus cation,anion] [--minus homo] [--mom] [--no-hirshfeld] [--case btpc] [--smoke]
+  combo = <geometry>/<model>; geometry gas|pcm|label=path.xyz, model gas|pcm.
+--smoke: STO-3G, grid 2, Lebedev 17, loose convergence, combos gas/gas,pcm/pcm.
+"""
+import sys, pathlib, argparse, time
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import rev_common as rc          # first: pins the thread pools
+import numpy as np
+import headline as hl
+import charges as ch
+
+CONV_DOUBLET = 1e-9
+
+
+def parser():
+    p = rc.add_common_args(argparse.ArgumentParser(description=__doc__.split('\n')[1]))
+    p.add_argument('--combos', default=None, help='comma list of geometry/model (default all four)')
+    p.add_argument('--plus', default='cation,anion', help='N+1 initial guesses: cation, anion, lumo')
+    p.add_argument('--minus', default='homo', help='N-1 initial guesses: homo, cation, anion')
+    p.add_argument('--mom', action='store_true', help='also run each guess with the maximum-overlap method')
+    p.add_argument('--no-hirshfeld', action='store_true')
+    p.add_argument('--case', default='btpc')
+    p.add_argument('--xc', default=rc.XC)
+    return p
+
+
+def pick_orbital(fr, kind, plus):
+    """Index of the neutral MO that receives the electron (N+1) or loses it (N-1)."""
+    if plus:
+        if kind == 'lumo':
+            return fr['n_occ']
+        o = fr['lowest_virtual_on'].get(kind)
+    else:
+        if kind == 'homo':
+            return fr['n_occ'] - 1
+        o = fr['highest_occupied_on'].get(kind)
+    return None if o is None else o['index']
+
+
+def uks_guess(C, nocc, k, plus):
+    """UKS density from RKS orbitals: alpha gets orbital k as well (N+1), or beta loses orbital k (N-1)."""
+    nmo = C.shape[1]
+    occ_a = np.zeros(nmo); occ_b = np.zeros(nmo)
+    occ_a[:nocc] = 1; occ_b[:nocc] = 1
+    if plus:
+        occ_a[k] = 1
+    else:
+        occ_b[k] = 0
+    dm = np.array([(C * occ_a) @ C.T, (C * occ_b) @ C.T])
+    return dm, (occ_a, occ_b)
+
+
+def run(job, args):
+    lv = hl.level(args.smoke)
+    combos = (args.combos or ('gas/gas,pcm/pcm' if args.smoke else 'gas/gas,pcm/pcm,gas/pcm,pcm/gas')).split(',')
+    plus_guesses = [g.strip() for g in args.plus.split(',') if g.strip()]
+    minus_guesses = [g.strip() for g in args.minus.split(',') if g.strip()]
+    job.r['settings'] = {**lv, 'xc': args.xc, 'conv_tol_doublet': 1e-6 if args.smoke else CONV_DOUBLET,
+                         'combos': combos, 'plus_guesses': plus_guesses, 'minus_guesses': minus_guesses,
+                         'mom': args.mom, 'pcm': f'{rc.PCM_METHOD} water eps {rc.SOLVENT_EPS["water"]}, equilibrium '
+                         'solvation for each charge state', 'density_fit': True, 'auxbasis': 'PySCF default',
+                         'spin_convention': 'mol.spin = 2S = 1 for both doublets'}
+    job.save()
+    case = rc.load_case(f'{args.case}_gas')
+    frags = rc.fragments(case)
+    conv_d = 1e-6 if args.smoke else CONV_DOUBLET
+    free_cache = {}
+
+    def analyse(mol, mf, dm):
+        out = {k: {'fragments': v['fragments'], **({'spin_fragments': v['spin_fragments']} if 'spin_fragments' in v
+                                                   else {})}
+               for k, v in hl.populations(mol, dm, frags).items()}
+        if not args.no_hirshfeld:
+            key = (mol.basis if isinstance(mol.basis, str) else str(mol.basis), args.xc)
+            if key not in free_cache:
+                free_cache[key] = ch.free_atom_dms(mol, xc=args.xc)
+            h = ch.hirshfeld_charges(mol, dm, mf.grids, free_cache[key])
+            q = np.array(h['charges'])
+            out['hirshfeld'] = {'fragments': {f: float(q[a].sum()) for f, a in frags.items()}}
+            if 'spins' in h:
+                s = np.array(h['spins'])
+                out['hirshfeld']['spin_fragments'] = {f: float(s[a].sum()) for f, a in frags.items()}
+        return out
+
+    summary = {}
+    for combo in combos:
+        gspec, model = combo.strip().split('/')
+        glabel, gpath, gmodel = hl.resolve_geom(gspec, args.case)
+        solvent = None if model == 'gas' else 'water'
+        tag = f'{glabel}/{model}'
+        job.input_file(f'geometry_{glabel}', gpath)
+
+        def build(charge, spin):
+            mol = rc.mol_for_case(case, gpath, charge=charge, spin=spin, basis=lv['basis'], verbose=4 if not args.smoke else 3,
+                                  output=job.out / f'pyscf_{glabel}_{model}.log')
+            return mol
+
+        # ---- N (neutral, RKS)
+        kN = f'{tag}|N'
+        chkN = job.chk_dir / f'{glabel}_{model}_N.chk'
+        mol = build(0, 0)
+        mfN = rc.make_mf(mol, xc=args.xc, solvent=solvent, conv_tol=lv['conv_tol'], grid_level=lv['grid_level'],
+                         lebedev_order=lv['lebedev_order'], chkfile=chkN)
+        guess = chkN if chkN.exists() else None
+        if guess is None and not args.smoke:
+            d = hl.stored_dir(f'{args.case}_{model}') or None
+            if d and (d / 'final.chk').exists():
+                guess = d / 'final.chk'
+        if job.done(kN) and chkN.exists():
+            # rebuild the neutral orbitals cheaply from the checkpoint (needed for the guesses)
+            wall = rc.run_scf(mfN, chk_guess=chkN, log=job.log)
+            recN = job.get(kN)
+        else:
+            recN = {'geometry': glabel, 'xyz': str(gpath), 'model': model, 'charge': 0, 'spin': 0,
+                    'settings': rc.settings_of(mfN)}
+            job.put(kN, recN, status='running')
+            job.log(f'{kN}: RKS ({mol.nao} AO), guess {guess or "minao"}')
+            wall = rc.run_scf(mfN, chk_guess=guess, log=job.log)
+            fr = hl.frontier(mfN, frags)
+            recN.update({'E_Ha': float(mfN.e_tot), 'scf_cycles': mfN._cycles, 'scf_wall_s': round(wall, 1),
+                         'frontier': fr, 'populations': analyse(mol, mfN, mfN.make_rdm1())})
+            job.put(kN, recN)
+            job.r['timings'][kN] = round(wall, 1)
+            job.log(f"{kN}: E = {mfN.e_tot:.10f} Ha ({mfN._cycles} cycles, {wall:.0f} s); LUMO on {fr['LUMO_on']}, "
+                    f"HOMO on {fr['HOMO_on']}")
+        frN = recN['frontier']
+        C = np.asarray(mfN.mo_coeff); nocc = frN['n_occ']
+
+        # ---- N+1 and N-1 (UKS doublets)
+        results = {'N+1': [], 'N-1': []}
+        for plus, glist in ((True, plus_guesses), (False, minus_guesses)):
+            state = 'N+1' if plus else 'N-1'
+            used = set()
+            for g in glist:
+                k = pick_orbital(frN, g, plus)
+                if k is None:
+                    job.log(f'{tag} {state}: no orbital for guess {g!r}; skipped')
+                    continue
+                for mode in (['aufbau', 'mom'] if args.mom else ['aufbau']):
+                    if (k, mode) in used:
+                        job.log(f'{tag} {state}: guess {g!r} is orbital {k}, already done ({mode}); skipped')
+                        continue
+                    used.add((k, mode))
+                    key = f'{tag}|{state}|{g}|{mode}'
+                    if job.done(key):
+                        results[state].append(job.get(key)); continue
+                    charge = -1 if plus else +1
+                    molD = build(charge, 1)
+                    chk = job.chk_dir / f"{glabel}_{model}_{state.replace('+', 'p').replace('-', 'm')}_{g}_{mode}.chk"
+                    mf = rc.make_mf(molD, xc=args.xc, solvent=solvent, conv_tol=conv_d, grid_level=lv['grid_level'],
+                                    lebedev_order=lv['lebedev_order'], restricted=False, chkfile=chk)
+                    dm0, (oa, ob) = uks_guess(C, nocc, k, plus)
+                    if mode == 'mom':
+                        from pyscf import scf
+                        mf = scf.addons.mom_occ(mf, (C, C), (oa, ob))
+                    start_frag = hl.frag_of_share({f: 100 * rc.mo_fragment_share(mol, C[:, k], a) for f, a in frags.items()})
+                    rec = {'geometry': glabel, 'model': model, 'state': state, 'charge': charge, 'spin': 1,
+                           'guess': g, 'guess_orbital_index': int(k), 'guess_orbital_on': start_frag, 'mode': mode,
+                           'settings': rc.settings_of(mf)}
+                    job.put(key, rec, status='running')
+                    job.log(f'{key}: UKS doublet, electron {"added to" if plus else "removed from"} MO {k} '
+                            f'({start_frag}), {mode}')
+                    t = time.time()
+                    attempts = []
+                    try:
+                        if chk.exists():
+                            rc.run_scf(mf, chk_guess=chk, log=job.log)
+                        else:
+                            rc.run_scf(mf, dm0=dm0, log=job.log)
+                        attempts.append({'level_shift': 0, 'cycles': mf._cycles})
+                    except RuntimeError as ex:
+                        attempts.append({'level_shift': 0, 'cycles': mf.max_cycle, 'error': str(ex)})
+                        job.log(f'{key}: not converged; retry with level shift 0.25 Ha from the last density')
+                        dm_last = mf.make_rdm1()
+                        mf.level_shift = 0.25
+                        rc.run_scf(mf, dm0=dm_last, log=job.log)
+                        attempts.append({'level_shift': 0.25, 'cycles': mf._cycles})
+                        mf.level_shift = 0
+                        rc.run_scf(mf, dm0=mf.make_rdm1(), log=job.log)      # polish without the shift
+                        attempts.append({'level_shift': 0, 'cycles': mf._cycles, 'polish': True})
+                    wall = time.time() - t
+                    s2, mult = mf.spin_square()
+                    dm = mf.make_rdm1()
+                    pops = analyse(molD, mf, dm)
+                    # where did the unpaired electron end up?  (Mulliken spin; Hirshfeld if computed)
+                    sp = (pops.get('hirshfeld') or pops['mulliken'])['spin_fragments']
+                    end_frag = max(sp, key=lambda f: abs(sp[f]))
+                    na = int(round(mf.mo_occ[0].sum())); nb = int(round(mf.mo_occ[1].sum()))
+                    # the orbital of the added electron (alpha HOMO) or of the hole (beta LUMO)
+                    s_idx, s_spin, s_lab = (na - 1, 0, 'alpha HOMO') if plus else (nb, 1, 'beta LUMO')
+                    soc = mf.mo_coeff[s_spin][:, s_idx]
+                    somo_sh = {f: round(100 * rc.mo_fragment_share(molD, soc, a), 2) for f, a in frags.items()}
+                    dq = {m: {f: pops[m]['fragments'][f] - recN['populations'][m]['fragments'][f] for f in frags}
+                          for m in pops if m in recN['populations']}
+                    rec.update({'E_Ha': float(mf.e_tot), 'S2': float(s2), 'multiplicity': float(mult),
+                                'scf_attempts': attempts, 'scf_wall_s': round(wall, 1), 'populations': pops,
+                                'delta_charge_vs_N': dq, 'spin_on': end_frag,
+                                'stayed_on_guess_fragment': end_frag == start_frag,
+                                'unpaired_orbital': s_lab,
+                                'unpaired_orbital_eV': float(mf.mo_energy[s_spin][s_idx] * rc.HARTREE_EV),
+                                'unpaired_orbital_shares_mulliken_pct': somo_sh})
+                    job.put(key, rec)
+                    job.r['timings'][key] = round(wall, 1)
+                    job.log(f"{key}: E = {mf.e_tot:.10f} Ha, <S2> {s2:.4f}, spin on {end_frag} "
+                            f"({', '.join(f'{f} {v:+.3f}' for f, v in sp.items())}), {wall:.0f} s")
+                    molD.stdout.close()
+                    results[state].append(job.get(key))
+        # ---- Delta-SCF numbers for this combination
+        EN = recN['E_Ha']
+        s = {'E_N_Ha': EN, 'koopmans_IP_eV': -frN['HOMO_eV'], 'koopmans_EA_eV': -frN['LUMO_eV'],
+             'LUMO_on': frN['LUMO_on'], 'HOMO_on': frN['HOMO_on']}
+        for state, lst in results.items():
+            lst = [r for r in lst if r and r.get('status') == 'done']
+            if not lst:
+                continue
+            best = min(lst, key=lambda r: r['E_Ha'])
+            s[f'{state}_states'] = [{'guess': r['guess'], 'mode': r['mode'], 'E_Ha': r['E_Ha'], 'spin_on': r['spin_on'],
+                                     'S2': r['S2'], 'E_rel_eV': (r['E_Ha'] - best['E_Ha']) * rc.HARTREE_EV}
+                                    for r in lst]
+            s[f'{state}_lowest'] = {'guess': best['guess'], 'mode': best['mode'], 'spin_on': best['spin_on']}
+            if state == 'N+1':
+                s['deltaSCF_EA_eV'] = (EN - best['E_Ha']) * rc.HARTREE_EV
+                s['added_electron_on'] = best['spin_on']
+            else:
+                s['deltaSCF_IE_eV'] = (best['E_Ha'] - EN) * rc.HARTREE_EV
+                s['hole_on'] = best['spin_on']
+        summary[tag] = s
+        job.log(f"{tag}: EA(dSCF) {s.get('deltaSCF_EA_eV', float('nan')):.3f} eV (electron on {s.get('added_electron_on')}),"
+                f" IE(dSCF) {s.get('deltaSCF_IE_eV', float('nan')):.3f} eV (hole on {s.get('hole_on')}); Koopmans "
+                f"EA {s['koopmans_EA_eV']:.3f}, IP {s['koopmans_IP_eV']:.3f} eV; LUMO on {s['LUMO_on']}")
+        mol.stdout.close()
+        job.r['summary'] = summary
+        job.save()
+    return True
+
+
+if __name__ == '__main__':
+    rc.install_sigterm_handler()
+    rc.main_wrapper(parser, run, __file__)
+#INFO: ******************** input file end ********************
+
+
+System: uname_result(system='Linux', node='<vm-1>', release='7.0.0-1017-gcp', version='#19~24.04.1-Ubuntu SMP PREEMPT Thu Oct 29 22:34:06 UTC 2026', machine='x86_64')  Threads 4
+Python 3.11.16 (main, Sep  2 2026, 23:39:52) [GCC 15.3.0]
+numpy 2.4.6  scipy 1.17.1  h5py 3.16.0
+Date: Sat Nov 21 13:49:43 2026
+PySCF version 2.14.0
+PySCF path  <run-dir>/env/lib/python3.11/site-packages/pyscf
+
+[ENV] PYSCF_TMPDIR <run-dir>/scratch/deltascf_gasgeom
+[CONFIG] conf_file None
+[INPUT] verbose = 4
+[INPUT] num. atoms = 33
+[INPUT] num. electrons = 179
+[INPUT] charge = -1
+[INPUT] spin (= nelec alpha-beta = 2S) = 1
+[INPUT] symmetry False subgroup None
+[INPUT] Mole.unit = angstrom
+[INPUT] Symbol           X                Y                Z      unit          X                Y                Z       unit  Magmom
+[INPUT]  1 O     -0.758190720000  -0.146469680000   0.405752490000 AA   -1.432772810987  -0.276787580753   0.766761080460 Bohr   0.0
+[INPUT]  2 N     -0.387069340000   2.474275380000   1.668986690000 AA   -0.731455043816   4.675702824954   3.153927749644 Bohr   0.0
+[INPUT]  3 O      0.538537480000   1.700803360000   1.918482650000 AA    1.017688345013   3.214052542140   3.625406783230 Bohr   0.0
+[INPUT]  4 C     -1.192502020000   2.224790000000   0.476186450000 AA   -2.253502220791   4.204243784671   0.899861974729 Bohr   0.0
+[INPUT]  5 C     -1.261371930000   0.896925280000  -0.093064000000 AA   -2.383647488914   1.694943133399  -0.175865472057 Bohr   0.0
+[INPUT]  6 C     -2.063614580000   0.839511440000  -1.295553660000 AA   -3.899666382859   1.586446700039  -2.448241597078 Bohr   0.0
+[INPUT]  7 C     -2.761696110000   1.906264570000  -1.809630690000 AA   -5.218849287177   3.602317958262  -3.419706390708 Bohr   0.0
+[INPUT]  8 O     -0.657973870000   3.453660710000   2.354884050000 AA   -1.243390411420   6.526472869071   4.450085909607 Bohr   0.0
+[INPUT]  9 C     -2.656691930000   3.148151000000  -1.181974990000 AA   -5.020420145042   5.949143188776  -2.233609017186 Bohr   0.0
+[INPUT] 10 C     -1.880335340000   3.308073060000  -0.043579670000 AA   -3.553318814941   6.251352083452  -0.082353640899 Bohr   0.0
+[INPUT] 11 N     -2.161340730000  -0.430300140000  -2.027420520000 AA   -4.084342041568  -0.813149415962  -3.831269522123 Bohr   0.0
+[INPUT] 12 N     -3.365049990000   4.297774680000  -1.739865160000 AA   -6.359022876570   8.121617090290  -3.287868646073 Bohr   0.0
+[INPUT] 13 O     -4.041973620000   4.114750050000  -2.747757880000 AA   -7.638223144517   7.775750665540  -5.192509849816 Bohr   0.0
+[INPUT] 14 O     -3.243196220000   5.377467060000  -1.169568520000 AA   -6.128752624025  10.161939987270  -2.210164186713 Bohr   0.0
+[INPUT] 15 O     -3.251151630000  -0.730124010000  -2.499116070000 AA   -6.143786170133  -1.379734415869  -4.722644925799 Bohr   0.0
+[INPUT] 16 O     -1.141838680000  -1.100679930000  -2.158862010000 AA   -2.157762383635  -2.079983618505  -4.079657939628 Bohr   0.0
+[INPUT] 17 H     -1.808702250000   4.273035690000   0.437970670000 AA   -3.417951893385   8.074867174592   0.827644616892 Bohr   0.0
+[INPUT] 18 H     -3.373423250000   1.790405690000  -2.693723670000 AA   -6.374846044740   3.383376405963  -5.090399991558 Bohr   0.0
+[INPUT] 19 N      1.245795220000  -1.081521450000   1.524397330000 AA    2.354211773092  -2.043779338342   2.880693458718 Bohr   0.0
+[INPUT] 20 N      2.837932300000  -1.874109290000   2.630757610000 AA    5.362914807057  -3.541553285603   4.971411383015 Bohr   0.0
+[INPUT] 21 C      2.851060060000  -2.603088670000   1.465979410000 AA    5.387722678086  -4.919124664258   2.770299589151 Bohr   0.0
+[INPUT] 22 C      1.780400010000  -2.068280560000   0.732391800000 AA    3.364468411073  -3.908483807162   1.384019917877 Bohr   0.0
+[INPUT] 23 N      1.872094790000  -0.966000560000   2.650790930000 AA    3.537746432325  -1.825476494576   5.009268871181 Bohr   0.0
+[INPUT] 24 C      1.434770110000  -2.540206640000  -0.541712440000 AA    2.711322559612  -4.800294849402  -1.023688149870 Bohr   0.0
+[INPUT] 25 C      2.218396700000  -3.567495960000  -1.030696590000 AA    4.192162198639  -6.741590314892  -1.947734272623 Bohr   0.0
+[INPUT] 26 C      3.300928330000  -4.106976300000  -0.291102580000 AA    6.237850500518  -7.761060407080  -0.550104150354 Bohr   0.0
+[INPUT] 27 C      3.643153470000  -3.643758900000   0.966789470000 AA    6.884562288059  -6.885706384946   1.826967318413 Bohr   0.0
+[INPUT] 28 H      0.602146420000  -2.114056890000  -1.088302230000 AA    1.137891820687  -3.994988533850  -2.056593155453 Bohr   0.0
+[INPUT] 29 H      4.470428130000  -4.061573900000   1.525594310000 AA    8.447884825252  -7.675262305682   2.882955423095 Bohr   0.0
+[INPUT] 30 H      2.001426640000  -3.976931450000  -2.009647700000 AA    3.782148208008  -7.515311256669  -3.797683759862 Bohr   0.0
+[INPUT] 31 H      3.879240750000  -4.912104920000  -0.728380430000 AA    7.330702588752  -9.282532993929  -1.376439527193 Bohr   0.0
+[INPUT] 32 H      0.382070860000  -0.453204720000   1.224659430000 AA    0.722009285577  -0.856432799160   2.314270918566 Bohr   0.0
+[INPUT] 33 H      3.446344300000  -1.933090440000   3.435381540000 AA    6.512646857956  -3.653011505615   6.491930243987 Bohr   0.0
+
+nuclear repulsion = 2127.93144867434
+number of shells = 290
+number of NR pGTOs = 947
+number of NR cGTOs = 606
+basis = 6-311++g(d,p)
+ecp = {}
+CPU time:       618.34
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+
+
+******** <class 'pyscf.df.df_jk.DFUKS'> ********
+method = DFUKS
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-09
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/deltascf_gasgeom/chk/gas_gas_Np1_cation_aufbau.chk
+max_memory 8000 MB (current use 4639 MB)
+number electrons alpha = 90  beta = 89
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x7d62a3c936a0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x7d62a3c93600>
+small_rho_cutoff = 0
+Set gradient conv threshold to 3.16228e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+_cderi_to_save = <run-dir>/scratch/deltascf_gasgeom/tmpq3gde364
+init E= -1317.22336712997
+
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  alpha nocc = 90  HOMO = -0.02699298707318  LUMO = -0.0141242111860632
+  beta  nocc = 89  HOMO = -0.0664666656215461  LUMO = -0.0268929931398608
+
+WARN: HOMO -0.02699298707318 >= LUMO -0.0268929931398608
+
+cycle= 1 E= -1316.8964252874  delta_E= 0.327  |g|= 0.75  |ddm|= 11.4
+  alpha nocc = 90  HOMO = -0.0559760737013469  LUMO = -0.0453322869669151
+  beta  nocc = 89  HOMO = -0.0555427167143093  LUMO = -0.0478872287376757
+  HOMO = -0.0555427167143  LUMO = -0.0478872287377  gap/eV = 0.20832
+cycle= 2 E= -1296.75210924673  delta_E= 20.1  |g|= 4.16  |ddm|= 57.4
+  alpha nocc = 90  HOMO = -0.0814833403885835  LUMO = -0.0109448155215737
+  beta  nocc = 89  HOMO = -0.130986911445387  LUMO = -0.0172729709099991
+  HOMO = -0.0814833403886  LUMO = -0.01727297091  gap/eV = 1.74725
+cycle= 3 E= -1316.89830918132  delta_E= -20.1  |g|= 0.824  |ddm|= 52.4
+  alpha nocc = 90  HOMO = -0.0132399393791067  LUMO = 0.00541277648983171
+  beta  nocc = 89  HOMO = -0.121300132760622  LUMO = -0.00909901268946864
+  HOMO = -0.0132399393791  LUMO = -0.00909901268947  gap/eV = 0.11268
+cycle= 4 E= -1317.19731651743  delta_E= -0.299  |g|= 0.346  |ddm|= 5.52
+  alpha nocc = 90  HOMO = -0.0161926874585371  LUMO = 0.0163282958613409
+  beta  nocc = 89  HOMO = -0.134262182223605  LUMO = 0.00144401919698489
+  HOMO = -0.0161926874585  LUMO = 0.00144401919698  gap/eV = 0.47992
+cycle= 5 E= -1317.23246376234  delta_E= -0.0351  |g|= 0.254  |ddm|= 2.24
+  alpha nocc = 90  HOMO = -0.0131684875666256  LUMO = 0.0148091605237562
+  beta  nocc = 89  HOMO = -0.136287633175005  LUMO = -5.48301925883507e-05
+  HOMO = -0.0131684875666  LUMO = -5.48301925884e-05  gap/eV = 0.35684
+cycle= 6 E= -1317.2537641202  delta_E= -0.0213  |g|= 0.133  |ddm|= 1.92
+  alpha nocc = 90  HOMO = -0.00840608146180375  LUMO = 0.0102445173086632
+  beta  nocc = 89  HOMO = -0.144245753370666  LUMO = -0.00568227223936834
+  HOMO = -0.0084060814618  LUMO = -0.00568227223937  gap/eV = 0.07412
+cycle= 7 E= -1317.22682637642  delta_E= 0.0269  |g|= 0.229  |ddm|= 2.71
+  alpha nocc = 90  HOMO = -0.00767552036794522  LUMO = 0.0127815239161176
+  beta  nocc = 89  HOMO = -0.14017278942773  LUMO = 0.00280382993961046
+  HOMO = -0.00767552036795  LUMO = 0.00280382993961  gap/eV = 0.28516
+cycle= 8 E= -1317.26877831455  delta_E= -0.042  |g|= 0.0834  |ddm|= 1.54
+  alpha nocc = 90  HOMO = -0.0114039280625761  LUMO = 0.0151243043942867
+  beta  nocc = 89  HOMO = -0.139130397919758  LUMO = 0.00202232691989118
+  HOMO = -0.0114039280626  LUMO = 0.00202232691989  gap/eV = 0.36535
+cycle= 9 E= -1317.2656012447  delta_E= 0.00318  |g|= 0.103  |ddm|= 0.675
+  alpha nocc = 90  HOMO = -0.0132876234812404  LUMO = 0.0160923741427186
+  beta  nocc = 89  HOMO = -0.138042908385228  LUMO = 0.00430062674135877
+  HOMO = -0.0132876234812  LUMO = 0.00430062674136  gap/eV = 0.47860
+cycle= 10 E= -1317.26902334334  delta_E= -0.00342  |g|= 0.0818  |ddm|= 0.274
+  alpha nocc = 90  HOMO = -0.0148603795258781  LUMO = 0.0156613384920854
+  beta  nocc = 89  HOMO = -0.137986008678099  LUMO = 0.00531038291498388
+  HOMO = -0.0148603795259  LUMO = 0.00531038291498  gap/eV = 0.54887
+cycle= 11 E= -1317.26942784588  delta_E= -0.000405  |g|= 0.0791  |ddm|= 0.214
+  alpha nocc = 90  HOMO = -0.0166081433444876  LUMO = 0.0136767407241624
+  beta  nocc = 89  HOMO = -0.136228245859815  LUMO = 0.00966202480672442
+  HOMO = -0.0166081433445  LUMO = 0.00966202480672  gap/eV = 0.71485
+cycle= 12 E= -1317.271554479  delta_E= -0.00213  |g|= 0.061  |ddm|= 0.393
+  alpha nocc = 90  HOMO = -0.0172121304159703  LUMO = 0.0150954681628639
+  beta  nocc = 89  HOMO = -0.133873888530768  LUMO = 0.0139720472523643
+  HOMO = -0.017212130416  LUMO = 0.0139720472524  gap/eV = 0.84856
+cycle= 13 E= -1317.27424904404  delta_E= -0.00269  |g|= 0.0258  |ddm|= 0.493
+  alpha nocc = 90  HOMO = -0.0167106770987408  LUMO = 0.0167458391750654
+  beta  nocc = 89  HOMO = -0.133136356820472  LUMO = 0.014110317328032
+  HOMO = -0.0167106770987  LUMO = 0.014110317328  gap/eV = 0.83868
+cycle= 14 E= -1317.27478715278  delta_E= -0.000538  |g|= 0.0123  |ddm|=  0.2
+  alpha nocc = 90  HOMO = -0.0176558982970789  LUMO = 0.0179938615839548
+  beta  nocc = 89  HOMO = -0.132504899277123  LUMO = 0.0143430322323355
+  HOMO = -0.0176558982971  LUMO = 0.0143430322323  gap/eV = 0.87074
+cycle= 15 E= -1317.27485312671  delta_E= -6.6e-05  |g|= 0.00687  |ddm|= 0.103
+  alpha nocc = 90  HOMO = -0.0173672474004327  LUMO = 0.0176158481582783
+  beta  nocc = 89  HOMO = -0.132676592459212  LUMO = 0.0143098159643167
+  HOMO = -0.0173672474004  LUMO = 0.0143098159643  gap/eV = 0.86198
+cycle= 16 E= -1317.27487667832  delta_E= -2.36e-05  |g|= 0.00312  |ddm|= 0.062
+  alpha nocc = 90  HOMO = -0.0171626410266263  LUMO = 0.0175500919954855
+  beta  nocc = 89  HOMO = -0.132717482622759  LUMO = 0.0143209037674212
+  HOMO = -0.0171626410266  LUMO = 0.0143209037674  gap/eV = 0.85671
+cycle= 17 E= -1317.27488166103  delta_E= -4.98e-06  |g|= 0.00135  |ddm|= 0.023
+  alpha nocc = 90  HOMO = -0.0170641321397511  LUMO = 0.0176395649869764
+  beta  nocc = 89  HOMO = -0.132727517233377  LUMO = 0.0140735693343717
+  HOMO = -0.0170641321398  LUMO = 0.0140735693344  gap/eV = 0.84730
+cycle= 18 E= -1317.27488366242  delta_E= -2e-06  |g|= 0.000798  |ddm|= 0.0287
+  alpha nocc = 90  HOMO = -0.0170415852464387  LUMO = 0.0176252463887554
+  beta  nocc = 89  HOMO = -0.132778519428424  LUMO = 0.0138797077777067
+  HOMO = -0.0170415852464  LUMO = 0.0138797077777  gap/eV = 0.84141
+cycle= 19 E= -1317.27488468804  delta_E= -1.03e-06  |g|= 0.00121  |ddm|= 0.0229
+  alpha nocc = 90  HOMO = -0.0170308914252004  LUMO = 0.017735066732029
+  beta  nocc = 89  HOMO = -0.132746888270432  LUMO = 0.0137580660585673
+  HOMO = -0.0170308914252  LUMO = 0.0137580660586  gap/eV = 0.83781
+cycle= 20 E= -1317.27488580216  delta_E= -1.11e-06  |g|= 0.000897  |ddm|= 0.0187
+  alpha nocc = 90  HOMO = -0.0170220139223538  LUMO = 0.0178469328532175
+  beta  nocc = 89  HOMO = -0.132726873671317  LUMO = 0.0136614064178228
+  HOMO = -0.0170220139224  LUMO = 0.0136614064178  gap/eV = 0.83494
+cycle= 21 E= -1317.27488679867  delta_E= -9.97e-07  |g|= 0.00051  |ddm|= 0.0175
+  alpha nocc = 90  HOMO = -0.0170475662549663  LUMO = 0.0179589204143748
+  beta  nocc = 89  HOMO = -0.132662127922536  LUMO = 0.0136626940166058
+  HOMO = -0.017047566255  LUMO = 0.0136626940166  gap/eV = 0.83567
+cycle= 22 E= -1317.27488650739  delta_E= 2.91e-07  |g|= 0.000897  |ddm|= 0.0101
+  alpha nocc = 90  HOMO = -0.0170340240226956  LUMO = 0.0179384017367391
+  beta  nocc = 89  HOMO = -0.132688972115151  LUMO = 0.0136238265518571
+  HOMO = -0.0170340240227  LUMO = 0.0136238265519  gap/eV = 0.83424
+cycle= 23 E= -1317.27488712536  delta_E= -6.18e-07  |g|= 0.000182  |ddm|= 0.00837
+  alpha nocc = 90  HOMO = -0.017029026908471  LUMO = 0.017938658900358
+  beta  nocc = 89  HOMO = -0.132694441180998  LUMO = 0.0135945438111512
+  HOMO = -0.0170290269085  LUMO = 0.0135945438112  gap/eV = 0.83331
+cycle= 24 E= -1317.27488713853  delta_E= -1.32e-08  |g|= 0.000172  |ddm|= 0.00251
+  alpha nocc = 90  HOMO = -0.0170281762441284  LUMO = 0.0179485541701145
+  beta  nocc = 89  HOMO = -0.132695573925218  LUMO = 0.013574613341926
+  HOMO = -0.0170281762441  LUMO = 0.0135746133419  gap/eV = 0.83274
+cycle= 25 E= -1317.27488716139  delta_E= -2.29e-08  |g|= 9.2e-05  |ddm|= 0.00205
+  alpha nocc = 90  HOMO = -0.0170241049887956  LUMO = 0.0179701287437051
+  beta  nocc = 89  HOMO = -0.132694848620524  LUMO = 0.0135331545354975
+  HOMO = -0.0170241049888  LUMO = 0.0135331545355  gap/eV = 0.83151
+cycle= 26 E= -1317.27488717833  delta_E= -1.69e-08  |g|= 7.25e-05  |ddm|= 0.00475
+  alpha nocc = 90  HOMO = -0.0170250366415203  LUMO = 0.0179845300884542
+  beta  nocc = 89  HOMO = -0.13269183743947  LUMO = 0.0135160474871888
+  HOMO = -0.0170250366415  LUMO = 0.0135160474872  gap/eV = 0.83107
+cycle= 27 E= -1317.27488718318  delta_E= -4.85e-09  |g|= 3.15e-05  |ddm|= 0.00177
+  alpha nocc = 90  HOMO = -0.0170264841539662  LUMO = 0.0179809617576903
+  beta  nocc = 89  HOMO = -0.132693361576308  LUMO = 0.0135194880327961
+  HOMO = -0.017026484154  LUMO = 0.0135194880328  gap/eV = 0.83120
+cycle= 28 E= -1317.27488718347  delta_E= -2.95e-10  |g|= 2.61e-05  |ddm|= 0.000555
+  alpha nocc = 90  HOMO = -0.0170238135078868  LUMO = 0.0179778003595462
+  beta  nocc = 89  HOMO = -0.13269573303845  LUMO = 0.0135119794107299
+  HOMO = -0.0170238135079  LUMO = 0.0135119794107  gap/eV = 0.83092
+Extra cycle  E= -1317.27488717536  delta_E= 8.11e-09  |g|= 0.000109  |ddm|= 0.00125
+converged SCF energy = -1317.27488717536  <S^2> = 0.76040205  2S+1 = 2.0103751
+#INFO: **** input file is <run-dir>/repo/dft/revision/deltascf.py ****
+"""
+Delta-SCF check of where an added electron (N+1) and a removed electron (N-1) go in the BTPC ion pair (plan section 5,
+item 3): an orbital-independent test of the LUMO-location claim.
+
+For each (geometry, model) combination -- default all four of {gas minimum, PCM minimum} x {gas phase, IEF-PCM water},
+i.e. the two published calculations and the two cross combinations -- the script computes
+  N     neutral RKS (from the stored final.chk where one exists),
+  N+1   UKS anion doublet at the same geometry (vertical), from one or more initial guesses that put the extra electron
+        in the lowest cation-localised virtual, the lowest picrate-localised virtual, or the neutral LUMO,
+  N-1   UKS cation doublet, hole in the neutral HOMO (or the highest cation/picrate-localised occupied orbital),
+and reports Delta-SCF vertical electron affinity EA = E(N) - E(N+1) and ionisation energy IE = E(N-1) - E(N) (lowest
+state of each charge), Koopmans values for comparison, <S^2>, and fragment spin and charge (Mulliken, Loewdin,
+Hirshfeld) with the change of fragment charge from N.  With aufbau occupations an initial guess on the "wrong"
+fragment may still relax to the other one; that is reported (start fragment vs final spin location).  --mom keeps the
+initial occupation (maximum-overlap method) to obtain both localised states and their energy difference.
+In IEF-PCM the continuum is fully relaxed for each charge state (equilibrium solvation at fixed geometry).
+
+Level of theory: B3LYP/6-311++G(d,p), density fitting, grid 4, IEF-PCM Lebedev 29 (rev_common.py), conv_tol 1e-10
+for N, 1e-9 for the doublets, max_cycle 150 with a level-shifted retry.
+Usage:
+  python dft/revision/deltascf.py --job dscf --out <dir> [--combos gas/gas,pcm/pcm,gas/pcm,pcm/gas]
+         [--plus cation,anion] [--minus homo] [--mom] [--no-hirshfeld] [--case btpc] [--smoke]
+  combo = <geometry>/<model>; geometry gas|pcm|label=path.xyz, model gas|pcm.
+--smoke: STO-3G, grid 2, Lebedev 17, loose convergence, combos gas/gas,pcm/pcm.
+"""
+import sys, pathlib, argparse, time
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import rev_common as rc          # first: pins the thread pools
+import numpy as np
+import headline as hl
+import charges as ch
+
+CONV_DOUBLET = 1e-9
+
+
+def parser():
+    p = rc.add_common_args(argparse.ArgumentParser(description=__doc__.split('\n')[1]))
+    p.add_argument('--combos', default=None, help='comma list of geometry/model (default all four)')
+    p.add_argument('--plus', default='cation,anion', help='N+1 initial guesses: cation, anion, lumo')
+    p.add_argument('--minus', default='homo', help='N-1 initial guesses: homo, cation, anion')
+    p.add_argument('--mom', action='store_true', help='also run each guess with the maximum-overlap method')
+    p.add_argument('--no-hirshfeld', action='store_true')
+    p.add_argument('--case', default='btpc')
+    p.add_argument('--xc', default=rc.XC)
+    return p
+
+
+def pick_orbital(fr, kind, plus):
+    """Index of the neutral MO that receives the electron (N+1) or loses it (N-1)."""
+    if plus:
+        if kind == 'lumo':
+            return fr['n_occ']
+        o = fr['lowest_virtual_on'].get(kind)
+    else:
+        if kind == 'homo':
+            return fr['n_occ'] - 1
+        o = fr['highest_occupied_on'].get(kind)
+    return None if o is None else o['index']
+
+
+def uks_guess(C, nocc, k, plus):
+    """UKS density from RKS orbitals: alpha gets orbital k as well (N+1), or beta loses orbital k (N-1)."""
+    nmo = C.shape[1]
+    occ_a = np.zeros(nmo); occ_b = np.zeros(nmo)
+    occ_a[:nocc] = 1; occ_b[:nocc] = 1
+    if plus:
+        occ_a[k] = 1
+    else:
+        occ_b[k] = 0
+    dm = np.array([(C * occ_a) @ C.T, (C * occ_b) @ C.T])
+    return dm, (occ_a, occ_b)
+
+
+def run(job, args):
+    lv = hl.level(args.smoke)
+    combos = (args.combos or ('gas/gas,pcm/pcm' if args.smoke else 'gas/gas,pcm/pcm,gas/pcm,pcm/gas')).split(',')
+    plus_guesses = [g.strip() for g in args.plus.split(',') if g.strip()]
+    minus_guesses = [g.strip() for g in args.minus.split(',') if g.strip()]
+    job.r['settings'] = {**lv, 'xc': args.xc, 'conv_tol_doublet': 1e-6 if args.smoke else CONV_DOUBLET,
+                         'combos': combos, 'plus_guesses': plus_guesses, 'minus_guesses': minus_guesses,
+                         'mom': args.mom, 'pcm': f'{rc.PCM_METHOD} water eps {rc.SOLVENT_EPS["water"]}, equilibrium '
+                         'solvation for each charge state', 'density_fit': True, 'auxbasis': 'PySCF default',
+                         'spin_convention': 'mol.spin = 2S = 1 for both doublets'}
+    job.save()
+    case = rc.load_case(f'{args.case}_gas')
+    frags = rc.fragments(case)
+    conv_d = 1e-6 if args.smoke else CONV_DOUBLET
+    free_cache = {}
+
+    def analyse(mol, mf, dm):
+        out = {k: {'fragments': v['fragments'], **({'spin_fragments': v['spin_fragments']} if 'spin_fragments' in v
+                                                   else {})}
+               for k, v in hl.populations(mol, dm, frags).items()}
+        if not args.no_hirshfeld:
+            key = (mol.basis if isinstance(mol.basis, str) else str(mol.basis), args.xc)
+            if key not in free_cache:
+                free_cache[key] = ch.free_atom_dms(mol, xc=args.xc)
+            h = ch.hirshfeld_charges(mol, dm, mf.grids, free_cache[key])
+            q = np.array(h['charges'])
+            out['hirshfeld'] = {'fragments': {f: float(q[a].sum()) for f, a in frags.items()}}
+            if 'spins' in h:
+                s = np.array(h['spins'])
+                out['hirshfeld']['spin_fragments'] = {f: float(s[a].sum()) for f, a in frags.items()}
+        return out
+
+    summary = {}
+    for combo in combos:
+        gspec, model = combo.strip().split('/')
+        glabel, gpath, gmodel = hl.resolve_geom(gspec, args.case)
+        solvent = None if model == 'gas' else 'water'
+        tag = f'{glabel}/{model}'
+        job.input_file(f'geometry_{glabel}', gpath)
+
+        def build(charge, spin):
+            mol = rc.mol_for_case(case, gpath, charge=charge, spin=spin, basis=lv['basis'], verbose=4 if not args.smoke else 3,
+                                  output=job.out / f'pyscf_{glabel}_{model}.log')
+            return mol
+
+        # ---- N (neutral, RKS)
+        kN = f'{tag}|N'
+        chkN = job.chk_dir / f'{glabel}_{model}_N.chk'
+        mol = build(0, 0)
+        mfN = rc.make_mf(mol, xc=args.xc, solvent=solvent, conv_tol=lv['conv_tol'], grid_level=lv['grid_level'],
+                         lebedev_order=lv['lebedev_order'], chkfile=chkN)
+        guess = chkN if chkN.exists() else None
+        if guess is None and not args.smoke:
+            d = hl.stored_dir(f'{args.case}_{model}') or None
+            if d and (d / 'final.chk').exists():
+                guess = d / 'final.chk'
+        if job.done(kN) and chkN.exists():
+            # rebuild the neutral orbitals cheaply from the checkpoint (needed for the guesses)
+            wall = rc.run_scf(mfN, chk_guess=chkN, log=job.log)
+            recN = job.get(kN)
+        else:
+            recN = {'geometry': glabel, 'xyz': str(gpath), 'model': model, 'charge': 0, 'spin': 0,
+                    'settings': rc.settings_of(mfN)}
+            job.put(kN, recN, status='running')
+            job.log(f'{kN}: RKS ({mol.nao} AO), guess {guess or "minao"}')
+            wall = rc.run_scf(mfN, chk_guess=guess, log=job.log)
+            fr = hl.frontier(mfN, frags)
+            recN.update({'E_Ha': float(mfN.e_tot), 'scf_cycles': mfN._cycles, 'scf_wall_s': round(wall, 1),
+                         'frontier': fr, 'populations': analyse(mol, mfN, mfN.make_rdm1())})
+            job.put(kN, recN)
+            job.r['timings'][kN] = round(wall, 1)
+            job.log(f"{kN}: E = {mfN.e_tot:.10f} Ha ({mfN._cycles} cycles, {wall:.0f} s); LUMO on {fr['LUMO_on']}, "
+                    f"HOMO on {fr['HOMO_on']}")
+        frN = recN['frontier']
+        C = np.asarray(mfN.mo_coeff); nocc = frN['n_occ']
+
+        # ---- N+1 and N-1 (UKS doublets)
+        results = {'N+1': [], 'N-1': []}
+        for plus, glist in ((True, plus_guesses), (False, minus_guesses)):
+            state = 'N+1' if plus else 'N-1'
+            used = set()
+            for g in glist:
+                k = pick_orbital(frN, g, plus)
+                if k is None:
+                    job.log(f'{tag} {state}: no orbital for guess {g!r}; skipped')
+                    continue
+                for mode in (['aufbau', 'mom'] if args.mom else ['aufbau']):
+                    if (k, mode) in used:
+                        job.log(f'{tag} {state}: guess {g!r} is orbital {k}, already done ({mode}); skipped')
+                        continue
+                    used.add((k, mode))
+                    key = f'{tag}|{state}|{g}|{mode}'
+                    if job.done(key):
+                        results[state].append(job.get(key)); continue
+                    charge = -1 if plus else +1
+                    molD = build(charge, 1)
+                    chk = job.chk_dir / f"{glabel}_{model}_{state.replace('+', 'p').replace('-', 'm')}_{g}_{mode}.chk"
+                    mf = rc.make_mf(molD, xc=args.xc, solvent=solvent, conv_tol=conv_d, grid_level=lv['grid_level'],
+                                    lebedev_order=lv['lebedev_order'], restricted=False, chkfile=chk)
+                    dm0, (oa, ob) = uks_guess(C, nocc, k, plus)
+                    if mode == 'mom':
+                        from pyscf import scf
+                        mf = scf.addons.mom_occ(mf, (C, C), (oa, ob))
+                    start_frag = hl.frag_of_share({f: 100 * rc.mo_fragment_share(mol, C[:, k], a) for f, a in frags.items()})
+                    rec = {'geometry': glabel, 'model': model, 'state': state, 'charge': charge, 'spin': 1,
+                           'guess': g, 'guess_orbital_index': int(k), 'guess_orbital_on': start_frag, 'mode': mode,
+                           'settings': rc.settings_of(mf)}
+                    job.put(key, rec, status='running')
+                    job.log(f'{key}: UKS doublet, electron {"added to" if plus else "removed from"} MO {k} '
+                            f'({start_frag}), {mode}')
+                    t = time.time()
+                    attempts = []
+                    try:
+                        if chk.exists():
+                            rc.run_scf(mf, chk_guess=chk, log=job.log)
+                        else:
+                            rc.run_scf(mf, dm0=dm0, log=job.log)
+                        attempts.append({'level_shift': 0, 'cycles': mf._cycles})
+                    except RuntimeError as ex:
+                        attempts.append({'level_shift': 0, 'cycles': mf.max_cycle, 'error': str(ex)})
+                        job.log(f'{key}: not converged; retry with level shift 0.25 Ha from the last density')
+                        dm_last = mf.make_rdm1()
+                        mf.level_shift = 0.25
+                        rc.run_scf(mf, dm0=dm_last, log=job.log)
+                        attempts.append({'level_shift': 0.25, 'cycles': mf._cycles})
+                        mf.level_shift = 0
+                        rc.run_scf(mf, dm0=mf.make_rdm1(), log=job.log)      # polish without the shift
+                        attempts.append({'level_shift': 0, 'cycles': mf._cycles, 'polish': True})
+                    wall = time.time() - t
+                    s2, mult = mf.spin_square()
+                    dm = mf.make_rdm1()
+                    pops = analyse(molD, mf, dm)
+                    # where did the unpaired electron end up?  (Mulliken spin; Hirshfeld if computed)
+                    sp = (pops.get('hirshfeld') or pops['mulliken'])['spin_fragments']
+                    end_frag = max(sp, key=lambda f: abs(sp[f]))
+                    na = int(round(mf.mo_occ[0].sum())); nb = int(round(mf.mo_occ[1].sum()))
+                    # the orbital of the added electron (alpha HOMO) or of the hole (beta LUMO)
+                    s_idx, s_spin, s_lab = (na - 1, 0, 'alpha HOMO') if plus else (nb, 1, 'beta LUMO')
+                    soc = mf.mo_coeff[s_spin][:, s_idx]
+                    somo_sh = {f: round(100 * rc.mo_fragment_share(molD, soc, a), 2) for f, a in frags.items()}
+                    dq = {m: {f: pops[m]['fragments'][f] - recN['populations'][m]['fragments'][f] for f in frags}
+                          for m in pops if m in recN['populations']}
+                    rec.update({'E_Ha': float(mf.e_tot), 'S2': float(s2), 'multiplicity': float(mult),
+                                'scf_attempts': attempts, 'scf_wall_s': round(wall, 1), 'populations': pops,
+                                'delta_charge_vs_N': dq, 'spin_on': end_frag,
+                                'stayed_on_guess_fragment': end_frag == start_frag,
+                                'unpaired_orbital': s_lab,
+                                'unpaired_orbital_eV': float(mf.mo_energy[s_spin][s_idx] * rc.HARTREE_EV),
+                                'unpaired_orbital_shares_mulliken_pct': somo_sh})
+                    job.put(key, rec)
+                    job.r['timings'][key] = round(wall, 1)
+                    job.log(f"{key}: E = {mf.e_tot:.10f} Ha, <S2> {s2:.4f}, spin on {end_frag} "
+                            f"({', '.join(f'{f} {v:+.3f}' for f, v in sp.items())}), {wall:.0f} s")
+                    molD.stdout.close()
+                    results[state].append(job.get(key))
+        # ---- Delta-SCF numbers for this combination
+        EN = recN['E_Ha']
+        s = {'E_N_Ha': EN, 'koopmans_IP_eV': -frN['HOMO_eV'], 'koopmans_EA_eV': -frN['LUMO_eV'],
+             'LUMO_on': frN['LUMO_on'], 'HOMO_on': frN['HOMO_on']}
+        for state, lst in results.items():
+            lst = [r for r in lst if r and r.get('status') == 'done']
+            if not lst:
+                continue
+            best = min(lst, key=lambda r: r['E_Ha'])
+            s[f'{state}_states'] = [{'guess': r['guess'], 'mode': r['mode'], 'E_Ha': r['E_Ha'], 'spin_on': r['spin_on'],
+                                     'S2': r['S2'], 'E_rel_eV': (r['E_Ha'] - best['E_Ha']) * rc.HARTREE_EV}
+                                    for r in lst]
+            s[f'{state}_lowest'] = {'guess': best['guess'], 'mode': best['mode'], 'spin_on': best['spin_on']}
+            if state == 'N+1':
+                s['deltaSCF_EA_eV'] = (EN - best['E_Ha']) * rc.HARTREE_EV
+                s['added_electron_on'] = best['spin_on']
+            else:
+                s['deltaSCF_IE_eV'] = (best['E_Ha'] - EN) * rc.HARTREE_EV
+                s['hole_on'] = best['spin_on']
+        summary[tag] = s
+        job.log(f"{tag}: EA(dSCF) {s.get('deltaSCF_EA_eV', float('nan')):.3f} eV (electron on {s.get('added_electron_on')}),"
+                f" IE(dSCF) {s.get('deltaSCF_IE_eV', float('nan')):.3f} eV (hole on {s.get('hole_on')}); Koopmans "
+                f"EA {s['koopmans_EA_eV']:.3f}, IP {s['koopmans_IP_eV']:.3f} eV; LUMO on {s['LUMO_on']}")
+        mol.stdout.close()
+        job.r['summary'] = summary
+        job.save()
+    return True
+
+
+if __name__ == '__main__':
+    rc.install_sigterm_handler()
+    rc.main_wrapper(parser, run, __file__)
+#INFO: ******************** input file end ********************
+
+
+System: uname_result(system='Linux', node='<vm-1>', release='7.0.0-1017-gcp', version='#19~24.04.1-Ubuntu SMP PREEMPT Thu Oct 29 22:34:06 UTC 2026', machine='x86_64')  Threads 4
+Python 3.11.16 (main, Sep  2 2026, 23:39:52) [GCC 15.3.0]
+numpy 2.4.6  scipy 1.17.1  h5py 3.16.0
+Date: Sat Nov 21 14:12:50 2026
+PySCF version 2.14.0
+PySCF path  <run-dir>/env/lib/python3.11/site-packages/pyscf
+
+[ENV] PYSCF_TMPDIR <run-dir>/scratch/deltascf_gasgeom
+[CONFIG] conf_file None
+[INPUT] verbose = 4
+[INPUT] num. atoms = 33
+[INPUT] num. electrons = 179
+[INPUT] charge = -1
+[INPUT] spin (= nelec alpha-beta = 2S) = 1
+[INPUT] symmetry False subgroup None
+[INPUT] Mole.unit = angstrom
+[INPUT] Symbol           X                Y                Z      unit          X                Y                Z       unit  Magmom
+[INPUT]  1 O     -0.758190720000  -0.146469680000   0.405752490000 AA   -1.432772810987  -0.276787580753   0.766761080460 Bohr   0.0
+[INPUT]  2 N     -0.387069340000   2.474275380000   1.668986690000 AA   -0.731455043816   4.675702824954   3.153927749644 Bohr   0.0
+[INPUT]  3 O      0.538537480000   1.700803360000   1.918482650000 AA    1.017688345013   3.214052542140   3.625406783230 Bohr   0.0
+[INPUT]  4 C     -1.192502020000   2.224790000000   0.476186450000 AA   -2.253502220791   4.204243784671   0.899861974729 Bohr   0.0
+[INPUT]  5 C     -1.261371930000   0.896925280000  -0.093064000000 AA   -2.383647488914   1.694943133399  -0.175865472057 Bohr   0.0
+[INPUT]  6 C     -2.063614580000   0.839511440000  -1.295553660000 AA   -3.899666382859   1.586446700039  -2.448241597078 Bohr   0.0
+[INPUT]  7 C     -2.761696110000   1.906264570000  -1.809630690000 AA   -5.218849287177   3.602317958262  -3.419706390708 Bohr   0.0
+[INPUT]  8 O     -0.657973870000   3.453660710000   2.354884050000 AA   -1.243390411420   6.526472869071   4.450085909607 Bohr   0.0
+[INPUT]  9 C     -2.656691930000   3.148151000000  -1.181974990000 AA   -5.020420145042   5.949143188776  -2.233609017186 Bohr   0.0
+[INPUT] 10 C     -1.880335340000   3.308073060000  -0.043579670000 AA   -3.553318814941   6.251352083452  -0.082353640899 Bohr   0.0
+[INPUT] 11 N     -2.161340730000  -0.430300140000  -2.027420520000 AA   -4.084342041568  -0.813149415962  -3.831269522123 Bohr   0.0
+[INPUT] 12 N     -3.365049990000   4.297774680000  -1.739865160000 AA   -6.359022876570   8.121617090290  -3.287868646073 Bohr   0.0
+[INPUT] 13 O     -4.041973620000   4.114750050000  -2.747757880000 AA   -7.638223144517   7.775750665540  -5.192509849816 Bohr   0.0
+[INPUT] 14 O     -3.243196220000   5.377467060000  -1.169568520000 AA   -6.128752624025  10.161939987270  -2.210164186713 Bohr   0.0
+[INPUT] 15 O     -3.251151630000  -0.730124010000  -2.499116070000 AA   -6.143786170133  -1.379734415869  -4.722644925799 Bohr   0.0
+[INPUT] 16 O     -1.141838680000  -1.100679930000  -2.158862010000 AA   -2.157762383635  -2.079983618505  -4.079657939628 Bohr   0.0
+[INPUT] 17 H     -1.808702250000   4.273035690000   0.437970670000 AA   -3.417951893385   8.074867174592   0.827644616892 Bohr   0.0
+[INPUT] 18 H     -3.373423250000   1.790405690000  -2.693723670000 AA   -6.374846044740   3.383376405963  -5.090399991558 Bohr   0.0
+[INPUT] 19 N      1.245795220000  -1.081521450000   1.524397330000 AA    2.354211773092  -2.043779338342   2.880693458718 Bohr   0.0
+[INPUT] 20 N      2.837932300000  -1.874109290000   2.630757610000 AA    5.362914807057  -3.541553285603   4.971411383015 Bohr   0.0
+[INPUT] 21 C      2.851060060000  -2.603088670000   1.465979410000 AA    5.387722678086  -4.919124664258   2.770299589151 Bohr   0.0
+[INPUT] 22 C      1.780400010000  -2.068280560000   0.732391800000 AA    3.364468411073  -3.908483807162   1.384019917877 Bohr   0.0
+[INPUT] 23 N      1.872094790000  -0.966000560000   2.650790930000 AA    3.537746432325  -1.825476494576   5.009268871181 Bohr   0.0
+[INPUT] 24 C      1.434770110000  -2.540206640000  -0.541712440000 AA    2.711322559612  -4.800294849402  -1.023688149870 Bohr   0.0
+[INPUT] 25 C      2.218396700000  -3.567495960000  -1.030696590000 AA    4.192162198639  -6.741590314892  -1.947734272623 Bohr   0.0
+[INPUT] 26 C      3.300928330000  -4.106976300000  -0.291102580000 AA    6.237850500518  -7.761060407080  -0.550104150354 Bohr   0.0
+[INPUT] 27 C      3.643153470000  -3.643758900000   0.966789470000 AA    6.884562288059  -6.885706384946   1.826967318413 Bohr   0.0
+[INPUT] 28 H      0.602146420000  -2.114056890000  -1.088302230000 AA    1.137891820687  -3.994988533850  -2.056593155453 Bohr   0.0
+[INPUT] 29 H      4.470428130000  -4.061573900000   1.525594310000 AA    8.447884825252  -7.675262305682   2.882955423095 Bohr   0.0
+[INPUT] 30 H      2.001426640000  -3.976931450000  -2.009647700000 AA    3.782148208008  -7.515311256669  -3.797683759862 Bohr   0.0
+[INPUT] 31 H      3.879240750000  -4.912104920000  -0.728380430000 AA    7.330702588752  -9.282532993929  -1.376439527193 Bohr   0.0
+[INPUT] 32 H      0.382070860000  -0.453204720000   1.224659430000 AA    0.722009285577  -0.856432799160   2.314270918566 Bohr   0.0
+[INPUT] 33 H      3.446344300000  -1.933090440000   3.435381540000 AA    6.512646857956  -3.653011505615   6.491930243987 Bohr   0.0
+
+nuclear repulsion = 2127.93144867434
+number of shells = 290
+number of NR pGTOs = 947
+number of NR cGTOs = 606
+basis = 6-311++g(d,p)
+ecp = {}
+CPU time:      5932.91
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+
+
+******** <class 'pyscf.df.df_jk.DFUKS'> ********
+method = DFUKS
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-09
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/deltascf_gasgeom/chk/gas_gas_Np1_anion_aufbau.chk
+max_memory 8000 MB (current use 4793 MB)
+number electrons alpha = 90  beta = 89
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x7d62a3c936a0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x7d62a3c93600>
+small_rho_cutoff = 0
+Set gradient conv threshold to 3.16228e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+_cderi_to_save = <run-dir>/scratch/deltascf_gasgeom/tmpj3awhpgq
+init E= -1317.22764415277
+
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  alpha nocc = 90  HOMO = -0.0304409902849265  LUMO = 0.0146050315248916
+  beta  nocc = 89  HOMO = -0.055625704660384  LUMO = -0.0303627161912452
+
+WARN: HOMO -0.0304409902849265 >= LUMO -0.0303627161912452
+
+cycle= 1 E= -1317.10448697702  delta_E= 0.123  |g|= 0.522  |ddm|= 12.4
+  alpha nocc = 90  HOMO = -0.0875006074348768  LUMO = -0.0637091336907567
+  beta  nocc = 89  HOMO = -0.0850486784850026  LUMO = -0.0744538538511382
+  HOMO = -0.085048678485  LUMO = -0.0744538538511  gap/eV = 0.28830
+cycle= 2 E= -1313.77773965138  delta_E= 3.33  |g|= 1.81  |ddm|= 28.5
+  alpha nocc = 90  HOMO = -0.0617720932249028  LUMO = 0.0258218250827959
+  beta  nocc = 89  HOMO = -0.118247666740281  LUMO = -0.00717584860478127
+  HOMO = -0.0617720932249  LUMO = -0.00717584860478  gap/eV = 1.48564
+cycle= 3 E= -1317.19868296823  delta_E= -3.42  |g|= 0.317  |ddm|= 20.8
+  alpha nocc = 90  HOMO = -0.0357265392676425  LUMO = 0.0187046709521978
+  beta  nocc = 89  HOMO = -0.124918290178293  LUMO = 0.0136309768761997
+  HOMO = -0.0357265392676  LUMO = 0.0136309768762  gap/eV = 1.34309
+cycle= 4 E= -1317.24429381674  delta_E= -0.0456  |g|= 0.187  |ddm|=  3.3
+  alpha nocc = 90  HOMO = -0.00396990788186757  LUMO = 0.00293133631541544
+  beta  nocc = 89  HOMO = -0.133729423094014  LUMO = -0.00379500972368095
+
+WARN: HOMO -0.00396990788186757 >= LUMO -0.00379500972368095
+
+cycle= 5 E= -1317.12863115605  delta_E= 0.116  |g|= 0.408  |ddm|= 3.83
+  alpha nocc = 90  HOMO = -0.00799720746232672  LUMO = 0.0159785890270902
+  beta  nocc = 89  HOMO = -0.135577824553393  LUMO = 0.00119089115419971
+  HOMO = -0.00799720746233  LUMO = 0.0011908911542  gap/eV = 0.25002
+cycle= 6 E= -1317.2565697012  delta_E= -0.128  |g|= 0.127  |ddm|= 3.71
+  alpha nocc = 90  HOMO = -0.00725969829289875  LUMO = 0.00942060263295825
+  beta  nocc = 89  HOMO = -0.138721672120185  LUMO = -0.0053461212344852
+  HOMO = -0.0072596982929  LUMO = -0.00534612123449  gap/eV = 0.05207
+cycle= 7 E= -1317.22071207292  delta_E= 0.0359  |g|= 0.245  |ddm|= 2.96
+  alpha nocc = 90  HOMO = -0.0088310382284966  LUMO = 0.0102213214298792
+  beta  nocc = 89  HOMO = -0.140290713353163  LUMO = 0.00297907887724839
+  HOMO = -0.0088310382285  LUMO = 0.00297907887725  gap/eV = 0.32137
+cycle= 8 E= -1317.26226676425  delta_E= -0.0416  |g|= 0.119  |ddm|= 1.24
+  alpha nocc = 90  HOMO = -0.0110669262326803  LUMO = 0.0123966234409825
+  beta  nocc = 89  HOMO = -0.136846435709673  LUMO = 0.00831047767843412
+  HOMO = -0.0110669262327  LUMO = 0.00831047767843  gap/eV = 0.52729
+cycle= 9 E= -1317.2724018328  delta_E= -0.0101  |g|= 0.0563  |ddm|= 0.607
+  alpha nocc = 90  HOMO = -0.0158556847740722  LUMO = 0.0129608859726041
+  beta  nocc = 89  HOMO = -0.135874622107977  LUMO = 0.0110145153853476
+  HOMO = -0.0158556847741  LUMO = 0.0110145153853  gap/eV = 0.73118
+cycle= 10 E= -1317.2737238251  delta_E= -0.00132  |g|= 0.0387  |ddm|= 0.316
+  alpha nocc = 90  HOMO = -0.0173603658778454  LUMO = 0.0133483977616883
+  beta  nocc = 89  HOMO = -0.134918306589732  LUMO = 0.0131910017075562
+  HOMO = -0.0173603658778  LUMO = 0.0131910017076  gap/eV = 0.83135
+cycle= 11 E= -1317.27403001233  delta_E= -0.000306  |g|= 0.0325  |ddm|= 0.211
+  alpha nocc = 90  HOMO = -0.0169595928459287  LUMO = 0.0151559786491089
+  beta  nocc = 89  HOMO = -0.133974199150423  LUMO = 0.0135495851976943
+  HOMO = -0.0169595928459  LUMO = 0.0135495851977  gap/eV = 0.83020
+cycle= 12 E= -1317.27458724736  delta_E= -0.000557  |g|= 0.0193  |ddm|= 0.174
+  alpha nocc = 90  HOMO = -0.0173712830927393  LUMO = 0.0166764504417065
+  beta  nocc = 89  HOMO = -0.133191443634917  LUMO = 0.0137529865951043
+  HOMO = -0.0173712830927  LUMO = 0.0137529865951  gap/eV = 0.84693
+cycle= 13 E= -1317.27481300539  delta_E= -0.000226  |g|= 0.00894  |ddm|= 0.152
+  alpha nocc = 90  HOMO = -0.0172723826870325  LUMO = 0.0176383248219228
+  beta  nocc = 89  HOMO = -0.132772233805184  LUMO = 0.0139253770219811
+  HOMO = -0.017272382687  LUMO = 0.013925377022  gap/eV = 0.84893
+cycle= 14 E= -1317.27488308346  delta_E= -7.01e-05  |g|= 0.00206  |ddm|= 0.0787
+  alpha nocc = 90  HOMO = -0.0171224501785474  LUMO = 0.0177887855501654
+  beta  nocc = 89  HOMO = -0.132678524034755  LUMO = 0.0139389069601842
+  HOMO = -0.0171224501785  LUMO = 0.0139389069602  gap/eV = 0.84522
+cycle= 15 E= -1317.27488574873  delta_E= -2.67e-06  |g|= 0.00102  |ddm|= 0.0242
+  alpha nocc = 90  HOMO = -0.0170669670643413  LUMO = 0.0179109834365062
+  beta  nocc = 89  HOMO = -0.132636727452688  LUMO = 0.0138746603300892
+  HOMO = -0.0170669670643  LUMO = 0.0138746603301  gap/eV = 0.84196
+cycle= 16 E= -1317.27488590247  delta_E= -1.54e-07  |g|= 0.000948  |ddm|= 0.0136
+  alpha nocc = 90  HOMO = -0.017042692637947  LUMO = 0.0178529735666333
+  beta  nocc = 89  HOMO = -0.132689964382756  LUMO = 0.0137669687870432
+  HOMO = -0.0170426926379  LUMO = 0.013766968787  gap/eV = 0.83837
+cycle= 17 E= -1317.27488662588  delta_E= -7.23e-07  |g|= 0.000328  |ddm|= 0.0126
+  alpha nocc = 90  HOMO = -0.0170381104775466  LUMO = 0.0178407688382252
+  beta  nocc = 89  HOMO = -0.132715441491641  LUMO = 0.0137032838409778
+  HOMO = -0.0170381104775  LUMO = 0.013703283841  gap/eV = 0.83652
+cycle= 18 E= -1317.27488686795  delta_E= -2.42e-07  |g|= 0.000419  |ddm|= 0.00959
+  alpha nocc = 90  HOMO = -0.0170328148205527  LUMO = 0.0178809248013642
+  beta  nocc = 89  HOMO = -0.132711943107271  LUMO = 0.0136443456891697
+  HOMO = -0.0170328148206  LUMO = 0.0136443456892  gap/eV = 0.83477
+cycle= 19 E= -1317.27488700332  delta_E= -1.35e-07  |g|= 0.000362  |ddm|= 0.00619
+  alpha nocc = 90  HOMO = -0.0170338077555279  LUMO = 0.0179112504916226
+  beta  nocc = 89  HOMO = -0.132701614250564  LUMO = 0.0136254519675412
+  HOMO = -0.0170338077555  LUMO = 0.0136254519675  gap/eV = 0.83428
+cycle= 20 E= -1317.27488709246  delta_E= -8.91e-08  |g|= 0.000203  |ddm|= 0.00351
+  alpha nocc = 90  HOMO = -0.017028924035742  LUMO = 0.0179593030380596
+  beta  nocc = 89  HOMO = -0.132696538043305  LUMO = 0.0135553282579093
+  HOMO = -0.0170289240357  LUMO = 0.0135553282579  gap/eV = 0.83224
+cycle= 21 E= -1317.27488716937  delta_E= -7.69e-08  |g|= 0.000105  |ddm|= 0.00786
+  alpha nocc = 90  HOMO = -0.0170293879464651  LUMO = 0.0179450610932119
+  beta  nocc = 89  HOMO = -0.132698023521733  LUMO = 0.0135765441505213
+  HOMO = -0.0170293879465  LUMO = 0.0135765441505  gap/eV = 0.83283
+cycle= 22 E= -1317.27488715511  delta_E= 1.43e-08  |g|= 0.000137  |ddm|= 0.00305
+  alpha nocc = 90  HOMO = -0.0170264832851004  LUMO = 0.0179721355372224
+  beta  nocc = 89  HOMO = -0.13269427303527  LUMO = 0.0135350497823405
+  HOMO = -0.0170264832851  LUMO = 0.0135350497823  gap/eV = 0.83162
+cycle= 23 E= -1317.27488718133  delta_E= -2.62e-08  |g|= 3.8e-05  |ddm|= 0.00459
+  alpha nocc = 90  HOMO = -0.0170258985102905  LUMO = 0.0179798568037406
+  beta  nocc = 89  HOMO = -0.132695330024504  LUMO = 0.0135204062691864
+  HOMO = -0.0170258985103  LUMO = 0.0135204062692  gap/eV = 0.83121
+cycle= 24 E= -1317.27488718253  delta_E= -1.2e-09  |g|= 4.64e-05  |ddm|= 0.00141
+  alpha nocc = 90  HOMO = -0.0170267303178093  LUMO = 0.0179750823509391
+  beta  nocc = 89  HOMO = -0.132695090451389  LUMO = 0.0135276759078133
+  HOMO = -0.0170267303178  LUMO = 0.0135276759078  gap/eV = 0.83143
+cycle= 25 E= -1317.27488718287  delta_E= -3.39e-10  |g|= 2.61e-05  |ddm|= 0.000755
+  alpha nocc = 90  HOMO = -0.0170264948601258  LUMO = 0.0179814322217097
+  beta  nocc = 89  HOMO = -0.132691984813921  LUMO = 0.0135220794450168
+  HOMO = -0.0170264948601  LUMO = 0.013522079445  gap/eV = 0.83127
+Extra cycle  E= -1317.27488718082  delta_E= 2.05e-09  |g|= 6.71e-05  |ddm|= 0.000904
+converged SCF energy = -1317.27488718082  <S^2> = 0.76040115  2S+1 = 2.0103742
+#INFO: **** input file is <run-dir>/repo/dft/revision/deltascf.py ****
+"""
+Delta-SCF check of where an added electron (N+1) and a removed electron (N-1) go in the BTPC ion pair (plan section 5,
+item 3): an orbital-independent test of the LUMO-location claim.
+
+For each (geometry, model) combination -- default all four of {gas minimum, PCM minimum} x {gas phase, IEF-PCM water},
+i.e. the two published calculations and the two cross combinations -- the script computes
+  N     neutral RKS (from the stored final.chk where one exists),
+  N+1   UKS anion doublet at the same geometry (vertical), from one or more initial guesses that put the extra electron
+        in the lowest cation-localised virtual, the lowest picrate-localised virtual, or the neutral LUMO,
+  N-1   UKS cation doublet, hole in the neutral HOMO (or the highest cation/picrate-localised occupied orbital),
+and reports Delta-SCF vertical electron affinity EA = E(N) - E(N+1) and ionisation energy IE = E(N-1) - E(N) (lowest
+state of each charge), Koopmans values for comparison, <S^2>, and fragment spin and charge (Mulliken, Loewdin,
+Hirshfeld) with the change of fragment charge from N.  With aufbau occupations an initial guess on the "wrong"
+fragment may still relax to the other one; that is reported (start fragment vs final spin location).  --mom keeps the
+initial occupation (maximum-overlap method) to obtain both localised states and their energy difference.
+In IEF-PCM the continuum is fully relaxed for each charge state (equilibrium solvation at fixed geometry).
+
+Level of theory: B3LYP/6-311++G(d,p), density fitting, grid 4, IEF-PCM Lebedev 29 (rev_common.py), conv_tol 1e-10
+for N, 1e-9 for the doublets, max_cycle 150 with a level-shifted retry.
+Usage:
+  python dft/revision/deltascf.py --job dscf --out <dir> [--combos gas/gas,pcm/pcm,gas/pcm,pcm/gas]
+         [--plus cation,anion] [--minus homo] [--mom] [--no-hirshfeld] [--case btpc] [--smoke]
+  combo = <geometry>/<model>; geometry gas|pcm|label=path.xyz, model gas|pcm.
+--smoke: STO-3G, grid 2, Lebedev 17, loose convergence, combos gas/gas,pcm/pcm.
+"""
+import sys, pathlib, argparse, time
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import rev_common as rc          # first: pins the thread pools
+import numpy as np
+import headline as hl
+import charges as ch
+
+CONV_DOUBLET = 1e-9
+
+
+def parser():
+    p = rc.add_common_args(argparse.ArgumentParser(description=__doc__.split('\n')[1]))
+    p.add_argument('--combos', default=None, help='comma list of geometry/model (default all four)')
+    p.add_argument('--plus', default='cation,anion', help='N+1 initial guesses: cation, anion, lumo')
+    p.add_argument('--minus', default='homo', help='N-1 initial guesses: homo, cation, anion')
+    p.add_argument('--mom', action='store_true', help='also run each guess with the maximum-overlap method')
+    p.add_argument('--no-hirshfeld', action='store_true')
+    p.add_argument('--case', default='btpc')
+    p.add_argument('--xc', default=rc.XC)
+    return p
+
+
+def pick_orbital(fr, kind, plus):
+    """Index of the neutral MO that receives the electron (N+1) or loses it (N-1)."""
+    if plus:
+        if kind == 'lumo':
+            return fr['n_occ']
+        o = fr['lowest_virtual_on'].get(kind)
+    else:
+        if kind == 'homo':
+            return fr['n_occ'] - 1
+        o = fr['highest_occupied_on'].get(kind)
+    return None if o is None else o['index']
+
+
+def uks_guess(C, nocc, k, plus):
+    """UKS density from RKS orbitals: alpha gets orbital k as well (N+1), or beta loses orbital k (N-1)."""
+    nmo = C.shape[1]
+    occ_a = np.zeros(nmo); occ_b = np.zeros(nmo)
+    occ_a[:nocc] = 1; occ_b[:nocc] = 1
+    if plus:
+        occ_a[k] = 1
+    else:
+        occ_b[k] = 0
+    dm = np.array([(C * occ_a) @ C.T, (C * occ_b) @ C.T])
+    return dm, (occ_a, occ_b)
+
+
+def run(job, args):
+    lv = hl.level(args.smoke)
+    combos = (args.combos or ('gas/gas,pcm/pcm' if args.smoke else 'gas/gas,pcm/pcm,gas/pcm,pcm/gas')).split(',')
+    plus_guesses = [g.strip() for g in args.plus.split(',') if g.strip()]
+    minus_guesses = [g.strip() for g in args.minus.split(',') if g.strip()]
+    job.r['settings'] = {**lv, 'xc': args.xc, 'conv_tol_doublet': 1e-6 if args.smoke else CONV_DOUBLET,
+                         'combos': combos, 'plus_guesses': plus_guesses, 'minus_guesses': minus_guesses,
+                         'mom': args.mom, 'pcm': f'{rc.PCM_METHOD} water eps {rc.SOLVENT_EPS["water"]}, equilibrium '
+                         'solvation for each charge state', 'density_fit': True, 'auxbasis': 'PySCF default',
+                         'spin_convention': 'mol.spin = 2S = 1 for both doublets'}
+    job.save()
+    case = rc.load_case(f'{args.case}_gas')
+    frags = rc.fragments(case)
+    conv_d = 1e-6 if args.smoke else CONV_DOUBLET
+    free_cache = {}
+
+    def analyse(mol, mf, dm):
+        out = {k: {'fragments': v['fragments'], **({'spin_fragments': v['spin_fragments']} if 'spin_fragments' in v
+                                                   else {})}
+               for k, v in hl.populations(mol, dm, frags).items()}
+        if not args.no_hirshfeld:
+            key = (mol.basis if isinstance(mol.basis, str) else str(mol.basis), args.xc)
+            if key not in free_cache:
+                free_cache[key] = ch.free_atom_dms(mol, xc=args.xc)
+            h = ch.hirshfeld_charges(mol, dm, mf.grids, free_cache[key])
+            q = np.array(h['charges'])
+            out['hirshfeld'] = {'fragments': {f: float(q[a].sum()) for f, a in frags.items()}}
+            if 'spins' in h:
+                s = np.array(h['spins'])
+                out['hirshfeld']['spin_fragments'] = {f: float(s[a].sum()) for f, a in frags.items()}
+        return out
+
+    summary = {}
+    for combo in combos:
+        gspec, model = combo.strip().split('/')
+        glabel, gpath, gmodel = hl.resolve_geom(gspec, args.case)
+        solvent = None if model == 'gas' else 'water'
+        tag = f'{glabel}/{model}'
+        job.input_file(f'geometry_{glabel}', gpath)
+
+        def build(charge, spin):
+            mol = rc.mol_for_case(case, gpath, charge=charge, spin=spin, basis=lv['basis'], verbose=4 if not args.smoke else 3,
+                                  output=job.out / f'pyscf_{glabel}_{model}.log')
+            return mol
+
+        # ---- N (neutral, RKS)
+        kN = f'{tag}|N'
+        chkN = job.chk_dir / f'{glabel}_{model}_N.chk'
+        mol = build(0, 0)
+        mfN = rc.make_mf(mol, xc=args.xc, solvent=solvent, conv_tol=lv['conv_tol'], grid_level=lv['grid_level'],
+                         lebedev_order=lv['lebedev_order'], chkfile=chkN)
+        guess = chkN if chkN.exists() else None
+        if guess is None and not args.smoke:
+            d = hl.stored_dir(f'{args.case}_{model}') or None
+            if d and (d / 'final.chk').exists():
+                guess = d / 'final.chk'
+        if job.done(kN) and chkN.exists():
+            # rebuild the neutral orbitals cheaply from the checkpoint (needed for the guesses)
+            wall = rc.run_scf(mfN, chk_guess=chkN, log=job.log)
+            recN = job.get(kN)
+        else:
+            recN = {'geometry': glabel, 'xyz': str(gpath), 'model': model, 'charge': 0, 'spin': 0,
+                    'settings': rc.settings_of(mfN)}
+            job.put(kN, recN, status='running')
+            job.log(f'{kN}: RKS ({mol.nao} AO), guess {guess or "minao"}')
+            wall = rc.run_scf(mfN, chk_guess=guess, log=job.log)
+            fr = hl.frontier(mfN, frags)
+            recN.update({'E_Ha': float(mfN.e_tot), 'scf_cycles': mfN._cycles, 'scf_wall_s': round(wall, 1),
+                         'frontier': fr, 'populations': analyse(mol, mfN, mfN.make_rdm1())})
+            job.put(kN, recN)
+            job.r['timings'][kN] = round(wall, 1)
+            job.log(f"{kN}: E = {mfN.e_tot:.10f} Ha ({mfN._cycles} cycles, {wall:.0f} s); LUMO on {fr['LUMO_on']}, "
+                    f"HOMO on {fr['HOMO_on']}")
+        frN = recN['frontier']
+        C = np.asarray(mfN.mo_coeff); nocc = frN['n_occ']
+
+        # ---- N+1 and N-1 (UKS doublets)
+        results = {'N+1': [], 'N-1': []}
+        for plus, glist in ((True, plus_guesses), (False, minus_guesses)):
+            state = 'N+1' if plus else 'N-1'
+            used = set()
+            for g in glist:
+                k = pick_orbital(frN, g, plus)
+                if k is None:
+                    job.log(f'{tag} {state}: no orbital for guess {g!r}; skipped')
+                    continue
+                for mode in (['aufbau', 'mom'] if args.mom else ['aufbau']):
+                    if (k, mode) in used:
+                        job.log(f'{tag} {state}: guess {g!r} is orbital {k}, already done ({mode}); skipped')
+                        continue
+                    used.add((k, mode))
+                    key = f'{tag}|{state}|{g}|{mode}'
+                    if job.done(key):
+                        results[state].append(job.get(key)); continue
+                    charge = -1 if plus else +1
+                    molD = build(charge, 1)
+                    chk = job.chk_dir / f"{glabel}_{model}_{state.replace('+', 'p').replace('-', 'm')}_{g}_{mode}.chk"
+                    mf = rc.make_mf(molD, xc=args.xc, solvent=solvent, conv_tol=conv_d, grid_level=lv['grid_level'],
+                                    lebedev_order=lv['lebedev_order'], restricted=False, chkfile=chk)
+                    dm0, (oa, ob) = uks_guess(C, nocc, k, plus)
+                    if mode == 'mom':
+                        from pyscf import scf
+                        mf = scf.addons.mom_occ(mf, (C, C), (oa, ob))
+                    start_frag = hl.frag_of_share({f: 100 * rc.mo_fragment_share(mol, C[:, k], a) for f, a in frags.items()})
+                    rec = {'geometry': glabel, 'model': model, 'state': state, 'charge': charge, 'spin': 1,
+                           'guess': g, 'guess_orbital_index': int(k), 'guess_orbital_on': start_frag, 'mode': mode,
+                           'settings': rc.settings_of(mf)}
+                    job.put(key, rec, status='running')
+                    job.log(f'{key}: UKS doublet, electron {"added to" if plus else "removed from"} MO {k} '
+                            f'({start_frag}), {mode}')
+                    t = time.time()
+                    attempts = []
+                    try:
+                        if chk.exists():
+                            rc.run_scf(mf, chk_guess=chk, log=job.log)
+                        else:
+                            rc.run_scf(mf, dm0=dm0, log=job.log)
+                        attempts.append({'level_shift': 0, 'cycles': mf._cycles})
+                    except RuntimeError as ex:
+                        attempts.append({'level_shift': 0, 'cycles': mf.max_cycle, 'error': str(ex)})
+                        job.log(f'{key}: not converged; retry with level shift 0.25 Ha from the last density')
+                        dm_last = mf.make_rdm1()
+                        mf.level_shift = 0.25
+                        rc.run_scf(mf, dm0=dm_last, log=job.log)
+                        attempts.append({'level_shift': 0.25, 'cycles': mf._cycles})
+                        mf.level_shift = 0
+                        rc.run_scf(mf, dm0=mf.make_rdm1(), log=job.log)      # polish without the shift
+                        attempts.append({'level_shift': 0, 'cycles': mf._cycles, 'polish': True})
+                    wall = time.time() - t
+                    s2, mult = mf.spin_square()
+                    dm = mf.make_rdm1()
+                    pops = analyse(molD, mf, dm)
+                    # where did the unpaired electron end up?  (Mulliken spin; Hirshfeld if computed)
+                    sp = (pops.get('hirshfeld') or pops['mulliken'])['spin_fragments']
+                    end_frag = max(sp, key=lambda f: abs(sp[f]))
+                    na = int(round(mf.mo_occ[0].sum())); nb = int(round(mf.mo_occ[1].sum()))
+                    # the orbital of the added electron (alpha HOMO) or of the hole (beta LUMO)
+                    s_idx, s_spin, s_lab = (na - 1, 0, 'alpha HOMO') if plus else (nb, 1, 'beta LUMO')
+                    soc = mf.mo_coeff[s_spin][:, s_idx]
+                    somo_sh = {f: round(100 * rc.mo_fragment_share(molD, soc, a), 2) for f, a in frags.items()}
+                    dq = {m: {f: pops[m]['fragments'][f] - recN['populations'][m]['fragments'][f] for f in frags}
+                          for m in pops if m in recN['populations']}
+                    rec.update({'E_Ha': float(mf.e_tot), 'S2': float(s2), 'multiplicity': float(mult),
+                                'scf_attempts': attempts, 'scf_wall_s': round(wall, 1), 'populations': pops,
+                                'delta_charge_vs_N': dq, 'spin_on': end_frag,
+                                'stayed_on_guess_fragment': end_frag == start_frag,
+                                'unpaired_orbital': s_lab,
+                                'unpaired_orbital_eV': float(mf.mo_energy[s_spin][s_idx] * rc.HARTREE_EV),
+                                'unpaired_orbital_shares_mulliken_pct': somo_sh})
+                    job.put(key, rec)
+                    job.r['timings'][key] = round(wall, 1)
+                    job.log(f"{key}: E = {mf.e_tot:.10f} Ha, <S2> {s2:.4f}, spin on {end_frag} "
+                            f"({', '.join(f'{f} {v:+.3f}' for f, v in sp.items())}), {wall:.0f} s")
+                    molD.stdout.close()
+                    results[state].append(job.get(key))
+        # ---- Delta-SCF numbers for this combination
+        EN = recN['E_Ha']
+        s = {'E_N_Ha': EN, 'koopmans_IP_eV': -frN['HOMO_eV'], 'koopmans_EA_eV': -frN['LUMO_eV'],
+             'LUMO_on': frN['LUMO_on'], 'HOMO_on': frN['HOMO_on']}
+        for state, lst in results.items():
+            lst = [r for r in lst if r and r.get('status') == 'done']
+            if not lst:
+                continue
+            best = min(lst, key=lambda r: r['E_Ha'])
+            s[f'{state}_states'] = [{'guess': r['guess'], 'mode': r['mode'], 'E_Ha': r['E_Ha'], 'spin_on': r['spin_on'],
+                                     'S2': r['S2'], 'E_rel_eV': (r['E_Ha'] - best['E_Ha']) * rc.HARTREE_EV}
+                                    for r in lst]
+            s[f'{state}_lowest'] = {'guess': best['guess'], 'mode': best['mode'], 'spin_on': best['spin_on']}
+            if state == 'N+1':
+                s['deltaSCF_EA_eV'] = (EN - best['E_Ha']) * rc.HARTREE_EV
+                s['added_electron_on'] = best['spin_on']
+            else:
+                s['deltaSCF_IE_eV'] = (best['E_Ha'] - EN) * rc.HARTREE_EV
+                s['hole_on'] = best['spin_on']
+        summary[tag] = s
+        job.log(f"{tag}: EA(dSCF) {s.get('deltaSCF_EA_eV', float('nan')):.3f} eV (electron on {s.get('added_electron_on')}),"
+                f" IE(dSCF) {s.get('deltaSCF_IE_eV', float('nan')):.3f} eV (hole on {s.get('hole_on')}); Koopmans "
+                f"EA {s['koopmans_EA_eV']:.3f}, IP {s['koopmans_IP_eV']:.3f} eV; LUMO on {s['LUMO_on']}")
+        mol.stdout.close()
+        job.r['summary'] = summary
+        job.save()
+    return True
+
+
+if __name__ == '__main__':
+    rc.install_sigterm_handler()
+    rc.main_wrapper(parser, run, __file__)
+#INFO: ******************** input file end ********************
+
+
+System: uname_result(system='Linux', node='<vm-1>', release='7.0.0-1017-gcp', version='#19~24.04.1-Ubuntu SMP PREEMPT Thu Oct 29 22:34:06 UTC 2026', machine='x86_64')  Threads 4
+Python 3.11.16 (main, Sep  2 2026, 23:39:52) [GCC 15.3.0]
+numpy 2.4.6  scipy 1.17.1  h5py 3.16.0
+Date: Sat Nov 21 14:33:41 2026
+PySCF version 2.14.0
+PySCF path  <run-dir>/env/lib/python3.11/site-packages/pyscf
+
+[ENV] PYSCF_TMPDIR <run-dir>/scratch/deltascf_gasgeom
+[CONFIG] conf_file None
+[INPUT] verbose = 4
+[INPUT] num. atoms = 33
+[INPUT] num. electrons = 177
+[INPUT] charge = 1
+[INPUT] spin (= nelec alpha-beta = 2S) = 1
+[INPUT] symmetry False subgroup None
+[INPUT] Mole.unit = angstrom
+[INPUT] Symbol           X                Y                Z      unit          X                Y                Z       unit  Magmom
+[INPUT]  1 O     -0.758190720000  -0.146469680000   0.405752490000 AA   -1.432772810987  -0.276787580753   0.766761080460 Bohr   0.0
+[INPUT]  2 N     -0.387069340000   2.474275380000   1.668986690000 AA   -0.731455043816   4.675702824954   3.153927749644 Bohr   0.0
+[INPUT]  3 O      0.538537480000   1.700803360000   1.918482650000 AA    1.017688345013   3.214052542140   3.625406783230 Bohr   0.0
+[INPUT]  4 C     -1.192502020000   2.224790000000   0.476186450000 AA   -2.253502220791   4.204243784671   0.899861974729 Bohr   0.0
+[INPUT]  5 C     -1.261371930000   0.896925280000  -0.093064000000 AA   -2.383647488914   1.694943133399  -0.175865472057 Bohr   0.0
+[INPUT]  6 C     -2.063614580000   0.839511440000  -1.295553660000 AA   -3.899666382859   1.586446700039  -2.448241597078 Bohr   0.0
+[INPUT]  7 C     -2.761696110000   1.906264570000  -1.809630690000 AA   -5.218849287177   3.602317958262  -3.419706390708 Bohr   0.0
+[INPUT]  8 O     -0.657973870000   3.453660710000   2.354884050000 AA   -1.243390411420   6.526472869071   4.450085909607 Bohr   0.0
+[INPUT]  9 C     -2.656691930000   3.148151000000  -1.181974990000 AA   -5.020420145042   5.949143188776  -2.233609017186 Bohr   0.0
+[INPUT] 10 C     -1.880335340000   3.308073060000  -0.043579670000 AA   -3.553318814941   6.251352083452  -0.082353640899 Bohr   0.0
+[INPUT] 11 N     -2.161340730000  -0.430300140000  -2.027420520000 AA   -4.084342041568  -0.813149415962  -3.831269522123 Bohr   0.0
+[INPUT] 12 N     -3.365049990000   4.297774680000  -1.739865160000 AA   -6.359022876570   8.121617090290  -3.287868646073 Bohr   0.0
+[INPUT] 13 O     -4.041973620000   4.114750050000  -2.747757880000 AA   -7.638223144517   7.775750665540  -5.192509849816 Bohr   0.0
+[INPUT] 14 O     -3.243196220000   5.377467060000  -1.169568520000 AA   -6.128752624025  10.161939987270  -2.210164186713 Bohr   0.0
+[INPUT] 15 O     -3.251151630000  -0.730124010000  -2.499116070000 AA   -6.143786170133  -1.379734415869  -4.722644925799 Bohr   0.0
+[INPUT] 16 O     -1.141838680000  -1.100679930000  -2.158862010000 AA   -2.157762383635  -2.079983618505  -4.079657939628 Bohr   0.0
+[INPUT] 17 H     -1.808702250000   4.273035690000   0.437970670000 AA   -3.417951893385   8.074867174592   0.827644616892 Bohr   0.0
+[INPUT] 18 H     -3.373423250000   1.790405690000  -2.693723670000 AA   -6.374846044740   3.383376405963  -5.090399991558 Bohr   0.0
+[INPUT] 19 N      1.245795220000  -1.081521450000   1.524397330000 AA    2.354211773092  -2.043779338342   2.880693458718 Bohr   0.0
+[INPUT] 20 N      2.837932300000  -1.874109290000   2.630757610000 AA    5.362914807057  -3.541553285603   4.971411383015 Bohr   0.0
+[INPUT] 21 C      2.851060060000  -2.603088670000   1.465979410000 AA    5.387722678086  -4.919124664258   2.770299589151 Bohr   0.0
+[INPUT] 22 C      1.780400010000  -2.068280560000   0.732391800000 AA    3.364468411073  -3.908483807162   1.384019917877 Bohr   0.0
+[INPUT] 23 N      1.872094790000  -0.966000560000   2.650790930000 AA    3.537746432325  -1.825476494576   5.009268871181 Bohr   0.0
+[INPUT] 24 C      1.434770110000  -2.540206640000  -0.541712440000 AA    2.711322559612  -4.800294849402  -1.023688149870 Bohr   0.0
+[INPUT] 25 C      2.218396700000  -3.567495960000  -1.030696590000 AA    4.192162198639  -6.741590314892  -1.947734272623 Bohr   0.0
+[INPUT] 26 C      3.300928330000  -4.106976300000  -0.291102580000 AA    6.237850500518  -7.761060407080  -0.550104150354 Bohr   0.0
+[INPUT] 27 C      3.643153470000  -3.643758900000   0.966789470000 AA    6.884562288059  -6.885706384946   1.826967318413 Bohr   0.0
+[INPUT] 28 H      0.602146420000  -2.114056890000  -1.088302230000 AA    1.137891820687  -3.994988533850  -2.056593155453 Bohr   0.0
+[INPUT] 29 H      4.470428130000  -4.061573900000   1.525594310000 AA    8.447884825252  -7.675262305682   2.882955423095 Bohr   0.0
+[INPUT] 30 H      2.001426640000  -3.976931450000  -2.009647700000 AA    3.782148208008  -7.515311256669  -3.797683759862 Bohr   0.0
+[INPUT] 31 H      3.879240750000  -4.912104920000  -0.728380430000 AA    7.330702588752  -9.282532993929  -1.376439527193 Bohr   0.0
+[INPUT] 32 H      0.382070860000  -0.453204720000   1.224659430000 AA    0.722009285577  -0.856432799160   2.314270918566 Bohr   0.0
+[INPUT] 33 H      3.446344300000  -1.933090440000   3.435381540000 AA    6.512646857956  -3.653011505615   6.491930243987 Bohr   0.0
+
+nuclear repulsion = 2127.93144867434
+number of shells = 290
+number of NR pGTOs = 947
+number of NR cGTOs = 606
+basis = 6-311++g(d,p)
+ecp = {}
+CPU time:     10710.50
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+
+
+******** <class 'pyscf.df.df_jk.DFUKS'> ********
+method = DFUKS
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-09
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/deltascf_gasgeom/chk/gas_gas_Nm1_homo_aufbau.chk
+max_memory 8000 MB (current use 4793 MB)
+number electrons alpha = 89  beta = 88
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x7d62a3c936a0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x7d62a3c93600>
+small_rho_cutoff = 0
+Set gradient conv threshold to 3.16228e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+_cderi_to_save = <run-dir>/scratch/deltascf_gasgeom/tmp1fodg6e2
+init E= -1316.85913405541
+
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  alpha nocc = 89  HOMO = -0.397847991411551  LUMO = -0.299806469698617
+  beta  nocc = 88  HOMO = -0.410872417389806  LUMO = -0.397814272934985
+
+WARN: HOMO -0.397847991411551 >= LUMO -0.397814272934985
+
+cycle= 1 E= -1316.59762821079  delta_E= 0.262  |g|= 0.646  |ddm|=   15
+  alpha nocc = 89  HOMO = -0.268992181239346  LUMO = -0.248671702409617
+  beta  nocc = 88  HOMO = -0.283343956769606  LUMO = -0.270380336995468
+
+WARN: HOMO -0.268992181239346 >= LUMO -0.270380336995468
+
+cycle= 2 E= -1309.95100247312  delta_E= 6.65  |g|= 2.66  |ddm|= 29.4
+  alpha nocc = 89  HOMO = -0.384829089906766  LUMO = -0.243054038143953
+  beta  nocc = 88  HOMO = -0.379393390740533  LUMO = -0.37008942874975
+  HOMO = -0.379393390741  LUMO = -0.37008942875  gap/eV = 0.25317
+cycle= 3 E= -1316.73910070773  delta_E= -6.79  |g|= 0.415  |ddm|= 20.3
+  alpha nocc = 89  HOMO = -0.383461420751131  LUMO = -0.256303350517626
+  beta  nocc = 88  HOMO = -0.401213395801209  LUMO = -0.378335924215495
+  HOMO = -0.383461420751  LUMO = -0.378335924215  gap/eV = 0.13947
+cycle= 4 E= -1316.8622187586  delta_E= -0.123  |g|= 0.255  |ddm|= 6.54
+  alpha nocc = 89  HOMO = -0.40536875820096  LUMO = -0.244347216307595
+  beta  nocc = 88  HOMO = -0.401811248978861  LUMO = -0.364019002778104
+  HOMO = -0.401811248979  LUMO = -0.364019002778  gap/eV = 1.02838
+cycle= 5 E= -1316.87299165631  delta_E= -0.0108  |g|= 0.229  |ddm|= 2.67
+  alpha nocc = 89  HOMO = -0.412641279008657  LUMO = -0.240877842150351
+  beta  nocc = 88  HOMO = -0.410189344548431  LUMO = -0.361393576794011
+  HOMO = -0.410189344548  LUMO = -0.361393576794  gap/eV = 1.32780
+cycle= 6 E= -1316.88815757083  delta_E= -0.0152  |g|= 0.124  |ddm|= 1.09
+  alpha nocc = 89  HOMO = -0.421261396575166  LUMO = -0.245886186326894
+  beta  nocc = 88  HOMO = -0.408319344273806  LUMO = -0.363747623946349
+  HOMO = -0.408319344274  LUMO = -0.363747623946  gap/eV = 1.21286
+cycle= 7 E= -1316.89292988773  delta_E= -0.00477  |g|= 0.0871  |ddm|= 1.09
+  alpha nocc = 89  HOMO = -0.411670207175683  LUMO = -0.254396610358796
+  beta  nocc = 88  HOMO = -0.40237229168083  LUMO = -0.368165313840251
+  HOMO = -0.402372291681  LUMO = -0.36816531384  gap/eV = 0.93082
+cycle= 8 E= -1316.89694511453  delta_E= -0.00402  |g|= 0.0417  |ddm|= 0.95
+  alpha nocc = 89  HOMO = -0.402092875795935  LUMO = -0.260291149366804
+  beta  nocc = 88  HOMO = -0.399625538541676  LUMO = -0.370986485767627
+  HOMO = -0.399625538542  LUMO = -0.370986485768  gap/eV = 0.77931
+cycle= 9 E= -1316.89795589714  delta_E= -0.00101  |g|= 0.0148  |ddm|= 0.666
+  alpha nocc = 89  HOMO = -0.39869805852215  LUMO = -0.262299971141526
+  beta  nocc = 88  HOMO = -0.398778526113941  LUMO = -0.370972460624532
+  HOMO = -0.398698058522  LUMO = -0.370972460625  gap/eV = 0.75445
+cycle= 10 E= -1316.89807888254  delta_E= -0.000123  |g|= 0.00798  |ddm|= 0.256
+  alpha nocc = 89  HOMO = -0.399882824429683  LUMO = -0.261517117811762
+  beta  nocc = 88  HOMO = -0.399421177042051  LUMO = -0.370434021250439
+  HOMO = -0.399421177042  LUMO = -0.37043402125  gap/eV = 0.78878
+cycle= 11 E= -1316.89810026248  delta_E= -2.14e-05  |g|= 0.00422  |ddm|= 0.141
+  alpha nocc = 89  HOMO = -0.399741148801437  LUMO = -0.261512414894609
+  beta  nocc = 88  HOMO = -0.399474209156804  LUMO = -0.370330827908457
+  HOMO = -0.399474209157  LUMO = -0.370330827908  gap/eV = 0.79303
+cycle= 12 E= -1316.89810992464  delta_E= -9.66e-06  |g|= 0.00227  |ddm|= 0.0672
+  alpha nocc = 89  HOMO = -0.399725356101833  LUMO = -0.261558611772274
+  beta  nocc = 88  HOMO = -0.399505204096927  LUMO = -0.370192917468788
+  HOMO = -0.399505204097  LUMO = -0.370192917469  gap/eV = 0.79763
+cycle= 13 E= -1316.89811488933  delta_E= -4.96e-06  |g|= 0.00119  |ddm|= 0.0299
+  alpha nocc = 89  HOMO = -0.399822701629404  LUMO = -0.261581435030231
+  beta  nocc = 88  HOMO = -0.399633254826574  LUMO = -0.370082523675045
+  HOMO = -0.399633254827  LUMO = -0.370082523675  gap/eV = 0.80412
+cycle= 14 E= -1316.89811675428  delta_E= -1.86e-06  |g|= 0.00101  |ddm|= 0.0252
+  alpha nocc = 89  HOMO = -0.399865227540368  LUMO = -0.261567464443521
+  beta  nocc = 88  HOMO = -0.399679866382721  LUMO = -0.370008181817017
+  HOMO = -0.399679866383  LUMO = -0.370008181817  gap/eV = 0.80741
+cycle= 15 E= -1316.8981171573  delta_E= -4.03e-07  |g|= 0.00089  |ddm|= 0.0131
+  alpha nocc = 89  HOMO = -0.399847152400338  LUMO = -0.261552312325985
+  beta  nocc = 88  HOMO = -0.399655305528256  LUMO = -0.369982616001145
+  HOMO = -0.399655305528  LUMO = -0.369982616001  gap/eV = 0.80744
+cycle= 16 E= -1316.8981173452  delta_E= -1.88e-07  |g|= 0.00068  |ddm|= 0.00798
+  alpha nocc = 89  HOMO = -0.399853354065174  LUMO = -0.261553908677427
+  beta  nocc = 88  HOMO = -0.399659803812135  LUMO = -0.369978815781021
+  HOMO = -0.399659803812  LUMO = -0.369978815781  gap/eV = 0.80766
+cycle= 17 E= -1316.89811753482  delta_E= -1.9e-07  |g|= 0.000185  |ddm|= 0.00658
+  alpha nocc = 89  HOMO = -0.399842172646803  LUMO = -0.261557267082323
+  beta  nocc = 88  HOMO = -0.399639730198101  LUMO = -0.369987052751004
+  HOMO = -0.399639730198  LUMO = -0.369987052751  gap/eV = 0.80689
+cycle= 18 E= -1316.89811754373  delta_E= -8.91e-09  |g|= 0.000191  |ddm|= 0.0016
+  alpha nocc = 89  HOMO = -0.399858008028635  LUMO = -0.26155702754796
+  beta  nocc = 88  HOMO = -0.399652563084157  LUMO = -0.369979520179676
+  HOMO = -0.399652563084  LUMO = -0.36997952018  gap/eV = 0.80744
+cycle= 19 E= -1316.89811756359  delta_E= -1.99e-08  |g|= 7.99e-05  |ddm|= 0.00134
+  alpha nocc = 89  HOMO = -0.399857910195807  LUMO = -0.261559697588779
+  beta  nocc = 88  HOMO = -0.399649459279337  LUMO = -0.369979375900858
+  HOMO = -0.399649459279  LUMO = -0.369979375901  gap/eV = 0.80736
+cycle= 20 E= -1316.89811756951  delta_E= -5.92e-09  |g|= 5.87e-05  |ddm|= 0.000841
+  alpha nocc = 89  HOMO = -0.39986008710477  LUMO = -0.261558923157625
+  beta  nocc = 88  HOMO = -0.399648494450856  LUMO = -0.369977686204127
+  HOMO = -0.399648494451  LUMO = -0.369977686204  gap/eV = 0.80738
+cycle= 21 E= -1316.89811757422  delta_E= -4.7e-09  |g|= 5.07e-05  |ddm|= 0.000874
+  alpha nocc = 89  HOMO = -0.399860729302851  LUMO = -0.261558058840937
+  beta  nocc = 88  HOMO = -0.399647165619814  LUMO = -0.36997713900319
+  HOMO = -0.39964716562  LUMO = -0.369977139003  gap/eV = 0.80736
+cycle= 22 E= -1316.89811757737  delta_E= -3.16e-09  |g|= 2.91e-05  |ddm|= 0.000641
+  alpha nocc = 89  HOMO = -0.399861010618483  LUMO = -0.261558854679566
+  beta  nocc = 88  HOMO = -0.399646227822933  LUMO = -0.369976967243311
+  HOMO = -0.399646227823  LUMO = -0.369976967243  gap/eV = 0.80734
+cycle= 23 E= -1316.89811757945  delta_E= -2.08e-09  |g|= 2.16e-05  |ddm|= 0.000459
+  alpha nocc = 89  HOMO = -0.399861106263141  LUMO = -0.261559394222448
+  beta  nocc = 88  HOMO = -0.399645900959028  LUMO = -0.36997756843629
+  HOMO = -0.399645900959  LUMO = -0.369977568436  gap/eV = 0.80732
+cycle= 24 E= -1316.89811758087  delta_E= -1.42e-09  |g|= 2.29e-05  |ddm|= 0.000393
+  alpha nocc = 89  HOMO = -0.399861231990785  LUMO = -0.261559483961972
+  beta  nocc = 88  HOMO = -0.399646071869487  LUMO = -0.369978122370121
+  HOMO = -0.399646071869  LUMO = -0.36997812237  gap/eV = 0.80731
+cycle= 25 E= -1316.89811758157  delta_E= -6.98e-10  |g|= 1.83e-05  |ddm|= 0.000208
+  alpha nocc = 89  HOMO = -0.399859833739218  LUMO = -0.261559097583562
+  beta  nocc = 88  HOMO = -0.399644984551739  LUMO = -0.369978106702256
+  HOMO = -0.399644984552  LUMO = -0.369978106702  gap/eV = 0.80728
+Extra cycle  E= -1316.89811758142  delta_E= 1.51e-10  |g|= 4.68e-05  |ddm|= 0.000343
+converged SCF energy = -1316.89811758142  <S^2> = 0.78146811  2S+1 = 2.0312244

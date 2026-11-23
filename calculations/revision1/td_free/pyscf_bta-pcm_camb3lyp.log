@@ -1,0 +1,420 @@
+#INFO: **** input file is <run-dir>/repo/dft/revision/tddft.py ****
+"""
+TD-DFT excited states of the BTPC ion pair and of its free components (plan section 5, item 7).
+
+Systems (--systems, comma list):
+  pair-gas      ion pair at the stored gas-phase B3LYP minimum, gas phase
+  pair-pcm      ion pair at the stored IEF-PCM minimum, IEF-PCM water
+  picrate-pcm   free picrate anion (the ion pair's anion atoms, charge -1), optimised in IEF-PCM water
+  bta-pcm       neutral 1H-benzotriazole (the cation's atoms without the H-bonded proton, case['proton']['H']),
+                optimised in IEF-PCM water
+  (picrate-gas / bta-gas: the same in the gas phase.)
+Functionals (--xc): b3lyp and camb3lyp (CAM-B3LYP) by default; the free species are optimised once with B3LYP
+(geomeTRIC, the five default criteria) and both functionals are applied at that geometry, as for the pair.
+Response: the Tamm-Dancoff approximation (TDA) by default, --rpa for full TD-DFT (RPA); --nstates singlets (default 20).
+In PySCF the response is dominated by the XC-kernel contraction on the DFT grid for every trial vector; full RPA needed
+3.3x the trial vectors of TDA for the same 3 roots of the ion pair (msi, 20 Nov 2026: 407 vs 124), so TDA is the
+production default and RPA the option (e.g. for oscillator strengths of the bright states).
+Solvent: PySCF 2.14 linear-response IEF-PCM for TD-DFT, non-equilibrium by default (the fast part of the continuum
+responds with the optical dielectric constant eps_opt = 1.78, fixed in pyscf/solvent/_attach_solvent.py; the ground
+state is fully equilibrated with eps 78.3553); --equilibrium uses the static eps for the response instead.
+Per state: excitation energy (eV, nm), oscillator strength (length gauge), the leading orbital pairs, and for the ion
+pair the hole and electron fractions on cation and picrate and the charge-transfer number from the Omega matrix of the
+transition density X+Y (X for TDA) with a Loewdin partition (Plasser & Lischka, J. Chem. Theory Comput. 8, 2777 (2012)):
+  T = C_occ (X+Y) C_vir^T,  T_L = S^1/2 T S^1/2,  Omega_AB = sum_{mu in A, nu in B} T_L,mu nu^2,
+  hole on A = sum_B Omega_AB / Omega,  electron on B = sum_A Omega_AB / Omega,  CT = sum_{A != B} Omega_AB / Omega.
+Ground state per functional: the frontier-orbital analysis of headline.py (LUMO location with that functional).
+
+Usage:
+  python dft/revision/tddft.py --job td_pair --out <dir> [--systems pair-gas,pair-pcm,picrate-pcm,bta-pcm]
+         [--xc b3lyp,camb3lyp] [--nstates 20] [--rpa] [--equilibrium] [--case btpc] [--smoke]
+--smoke: STO-3G, grid 2, Lebedev 17, 3 states, free-species optimisation 3 steps with loose criteria.
+"""
+import sys, pathlib, argparse, time
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import rev_common as rc          # first: pins the thread pools
+import numpy as np
+import headline as hl
+from opt_d3 import CONV, CONV_LOOSE, geomeric_norms
+
+EV_NM = 1239.841984
+
+
+def parser():
+    p = rc.add_common_args(argparse.ArgumentParser(description=__doc__.split('\n')[1]))
+    p.add_argument('--systems', default='pair-gas,pair-pcm,picrate-pcm,bta-pcm')
+    p.add_argument('--xc', default='b3lyp,camb3lyp')
+    p.add_argument('--nstates', type=int, default=None)
+    p.add_argument('--rpa', action='store_true', help='full TD-DFT (RPA) instead of the default TDA')
+    p.add_argument('--tda', action='store_true', help='TDA (the default; accepted for explicitness)')
+    p.add_argument('--equilibrium', action='store_true', help='equilibrium LR-PCM response (default non-equilibrium)')
+    p.add_argument('--case', default='btpc')
+    p.add_argument('--td-conv', type=float, default=1e-6, help='TD-DFT eigenvalue convergence, Ha (default 1e-6)')
+    return p
+
+
+def orbital_label(k, nocc):
+    return ('HOMO' + (f'-{nocc - 1 - k}' if k < nocc - 1 else '')) if k < nocc else ('LUMO' + (f'+{k - nocc}' if k > nocc else ''))
+
+
+def analyse_states(td, mf, frags, rpa):
+    mol = mf.mol
+    occ = np.asarray(mf.mo_occ); C = np.asarray(mf.mo_coeff)
+    oi = np.where(occ > 0)[0]; vi = np.where(occ == 0)[0]; nocc = len(oi)
+    Co, Cv = C[:, oi], C[:, vi]
+    S = mol.intor_symmetric('int1e_ovlp'); Sh = rc.lowdin_half(S)
+    sl = mol.aoslice_by_atom()
+    fidx = {f: np.concatenate([np.arange(sl[a][2], sl[a][3]) for a in atoms]) for f, atoms in frags.items()}
+    e_eV = np.asarray(td.e) * rc.HARTREE_EV
+    fosc = np.asarray(td.oscillator_strength(gauge='length'))
+    conv = np.atleast_1d(getattr(td, 'converged', [True] * len(e_eV)))
+    states = []
+    for n, (x, y) in enumerate(td.xy):
+        x = np.asarray(x).reshape(nocc, -1)
+        y = np.zeros_like(x) if np.isscalar(y) or np.ndim(y) == 0 else np.asarray(y).reshape(nocc, -1)
+        w = x ** 2 - y ** 2
+        w = w / w.sum()
+        top = np.argsort(w.ravel())[::-1][:4]
+        pairs = [{'from': orbital_label(int(oi[i // w.shape[1]]), nocc),
+                  'to': orbital_label(int(vi[i % w.shape[1]]), nocc), 'weight_pct': round(100 * float(w.ravel()[i]), 1)}
+                 for i in top if w.ravel()[i] > 0.02]
+        st = {'state': n + 1, 'E_eV': float(e_eV[n]), 'lambda_nm': float(EV_NM / e_eV[n]), 'f': float(fosc[n]),
+              'converged': bool(conv[n]) if n < len(conv) else None, 'transitions': pairs}
+        if len(frags) > 1:
+            T = Co @ (x + y if rpa else x) @ Cv.T
+            TL = Sh @ T @ Sh
+            Om = {(a, b): float((TL[np.ix_(fidx[a], fidx[b])] ** 2).sum()) for a in frags for b in frags}
+            tot = sum(Om.values())
+            st['omega'] = {f'{a}->{b}': v / tot for (a, b), v in Om.items()}
+            st['hole'] = {a: sum(Om[(a, b)] for b in frags) / tot for a in frags}
+            st['electron'] = {b: sum(Om[(a, b)] for a in frags) / tot for b in frags}
+            st['CT_number'] = sum(v for (a, b), v in Om.items() if a != b) / tot
+        states.append(st)
+    return states
+
+
+def free_species(case, X, syms, which):
+    """Atom list, charge, symbols and coordinates of the free picrate anion or neutral benzotriazole."""
+    fr = rc.fragments(case)
+    if which == 'picrate':
+        idx = list(fr['anion']); charge = -1
+    elif which == 'bta':
+        H = case['proton']['H']
+        idx = [i for i in fr['cation'] if i != H]; charge = 0
+    else:
+        raise ValueError(which)
+    return idx, charge, [syms[i] for i in idx], X[idx]
+
+
+def run(job, args):
+    from pyscf.geomopt import geometric_solver
+    lv = hl.level(args.smoke)
+    nstates = args.nstates or (3 if args.smoke else 20)
+    xcs = [x.strip() for x in args.xc.split(',') if x.strip()]
+    systems = [s.strip() for s in args.systems.split(',') if s.strip()]
+    if args.rpa and args.tda:
+        raise SystemExit('--rpa and --tda are exclusive')
+    rpa = bool(args.rpa)
+    job.r['settings'] = {**lv, 'xc': xcs, 'nstates': nstates, 'response': 'full TD-DFT (RPA)' if rpa else 'TDA',
+                         'td_conv_tol_Ha': args.td_conv, 'pcm_method': rc.PCM_METHOD,
+                         'pcm_ground_state_eps': rc.SOLVENT_EPS['water'],
+                         'pcm_response': 'equilibrium (static eps)' if args.equilibrium else
+                                         'non-equilibrium, optical eps 1.78 (PySCF 2.14 default)',
+                         'free_species_optimisation': 'B3LYP, geomeTRIC default criteria' if not args.smoke else 'smoke',
+                         'ct_analysis': 'Omega matrix of X+Y (X for TDA), Loewdin partition'}
+    job.save()
+    ok = True
+    case_gas = rc.load_case(f'{args.case}_gas')
+    frags_pair = rc.fragments(case_gas)
+    fdir = job.out / 'free'; fdir.mkdir(exist_ok=True)
+
+    for sysname in systems:
+        kind, model = sysname.rsplit('-', 1)
+        solvent = 'water' if model == 'pcm' else None
+        case = rc.load_case(f'{args.case}_{model}')
+        gpath = hl.resolve_geom(model, args.case)[1]
+        job.input_file(f'geometry_{model}', gpath)
+        if kind == 'pair':
+            geom, charge, frags = gpath, 0, frags_pair
+        else:
+            okey = f'opt/{sysname}'
+            if not job.done(okey):
+                syms, X = rc.read_xyz(gpath)
+                idx, charge, s2, X2 = free_species(case, X, syms, kind)
+                mol = rc.build_mol([(s, tuple(x)) for s, x in zip(s2, X2)], charge=charge, spin=0, basis=lv['basis'],
+                                   verbose=3, output=job.out / f'pyscf_opt_{sysname}.log')
+                mf = rc.make_mf(mol, xc=rc.XC, solvent=solvent, conv_tol=1e-6 if args.smoke else
+                                (rc.CONV_TOL_OPT_PCM if solvent else rc.CONV_TOL_OPT_GAS),
+                                grid_level=lv['grid_level'], lebedev_order=lv['lebedev_order'],
+                                chkfile=job.chk_dir / f'opt_{sysname}.chk')
+                hist = []
+
+                def cb(env):
+                    hist.append({'E_Ha': float(env['energy']), **geomeric_norms(env['gradients'])})
+                    job.log(f"{okey} step {len(hist) - 1}: E = {hist[-1]['E_Ha']:.10f}  grad rms/max "
+                            f"{hist[-1]['grms']:.1e}/{hist[-1]['gmax']:.1e}")
+                t0 = time.time()
+                job.put(okey, {'atoms_from_pair': idx, 'charge': charge, 'history': hist}, status='running')
+                conv, mo = geometric_solver.kernel(mf, maxsteps=3 if args.smoke else 100, callback=cb,
+                                                   **(CONV_LOOSE if args.smoke else CONV))
+                s3, X3 = hl.mol_geometry(mo)
+                rc.write_xyz(fdir / f'{sysname}.xyz', s3, X3, f'{sysname} B3LYP/{lv["basis"]} {"optimised" if conv else "NOT converged"}')
+                job.put(okey, {'atoms_from_pair': idx, 'charge': charge, 'converged': bool(conv), 'steps': len(hist),
+                               'E_Ha': hist[-1]['E_Ha'], 'xyz': f'free/{sysname}.xyz', 'history': hist,
+                               'wall_min': round((time.time() - t0) / 60, 2)})
+                job.log(f"{okey}: {'converged' if conv else 'NOT converged'} in {len(hist)} steps")
+                ok &= bool(conv) or args.smoke
+                mol.stdout.close()
+            o = job.get(okey)
+            geom, charge, frags = job.out / o['xyz'], o['charge'], {}
+        for xc in xcs:
+            key = f'{sysname}/{xc}'
+            if job.done(key):
+                continue
+            mol = rc.build_mol(geom, charge=charge, spin=0, basis=lv['basis'],
+                               basis_overrides=case.get('basis_overrides') if kind == 'pair' else None,
+                               verbose=4 if not args.smoke else 3, output=job.out / f'pyscf_{sysname}_{xc}.log')
+            chk = job.chk_dir / f'{sysname}_{xc}.chk'
+            mf = rc.make_mf(mol, xc=xc, solvent=solvent, conv_tol=lv['conv_tol'], grid_level=lv['grid_level'],
+                            lebedev_order=lv['lebedev_order'], chkfile=chk)
+            rec = {'system': sysname, 'xc': xc, 'geometry': str(geom), 'charge': charge, 'settings': rc.settings_of(mf)}
+            job.put(key, rec, status='running')
+            t = time.time()
+            rc.run_scf(mf, chk_guess=chk, log=job.log)
+            t_scf = time.time() - t
+            rec.update({'E_Ha': float(mf.e_tot), 'scf_cycles': mf._cycles, 'scf_wall_s': round(t_scf, 1)})
+            if frags:
+                fr = hl.frontier(mf, frags)
+                rec['frontier'] = fr
+            else:
+                n = int((mf.mo_occ > 0).sum()); e = mf.mo_energy * rc.HARTREE_EV
+                rec['frontier'] = {'HOMO_eV': float(e[n - 1]), 'LUMO_eV': float(e[n]), 'gap_eV': float(e[n] - e[n - 1])}
+            td = (mf.TDDFT if rpa else mf.TDA)(**({'equilibrium_solvation': True} if (solvent and args.equilibrium)
+                                                       else {}))
+            td.nstates = nstates
+            td.conv_tol = args.td_conv
+            if solvent:
+                rec['td_solvent'] = {'eps_response': float(td.with_solvent.eps),
+                                     'equilibrium_solvation': bool(td.with_solvent.equilibrium_solvation)}
+            t = time.time()
+            td.kernel()
+            t_td = time.time() - t
+            states = analyse_states(td, mf, frags, rpa)
+            rec.update({'td_class': type(td).__name__, 'td_wall_s': round(t_td, 1), 'states': states,
+                        'all_converged': bool(np.all(np.atleast_1d(td.converged)))})
+            bright = [s for s in states if s['f'] > 0.01]
+            rec['lowest_bright'] = bright[0] if bright else None
+            rec['strongest'] = max(states, key=lambda s: s['f'])
+            job.put(key, rec)
+            job.r['timings'][key] = round(t_scf + t_td, 1)
+            lb = rec['lowest_bright']
+            job.log(f"{key}: {len(states)} states in {t_td:.0f} s ({type(td).__name__}); S1 {states[0]['E_eV']:.3f} eV "
+                    f"({states[0]['lambda_nm']:.0f} nm, f {states[0]['f']:.4f}" +
+                    (f", CT {states[0]['CT_number']:.2f}" if 'CT_number' in states[0] else '') + ")" +
+                    (f"; lowest bright S{lb['state']} {lb['E_eV']:.3f} eV ({lb['lambda_nm']:.0f} nm, f {lb['f']:.3f})" if lb else ''))
+            ok &= rec['all_converged'] or args.smoke
+            mol.stdout.close()
+    job.r['summary'] = {k: {'S1_eV': v['states'][0]['E_eV'], 'S1_nm': v['states'][0]['lambda_nm'],
+                            'S1_f': v['states'][0]['f'], 'S1_CT': v['states'][0].get('CT_number'),
+                            'lowest_bright': v.get('lowest_bright'), 'LUMO_on': v['frontier'].get('LUMO_on'),
+                            'all_converged': v.get('all_converged')}
+                        for k, v in job.r['items'].items() if v.get('status') == 'done' and 'states' in v}
+    job.save()
+    return ok
+
+
+if __name__ == '__main__':
+    rc.install_sigterm_handler()
+    rc.main_wrapper(parser, run, __file__)
+#INFO: ******************** input file end ********************
+
+
+System: uname_result(system='Linux', node='<vm-1>', release='7.0.0-1017-gcp', version='#19~24.04.1-Ubuntu SMP PREEMPT Thu Oct 29 22:34:06 UTC 2026', machine='x86_64')  Threads 4
+Python 3.11.16 (main, Sep  2 2026, 23:39:52) [GCC 15.3.0]
+numpy 2.4.6  scipy 1.17.1  h5py 3.16.0
+Date: Sat Nov 21 19:10:01 2026
+PySCF version 2.14.0
+PySCF path  <run-dir>/env/lib/python3.11/site-packages/pyscf
+
+[ENV] PYSCF_TMPDIR <run-dir>/scratch/td_free
+[CONFIG] conf_file None
+[INPUT] verbose = 4
+[INPUT] num. atoms = 14
+[INPUT] num. electrons = 62
+[INPUT] charge = 0
+[INPUT] spin (= nelec alpha-beta = 2S) = 0
+[INPUT] symmetry False subgroup None
+[INPUT] Mole.unit = angstrom
+[INPUT] Symbol           X                Y                Z      unit          X                Y                Z       unit  Magmom
+[INPUT]  1 N      0.908162630000  -1.425874960000   1.033952710000 AA    1.716178647265  -2.694513162275   1.953887447652 Bohr   0.0
+[INPUT]  2 N      1.823477820000  -2.440209720000   2.700617520000 AA    3.445873674019  -4.611328057302   5.103427480002 Bohr   0.0
+[INPUT]  3 C      2.453248560000  -2.966559650000   1.613619370000 AA    4.635967893884  -5.605985270686   3.049298678593 Bohr   0.0
+[INPUT]  4 C      1.849097340000  -2.298463280000   0.531485540000 AA    3.494287550262  -4.343466106570   1.004362109767 Bohr   0.0
+[INPUT]  5 N      0.906780160000  -1.524327990000   2.327841740000 AA    1.713566157589  -2.880562425109   4.398983349931 Bohr   0.0
+[INPUT]  6 C      2.238119470000  -2.573981050000  -0.790596310000 AA    4.229432832357  -4.864119234320  -1.494010500992 Bohr   0.0
+[INPUT]  7 C      3.229825150000  -3.520534360000  -0.971373220000 AA    6.103484963732  -6.652845752521  -1.835629350537 Bohr   0.0
+[INPUT]  8 C      3.830562320000  -4.186447050000   0.127837110000 AA    7.238713687879  -7.911238359493   0.241577126456 Bohr   0.0
+[INPUT]  9 C      3.459448280000  -3.927204070000   1.435760530000 AA    6.537409791298  -7.421340127577   2.713194182160 Bohr   0.0
+[INPUT] 10 H      1.776262670000  -2.062765480000  -1.626728070000 AA    3.356649971589  -3.898061816407  -3.074070531442 Bohr   0.0
+[INPUT] 11 H      3.918911010000  -4.436298900000   2.273629140000 AA    7.405668515443  -8.383389927709   4.296536383430 Bohr   0.0
+[INPUT] 12 H      3.561249650000  -3.764881960000  -1.973892340000 AA    6.729786499703  -7.114595795716  -3.730115921977 Bohr   0.0
+[INPUT] 13 H      4.604083940000  -4.920751950000  -0.066125720000 AA    8.700457701108  -9.298873512419  -0.124959500590 Bohr   0.0
+[INPUT] 14 H      1.956429610000  -2.644598950000   3.682651560000 AA    3.697116144890  -4.997567724812   6.959202860602 Bohr   0.0
+
+nuclear repulsion = 406.585361506778
+number of shells = 115
+number of NR pGTOs = 360
+number of NR cGTOs = 233
+basis = 6-311++g(d,p)
+ecp = {}
+CPU time:     45589.13
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+
+
+******** <class 'pyscf.solvent._attach_solvent.PCMDFRKS'> ********
+method = PCMDFRKS
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-10
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/td_free/chk/bta-pcm_camb3lyp.chk
+max_memory 8000 MB (current use 1304 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = camb3lyp
+    T. Yanai, D. P. Tew, and N. C. Handy,  Chem. Phys. Lett. 393, 51 (2004)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x7060509374c0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x706050937420>
+small_rho_cutoff = 0
+******** <class 'pyscf.solvent.pcm.PCM'> (In testing) ********
+
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+
+lebedev_order = 29 (302 grids per sphere)
+eps = 78.3553
+frozen = False
+Set gradient conv threshold to 1e-05
+Initial guess from minao.
+tot grids = 333816
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+Create RSH-DF object <pyscf.df.df.DF object at 0x70605171ba90> for omega=0.33
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = auxmol.basis = {'C': 'aug-cc-pvtz-jkfit', 'N': 'aug-cc-pvtz-jkfit', 'H': 'aug-cc-pvtz-jkfit'}
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+PCM E_diel = -0.000270302395634356
+Solvent Energy = -0.000270302395634356
+init E= -397.865898252018
+
+WARN: 1 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.252517606407294  LUMO = -0.0772626616822052  gap/eV = 4.76893
+PCM E_diel = -0.0276496821281396
+Solvent Energy = -0.0276496821281396
+cycle= 1 E= -395.737012101419  delta_E= 2.13  |g|= 0.432  |ddm|= 23.1
+  HOMO = -0.288528973674339  LUMO = -0.0220976481203934  gap/eV = 7.24997
+PCM E_diel = -0.0191977492073586
+Solvent Energy = -0.0191977492073586
+cycle= 2 E= -395.736372651091  delta_E= 0.000639  |g|= 0.481  |ddm|= 4.95
+  HOMO = -0.302628837948523  LUMO = -0.0152599782806943  gap/eV = 7.81970
+PCM E_diel = -0.0225388901453536
+Solvent Energy = -0.0225388901453536
+cycle= 3 E= -395.783433960134  delta_E= -0.0471  |g|= 0.0941  |ddm|= 1.21
+  HOMO = -0.305237007660296  LUMO = -0.0169831764843877  gap/eV = 7.84379
+PCM E_diel = -0.0214986347254678
+Solvent Energy = -0.0214986347254678
+cycle= 4 E= -395.784941092814  delta_E= -0.00151  |g|= 0.0411  |ddm|= 0.597
+  HOMO = -0.303920894194795  LUMO = -0.016309280902135  gap/eV = 7.82631
+PCM E_diel = -0.0221212104910992
+Solvent Energy = -0.0221212104910992
+cycle= 5 E= -395.785307732755  delta_E= -0.000367  |g|= 0.00959  |ddm|= 0.123
+  HOMO = -0.303800665988267  LUMO = -0.0159129819278903  gap/eV = 7.83382
+PCM E_diel = -0.0221038162172747
+Solvent Energy = -0.0221038162172747
+cycle= 6 E= -395.785332884899  delta_E= -2.52e-05  |g|= 0.00249  |ddm|= 0.0716
+  HOMO = -0.304036624347753  LUMO = -0.0159842742902825  gap/eV = 7.83830
+PCM E_diel = -0.0221028919904374
+Solvent Energy = -0.0221028919904374
+cycle= 7 E= -395.785334717269  delta_E= -1.83e-06  |g|= 0.0011  |ddm|= 0.00762
+  HOMO = -0.304025241769423  LUMO = -0.01600373755943  gap/eV = 7.83746
+PCM E_diel = -0.0221306512076472
+Solvent Energy = -0.0221306512076472
+cycle= 8 E= -395.785335214923  delta_E= -4.98e-07  |g|= 0.000426  |ddm|= 0.00592
+  HOMO = -0.304014810787516  LUMO = -0.0159632727036367  gap/eV = 7.83828
+PCM E_diel = -0.0221256974391172
+Solvent Energy = -0.0221256974391172
+cycle= 9 E= -395.785335288328  delta_E= -7.34e-08  |g|= 0.00017  |ddm|= 0.0024
+  HOMO = -0.30401659268834  LUMO = -0.0159633754655388  gap/eV = 7.83833
+PCM E_diel = -0.0221290356764382
+Solvent Energy = -0.0221290356764382
+cycle= 10 E= -395.785335303267  delta_E= -1.49e-08  |g|= 6.95e-05  |ddm|= 0.00102
+  HOMO = -0.304022580398646  LUMO = -0.0159663325643109  gap/eV = 7.83841
+PCM E_diel = -0.0221286609088091
+Solvent Energy = -0.0221286609088091
+cycle= 11 E= -395.785335305338  delta_E= -2.07e-09  |g|= 2.17e-05  |ddm|= 0.000432
+  HOMO = -0.304021687168485  LUMO = -0.0159641775038466  gap/eV = 7.83844
+PCM E_diel = -0.0221285210130668
+Solvent Energy = -0.0221285210130668
+cycle= 12 E= -395.785335305725  delta_E= -3.87e-10  |g|= 6.55e-06  |ddm|= 0.000201
+  HOMO = -0.304021839062371  LUMO = -0.0159644051560335  gap/eV = 7.83844
+PCM E_diel = -0.0221284626670081
+Solvent Energy = -0.0221284626670081
+cycle= 13 E= -395.785335305746  delta_E= -2.17e-11  |g|= 3.52e-06  |ddm|= 4.37e-05
+  HOMO = -0.304022095678329  LUMO = -0.0159644359556737  gap/eV = 7.83845
+PCM E_diel = -0.0221285243634746
+Solvent Energy = -0.0221285243634746
+Extra cycle  E= -395.785335305747  delta_E= -2.27e-13  |g|= 4.28e-06  |ddm|= 2.2e-05
+converged SCF energy = -395.785335305747
+
+
+******** <class 'pyscf.solvent._attach_solvent.PCMTDA'> for <class 'pyscf.solvent._attach_solvent.PCMDFRKS'> ********
+nstates = 20 singlet
+deg_eia_thresh = 1.000e-03
+wfnsym = None
+conv_tol = 1e-06
+eigh lindep = 1e-12
+eigh level_shift = 0
+eigh max_cycle = 100
+chkfile = <run-dir>/queue/out/td_free/chk/bta-pcm_camb3lyp.chk
+max_memory 8000 MB (current use 1628 MB)
+
+
+Solvent model for TDDFT:
+******** <class 'pyscf.solvent.pcm.PCM'> (In testing) ********
+
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+
+lebedev_order = 29 (302 grids per sphere)
+eps = 1.78
+frozen = False
+TDDFT non-equilibrium solvation with eps=1.78
+Excitation energies (eV)
+[5.14419501 5.48470056 5.56005156 6.42408124 6.79627895 6.8172145
+ 6.91532683 6.95066871 7.04930058 7.11156254 7.21291136 7.36961191
+ 7.40094681 7.53920617 7.56199823 7.56665948 7.66908897 7.70337846
+ 7.73382416 7.95357261]

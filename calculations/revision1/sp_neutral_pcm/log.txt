@@ -1,0 +1,18 @@
+[2026-11-22 09:43:25 AM IST] job sp_neutral_pcm (dft/revision/singlepoints.py) on <vm-1>: threads 4, max_memory 16000 MB, scratch <run-dir>/scratch/sp_neutral_pcm, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 09:43:25 AM IST] 1 geometries x 5 methods (wb97x-d3bj, m062x, pbe0, cam-b3lyp, dfmp2); IEF-PCM eps 78.3553; basis 6-311++g(d,p), grid 4
+[2026-11-22 09:43:25 AM IST] initial density from <run-dir>/queue/out/neutral_start_pcm/chk/pcm.chk
+[2026-11-22 09:58:43 AM IST] neutral_pcm|wb97x-d3bj: E = -1317.6039448423 Ha (918 s, 13 cycles, LUMO on anion 99.6 %)
+[2026-11-22 09:58:43 AM IST] initial density from <run-dir>/queue/out/neutral_start_pcm/chk/pcm.chk
+[2026-11-22 10:16:12 AM IST] neutral_pcm|m062x: E = -1316.7303526386 Ha (1049 s, 12 cycles, LUMO on anion 99.5 %)
+[2026-11-22 10:16:12 AM IST] initial density from <run-dir>/queue/out/neutral_start_pcm/chk/pcm.chk
+[2026-11-22 10:28:45 AM IST] neutral_pcm|pbe0: E = -1315.8116797295 Ha (752 s, 11 cycles, LUMO on anion 99.7 %)
+[2026-11-22 10:28:45 AM IST] initial density from <run-dir>/queue/out/neutral_start_pcm/chk/pcm.chk
+[2026-11-22 10:42:21 AM IST] neutral_pcm|cam-b3lyp: E = -1316.6940970624 Ha (816 s, 11 cycles, LUMO on anion 99.6 %)
+[2026-11-22 10:42:21 AM IST] initial density from <run-dir>/queue/out/neutral_start_pcm/chk/pcm.chk
+[2026-11-22 10:54:33 AM IST] neutral_pcm|dfmp2: E = -1313.8744653186 Ha (732 s, E_HF -1309.73605920, E_corr -4.13840612)
+[2026-11-22 10:54:33 AM IST]   Relative energies (kcal/mol) per method; zero = the lowest geometry.
+[2026-11-22 10:54:33 AM IST]   
+[2026-11-22 10:54:33 AM IST]   | geometry | r(H...O) A | r(N-H) A | wb97x-d3bj | m062x | pbe0 | cam-b3lyp | dfmp2 | scs-mp2 |
+[2026-11-22 10:54:33 AM IST]   |---|---|---|---|---|---|---|---|---|
+[2026-11-22 10:54:33 AM IST]   | neutral_pcm | 1.050 | 1.541 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 |
+[2026-11-22 10:54:33 AM IST] job sp_neutral_pcm finished (peak RSS 17630 MB)

@@ -1,0 +1,4 @@
+
+===== 2026-11-21T12:10:34  $ bash <run-dir>/repo/run_case.sh btpcz_pcm 4 -- --stage fmo
+[run_case] btpcz_pcm  threads=4  mem=8000MB  fd=autox2  2026-11-21T12:10:34+00:00
+[pipeline] fmo: done (25.3 min) 

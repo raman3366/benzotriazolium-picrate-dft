@@ -1,0 +1,8 @@
+[2026-11-21 06:05:54 PM IST] job charges_stored (dft/revision/charges.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/charges_stored, smoke False, restart #0; PySCF 2.14.0
+[2026-11-21 06:06:09 PM IST] gas: Mulliken/Loewdin vs facts.json: max |diff| 5.3e-14 e -> PASS
+[2026-11-21 06:06:15 PM IST] gas: Multiwfn vs PySCF: Hirshfeld max |diff| 0.0272, CM5 correction max |diff| 7.7e-07 e
+[2026-11-21 06:06:15 PM IST] gas: picrate charge  Mulliken -0.8806  Loewdin -0.7220  Hirshfeld -0.5859  CM5 -0.6525 e  (grid 834040 points, N integrated 178.00000)
+[2026-11-21 06:06:30 PM IST] pcm: Mulliken/Loewdin vs facts.json: max |diff| 8.2e-09 e -> PASS
+[2026-11-21 06:06:35 PM IST] pcm: Multiwfn vs PySCF: Hirshfeld max |diff| 0.0289, CM5 correction max |diff| 7.7e-07 e
+[2026-11-21 06:06:35 PM IST] pcm: picrate charge  Mulliken -1.0001  Loewdin -0.8534  Hirshfeld -0.7591  CM5 -0.7948 e  (grid 834040 points, N integrated 177.99999)
+[2026-11-21 06:06:35 PM IST] job charges_stored finished (peak RSS 895 MB)

@@ -1,0 +1,59 @@
+
+===== queue: start sp_oside_all attempt 1 at 2026-11-22T12:53:00+05:30 =====
+$ export MAX_MEMORY_MB=16000; <run-dir>/env/bin/python dft/revision/singlepoints.py --job sp_oside_all --out <run-dir>/queue/out/sp_oside_all --scan <run-dir>/queue/out/scan_gas_oside --methods wb97x-d3bj,m062x,pbe0,cam-b3lyp,dfmp2 --mp2-aux aug-cc-pvtz-ri
+[2026-11-22 12:53:00 PM IST] job sp_oside_all (dft/revision/singlepoints.py) on <vm-1>: threads 4, max_memory 16000 MB, scratch <run-dir>/scratch/sp_oside_all, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 12:53:00 PM IST] 2 geometries x 5 methods (wb97x-d3bj, m062x, pbe0, cam-b3lyp, dfmp2); gas phase; basis 6-311++g(d,p), grid 4
+[2026-11-22 12:53:00 PM IST] initial density from <run-dir>/queue/out/scan_gas_oside/chk/neutral_0.940.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 12:59:05 PM IST] neutral_0.940|wb97x-d3bj: E = -1317.5672810107 Ha (364 s, 13 cycles, LUMO on anion 99.9 %)
+[2026-11-22 12:59:05 PM IST] initial density from <run-dir>/queue/out/sp_oside_all/chk/neutral_0.940_wb97x-d3bj.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 01:05:15 PM IST] neutral_0.900|wb97x-d3bj: E = -1317.5619236454 Ha (371 s, 13 cycles, LUMO on anion 99.9 %)
+[2026-11-22 01:05:16 PM IST] initial density from <run-dir>/queue/out/scan_gas_oside/chk/neutral_0.940.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 01:13:23 PM IST] neutral_0.940|m062x: E = -1316.6938326957 Ha (488 s, 12 cycles, LUMO on anion 99.9 %)
+[2026-11-22 01:13:23 PM IST] initial density from <run-dir>/queue/out/sp_oside_all/chk/neutral_0.940_m062x.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 01:22:20 PM IST] neutral_0.900|m062x: E = -1316.6882638467 Ha (536 s, 13 cycles, LUMO on anion 99.9 %)
+[2026-11-22 01:22:20 PM IST] initial density from <run-dir>/queue/out/sp_oside_all/chk/neutral_0.940_m062x.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 01:27:07 PM IST] initial density from <run-dir>/queue/out/sp_oside_all/chk/neutral_0.900_m062x.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 01:32:03 PM IST] M06-2X grid 4 -> 5: {'grid_default': 4, 'grid_check': 5, 'dE_abs_Ha': {'neutral_0.940': 1.0599533652566606e-05, 'neutral_0.900': 1.256762698176317e-05}, 'dE_abs_kcal': {'neutral_0.940': 0.0067, 'neutral_0.900': 0.0079}, 'relative_energy_error_kcal': 0.0012}
+[2026-11-22 01:32:03 PM IST] initial density from <run-dir>/queue/out/scan_gas_oside/chk/neutral_0.940.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 01:36:34 PM IST] neutral_0.940|pbe0: E = -1315.7750375218 Ha (271 s, 11 cycles, LUMO on anion 99.9 %)
+[2026-11-22 01:36:34 PM IST] initial density from <run-dir>/queue/out/sp_oside_all/chk/neutral_0.940_pbe0.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 01:41:34 PM IST] neutral_0.900|pbe0: E = -1315.7696275466 Ha (300 s, 12 cycles, LUMO on anion 99.9 %)
+[2026-11-22 01:41:34 PM IST] initial density from <run-dir>/queue/out/scan_gas_oside/chk/neutral_0.940.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 01:47:03 PM IST] neutral_0.940|cam-b3lyp: E = -1316.6563896108 Ha (329 s, 11 cycles, LUMO on anion 99.9 %)
+[2026-11-22 01:47:03 PM IST] initial density from <run-dir>/queue/out/sp_oside_all/chk/neutral_0.940_cam-b3lyp.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 01:53:23 PM IST] neutral_0.900|cam-b3lyp: E = -1316.6509010457 Ha (380 s, 13 cycles, LUMO on anion 99.9 %)
+[2026-11-22 01:53:24 PM IST] initial density from <run-dir>/queue/out/scan_gas_oside/chk/neutral_0.940.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 01:56:16 PM IST] neutral_0.940|dfmp2: E = -1313.8382356570 Ha (173 s, E_HF -1309.70174954, E_corr -4.13648612)
+[2026-11-22 01:56:16 PM IST] initial density from <run-dir>/queue/out/sp_oside_all/chk/neutral_0.940_dfmp2.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 01:58:54 PM IST] neutral_0.900|dfmp2: E = -1313.8328423594 Ha (157 s, E_HF -1309.69840348, E_corr -4.13443888)
+[2026-11-22 01:58:54 PM IST]   Relative energies (kcal/mol) per method; zero = the lowest geometry.
+[2026-11-22 01:58:54 PM IST]   
+[2026-11-22 01:58:54 PM IST]   | geometry | r(H...O) A | r(N-H) A | b3lyp_scan | wb97x-d3bj | m062x | pbe0 | cam-b3lyp | dfmp2 | scs-mp2 |
+[2026-11-22 01:58:54 PM IST]   |---|---|---|---|---|---|---|---|---|---|
+[2026-11-22 01:58:54 PM IST]   | neutral_0.940 | 0.940 | 2.052 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 |
+[2026-11-22 01:58:54 PM IST]   | neutral_0.900 | 0.900 | 2.128 | 3.40 | 3.36 | 3.50 | 3.40 | 3.44 | 3.38 | 3.23 |
+[2026-11-22 01:58:54 PM IST] job sp_oside_all finished (peak RSS 12938 MB)

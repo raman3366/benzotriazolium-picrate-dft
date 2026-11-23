@@ -1,0 +1,18 @@
+
+===== queue: start cc_neutral_631ppgd attempt 1 at 2026-11-22T17:55:22+05:30 =====
+$ export MAX_MEMORY_MB=22000; <run-dir>/env/bin/python dft/revision/cc_correction.py --job cc_neutral_631ppgd --out <run-dir>/queue/out/cc_neutral_631ppgd --xyz <run-dir>/queue/out/sp_neutral_pcm/geoms/neutral_pcm.xyz --labels neutral --solvent water --basis '6-31+g**' --fno-fracs 0.5
+[2026-11-22 05:55:22 PM IST] job cc_neutral_631ppgd (dft/revision/cc_correction.py) on <vm-1>: threads 8, max_memory 22000 MB, scratch <run-dir>/scratch/cc_neutral_631ppgd, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 05:55:22 PM IST] 1 geometries (neutral); basis 6-31+g**; IEF-PCM eps 78.3553; FNO fractions of the virtual space 0.5
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 1 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 06:00:19 PM IST] neutral: E_HF = -1309.4522293703 Ha (15 cycles), nao 490; RI basis {'N': 'heavyaug-cc-pvdz-ri', 'O': 'heavyaug-cc-pvdz-ri', 'C': 'heavyaug-cc-pvdz-ri', 'H': 'heavyaug-cc-pvdz-ri'}; full-space MP2 for the NOs
+[2026-11-22 06:02:45 PM IST] neutral: MP2 full space (RI) -3.86930825 Ha (146 s), 64 occ x 400 vir; NO sets [200]
+[2026-11-22 06:02:45 PM IST] neutral|f0.500: FNO-CCSD(T) with 200 of 400 virtual NOs (97.34 % of the NO occupation, smallest kept 1.23e-03)
+[2026-11-22 06:03:46 PM IST]   DF-CCSD space: 64 occ x 200 vir, naux 1912; MP2 (same space, RI) -3.57237579 Ha; |F_offdiag| max oo/vv/ov 3.5e-07/1.6e-07/3.1e-07
+[2026-11-22 07:59:21 PM IST]   CCSD -3.57769864 Ha (6975 s); T1 0.0168, D1 0.0771, D2 0.2037
+[2026-11-23 06:00:03 AM IST]   (T) -0.14469515 Ha (36043 s); delta = CCSD(T) - MP2 = -0.15001800 Ha
+[2026-11-23 06:00:04 AM IST] neutral|f0.500: delta_CCSD -0.00532285, delta_T -0.14469515, delta -0.15001800 Ha (with scaled (T) -0.16204492); MP2 truncation -0.296932 Ha (11.96 h)
+[2026-11-23 06:00:04 AM IST] neutral: all fractions done (12.08 h)
+[2026-11-23 06:00:04 AM IST] job cc_neutral_631ppgd finished (peak RSS 20826 MB)

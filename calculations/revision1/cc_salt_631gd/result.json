@@ -1,0 +1,252 @@
+{
+  "job": "cc_salt_631gd",
+  "script": "dft/revision/cc_correction.py",
+  "argv": [
+    "dft/revision/cc_correction.py",
+    "--job",
+    "cc_salt_631gd",
+    "--out",
+    "<run-dir>/queue/out/cc_salt_631gd",
+    "--xyz",
+    "<run-dir>/repo/molecules/btpc/results/btpc_pcm/opt.xyz",
+    "--labels",
+    "salt",
+    "--solvent",
+    "water",
+    "--basis",
+    "6-31g*",
+    "--fno-fracs",
+    "0.5,0.65"
+  ],
+  "smoke": false,
+  "status": "done",
+  "started": "2026-11-22T18:28:32+05:30",
+  "restarts": 0,
+  "last_start": "2026-11-22T18:28:32+05:30",
+  "finished": "2026-11-23T06:06:56+05:30",
+  "host": {
+    "hostname": "<vm-1>",
+    "machine": "x86_64",
+    "cpu": "AMD EPYC 7B13",
+    "cpu_count": 32,
+    "ram_mb": 128799
+  },
+  "threads": 10,
+  "max_memory_mb": 24000,
+  "scratch": "<run-dir>/scratch/cc_salt_631gd",
+  "software": {
+    "python": "3.11.16",
+    "pyscf": "2.14.0",
+    "numpy": "2.4.6",
+    "executable": "<run-dir>/env/bin/python",
+    "prefix": "<run-dir>/env",
+    "scipy": "1.17.1",
+    "h5py": "3.16.0",
+    "geometric": "1.1.1",
+    "libxc": "7.1.2",
+    "pyscf-dispersion": "1.5.0",
+    "conda_builds": {
+      "pyscf": "2.14.0 py311h990ede3_1302",
+      "pyscf-dispersion": "1.5.0 py311h5df2867_0",
+      "libxc-c": "7.1.2 cpu_hed2233d_2",
+      "libcint": "6.1.3 h64ba90f_2",
+      "libopenblas": "0.3.34 pthreads_hf13c14d_2",
+      "libblas": "3.11.0 12_h4a7cf45_openblas",
+      "numpy": "2.4.6 py311h2e04523_0",
+      "scipy": "1.17.1 py311hbe70eeb_1",
+      "geometric": "1.1.1 pyhd8ed1ab_0",
+      "python": "3.11.16 h5f976f7_2_cpython",
+      "_x86_64-microarch-level": "3 3_x86_64_v3"
+    }
+  },
+  "script_sha256": {
+    "cc_correction.py": "331882e1f1160eeaf7dc347dbc14697e781596c34c431e9e55d5ebf74fa492e2",
+    "rev_common.py": "fba929added9222d92adeca239e64fcb87eaaeefe6511ad436c2624eba72515a"
+  },
+  "settings": {
+    "basis": "6-31g*",
+    "solvent": "water",
+    "eps": 78.3553,
+    "pcm_method": "IEF-PCM",
+    "pcm_lebedev_order": 29,
+    "reference": "DF-RHF (PySCF default JK-fit), conv_tol 1e-10, IEF-PCM, reaction field frozen at HF (PTE)",
+    "correlation": "DF-CCSD(T) and MP2 in the FNO space; RI basis df.make_auxbasis(mp2fit=True); frozen core chemcore",
+    "cc_conv_tol": 1e-08,
+    "charge": 0,
+    "spin": 0,
+    "fno_fracs": [
+      0.5,
+      0.65
+    ]
+  },
+  "inputs": {
+    "xyz_salt": {
+      "path": "molecules/btpc/results/btpc_pcm/opt.xyz",
+      "sha256": "bc3eba08ce8205f9ec8dcb011700c2347fd331012c58fdd29080c4f091050538"
+    }
+  },
+  "items": {
+    "salt|f0.500": {
+      "geometry": "salt",
+      "xyz": "<run-dir>/repo/molecules/btpc/results/btpc_pcm/opt.xyz",
+      "frac": 0.5,
+      "E_HF_Ha": -1309.3932681790052,
+      "n_frozen_core": 25,
+      "nao": 366,
+      "nvir_total": 277,
+      "nvir_kept": 138,
+      "no_occ_kept_frac": 0.9301948771587552,
+      "no_occ_smallest_kept": 0.0037478867906735828,
+      "no_occ_sum": 2.5333798344989353,
+      "auxbasis": {
+        "scf_jk": "None",
+        "ri": {
+          "C": "cc-pvdz-ri",
+          "O": "cc-pvdz-ri",
+          "H": "cc-pvdz-ri",
+          "N": "cc-pvdz-ri"
+        }
+      },
+      "cc_class": "pyscf.cc.dfccsd.RCCSD",
+      "fock_offdiag_max": {
+        "oo": 1.5919865683101247e-07,
+        "vv": 1.1454846445034875e-07,
+        "ov": 2.715409141229871e-07
+      },
+      "naux_cc": 1512,
+      "n_active_occ": 64,
+      "n_active_vir": 138,
+      "E_corr_mp2_active_Ha": -3.0448660664745866,
+      "E_corr_ccsd_Ha": -3.0453851457422814,
+      "wall_ccsd_s": 2584.9,
+      "diagnostics": {
+        "T1": 0.015233480982726984,
+        "D1": 0.07057580756128277,
+        "D2": 0.20060135422533362,
+        "T_over_ccsd": 0.03364791961092903
+      },
+      "E_T_Ha": -0.10247087456825367,
+      "wall_t_s": 7572.8,
+      "delta_ccsd_Ha": -0.0005190792676947886,
+      "delta_T_Ha": -0.10247087456825367,
+      "delta_Ha": -0.10298995383594846,
+      "E_corr_mp2_full_ri_Ha": -3.765917874226556,
+      "dMP2_truncation_Ha": -0.7210518077519694,
+      "T_scaled_Ha": -0.12673690392267858,
+      "delta_T_scaled_Ha": -0.12725598319037337,
+      "wall_s": 10164.8,
+      "peak_rss_mb": 10086.0,
+      "status": "done",
+      "at": "2026-11-22T21:21:15+05:30"
+    },
+    "salt|f0.650": {
+      "geometry": "salt",
+      "xyz": "<run-dir>/repo/molecules/btpc/results/btpc_pcm/opt.xyz",
+      "frac": 0.65,
+      "E_HF_Ha": -1309.3932681790052,
+      "n_frozen_core": 25,
+      "nao": 366,
+      "nvir_total": 277,
+      "nvir_kept": 180,
+      "no_occ_kept_frac": 0.9705606283661026,
+      "no_occ_smallest_kept": 0.0016420325386978917,
+      "no_occ_sum": 2.5333798344989353,
+      "auxbasis": {
+        "scf_jk": "None",
+        "ri": {
+          "C": "cc-pvdz-ri",
+          "O": "cc-pvdz-ri",
+          "H": "cc-pvdz-ri",
+          "N": "cc-pvdz-ri"
+        }
+      },
+      "cc_class": "pyscf.cc.dfccsd.RCCSD",
+      "fock_offdiag_max": {
+        "oo": 1.591986567781034e-07,
+        "vv": 1.0858505449309885e-07,
+        "ov": 2.698805267235902e-07
+      },
+      "naux_cc": 1512,
+      "n_active_occ": 64,
+      "n_active_vir": 180,
+      "E_corr_mp2_active_Ha": -3.4291247582629456,
+      "E_corr_ccsd_Ha": -3.4384501704942627,
+      "wall_ccsd_s": 9228.5,
+      "diagnostics": {
+        "T1": 0.016778505168173995,
+        "D1": 0.07850639370196677,
+        "D2": 0.20166154067362999,
+        "T_over_ccsd": 0.03834187547693732
+      },
+      "E_T_Ha": -0.1318366282707449,
+      "wall_t_s": 22296.4,
+      "delta_ccsd_Ha": -0.00932541223131711,
+      "delta_T_Ha": -0.1318366282707449,
+      "delta_Ha": -0.14116204050206202,
+      "E_corr_mp2_full_ri_Ha": -3.765917874226556,
+      "dMP2_truncation_Ha": -0.3367931159636104,
+      "T_scaled_Ha": -0.14478502530017595,
+      "delta_T_scaled_Ha": -0.15411043753149306,
+      "wall_s": 31540.6,
+      "peak_rss_mb": 17849.0,
+      "status": "done",
+      "at": "2026-11-23T06:06:56+05:30"
+    }
+  },
+  "timings": {
+    "salt|f0.500": 10164.8,
+    "salt|f0.650": 31540.6
+  },
+  "error": null,
+  "summary": {
+    "salt|f0.500": {
+      "geometry": "salt",
+      "frac": 0.5,
+      "nvir_kept": 138,
+      "nvir_total": 277,
+      "no_occ_kept_frac": 0.9301948771587552,
+      "delta_ccsd_Ha": -0.0005190792676947886,
+      "delta_T_Ha": -0.10247087456825367,
+      "delta_Ha": -0.10298995383594846,
+      "delta_T_scaled_Ha": -0.12725598319037337,
+      "dMP2_truncation_Ha": -0.7210518077519694,
+      "E_HF_Ha": -1309.3932681790052,
+      "E_corr_mp2_full_ri_Ha": -3.765917874226556,
+      "E_corr_mp2_active_Ha": -3.0448660664745866,
+      "E_corr_ccsd_Ha": -3.0453851457422814,
+      "E_T_Ha": -0.10247087456825367,
+      "diagnostics": {
+        "T1": 0.015233480982726984,
+        "D1": 0.07057580756128277,
+        "D2": 0.20060135422533362,
+        "T_over_ccsd": 0.03364791961092903
+      },
+      "wall_s": 10164.8
+    },
+    "salt|f0.650": {
+      "geometry": "salt",
+      "frac": 0.65,
+      "nvir_kept": 180,
+      "nvir_total": 277,
+      "no_occ_kept_frac": 0.9705606283661026,
+      "delta_ccsd_Ha": -0.00932541223131711,
+      "delta_T_Ha": -0.1318366282707449,
+      "delta_Ha": -0.14116204050206202,
+      "delta_T_scaled_Ha": -0.15411043753149306,
+      "dMP2_truncation_Ha": -0.3367931159636104,
+      "E_HF_Ha": -1309.3932681790052,
+      "E_corr_mp2_full_ri_Ha": -3.765917874226556,
+      "E_corr_mp2_active_Ha": -3.4291247582629456,
+      "E_corr_ccsd_Ha": -3.4384501704942627,
+      "E_T_Ha": -0.1318366282707449,
+      "diagnostics": {
+        "T1": 0.016778505168173995,
+        "D1": 0.07850639370196677,
+        "D2": 0.20166154067362999,
+        "T_over_ccsd": 0.03834187547693732
+      },
+      "wall_s": 31540.6
+    }
+  },
+  "peak_rss_mb": 17849.0
+}

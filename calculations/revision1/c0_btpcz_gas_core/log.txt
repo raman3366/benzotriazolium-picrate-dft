@@ -1,0 +1,46 @@
+[2026-11-21 03:10:30 AM IST] job c0_btpcz_gas_core (dft/revision/c0_case.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/c0_btpcz_gas_core, smoke False, restart #0; PySCF 2.14.0
+[2026-11-21 03:10:30 AM IST] preopt: B3LYP/6-31g(d), GAU_LOOSE, from the crystal pair
+[2026-11-21 04:23:22 AM IST] preopt: pre-optimisation at B3LYP/6-31g(d): converged (GAU_LOOSE) after 45 steps, 72.9 min (dft/revision/c0_case.py)
+[2026-11-21 04:23:22 AM IST] optimize: from preopt.xyz, cap 100 evaluations, 12.0 h, stall stop 10
+[2026-11-21 01:32:22 PM IST] optimize: optimisation converged in 99 steps, 549.0 min, E = -1317.21139739 Ha
+[2026-11-21 01:32:22 PM IST] proton_check: ./run_case.sh btpcz_gas 4 -- --stage proton_check
+[2026-11-21 01:32:23 PM IST] proton_check: done in 0.0 min
+[2026-11-21 01:32:23 PM IST] frequencies: reference SCF (conv_tol 1e-10 from opt.chk -> final.chk)
+[2026-11-21 01:34:38 PM IST] frequencies: reference E = -1317.2113973942 Ha (135 s, grid 4, Lebedev None)
+[2026-11-21 02:07:07 PM IST] frequencies: chunk cols_000_003 done (6 gradients, 32.5 min); 1/33 chunks
+[2026-11-21 02:39:21 PM IST] frequencies: chunk cols_003_006 done (6 gradients, 32.2 min); 2/33 chunks
+[2026-11-21 03:11:05 PM IST] frequencies: chunk cols_006_009 done (6 gradients, 31.7 min); 3/33 chunks
+[2026-11-21 03:39:48 PM IST] frequencies: chunk cols_009_012 done (6 gradients, 28.7 min); 4/33 chunks
+[2026-11-21 04:11:55 PM IST] frequencies: chunk cols_012_015 done (6 gradients, 32.1 min); 5/33 chunks
+[2026-11-21 04:43:37 PM IST] frequencies: chunk cols_015_018 done (6 gradients, 31.7 min); 6/33 chunks
+[2026-11-21 05:12:01 PM IST] frequencies: chunk cols_018_021 done (6 gradients, 28.4 min); 7/33 chunks
+[2026-11-21 05:43:19 PM IST] frequencies: chunk cols_021_024 done (6 gradients, 31.3 min); 8/33 chunks
+[2026-11-21 06:15:03 PM IST] frequencies: chunk cols_024_027 done (6 gradients, 31.7 min); 9/33 chunks
+[2026-11-21 06:46:51 PM IST] frequencies: chunk cols_027_030 done (6 gradients, 31.8 min); 10/33 chunks
+[2026-11-21 07:18:43 PM IST] frequencies: chunk cols_030_033 done (6 gradients, 31.9 min); 11/33 chunks
+[2026-11-21 07:49:50 PM IST] frequencies: chunk cols_033_036 done (6 gradients, 31.1 min); 12/33 chunks
+[2026-11-21 08:21:07 PM IST] frequencies: chunk cols_036_039 done (6 gradients, 31.3 min); 13/33 chunks
+[2026-11-21 08:52:45 PM IST] frequencies: chunk cols_039_042 done (6 gradients, 31.6 min); 14/33 chunks
+[2026-11-21 09:23:53 PM IST] frequencies: chunk cols_042_045 done (6 gradients, 31.1 min); 15/33 chunks
+[2026-11-21 09:55:06 PM IST] frequencies: chunk cols_045_048 done (6 gradients, 31.2 min); 16/33 chunks
+[2026-11-21 10:27:16 PM IST] frequencies: chunk cols_048_051 done (6 gradients, 32.2 min); 17/33 chunks
+[2026-11-21 10:59:32 PM IST] frequencies: chunk cols_051_054 done (6 gradients, 32.3 min); 18/33 chunks
+[2026-11-21 11:31:45 PM IST] frequencies: chunk cols_054_057 done (6 gradients, 32.2 min); 19/33 chunks
+[2026-11-22 12:02:38 AM IST] frequencies: chunk cols_057_060 done (6 gradients, 30.9 min); 20/33 chunks
+[2026-11-22 12:31:14 AM IST] frequencies: chunk cols_060_063 done (6 gradients, 28.6 min); 21/33 chunks
+[2026-11-22 01:01:46 AM IST] frequencies: chunk cols_063_066 done (6 gradients, 30.5 min); 22/33 chunks
+[2026-11-22 01:30:00 AM IST] frequencies: chunk cols_066_069 done (6 gradients, 28.2 min); 23/33 chunks
+[2026-11-22 02:01:22 AM IST] frequencies: chunk cols_069_072 done (6 gradients, 31.4 min); 24/33 chunks
+[2026-11-22 02:30:31 AM IST] frequencies: chunk cols_072_075 done (6 gradients, 29.2 min); 25/33 chunks
+[2026-11-22 03:03:44 AM IST] frequencies: chunk cols_075_078 done (6 gradients, 33.2 min); 26/33 chunks
+[2026-11-22 03:33:50 AM IST] frequencies: chunk cols_078_081 done (6 gradients, 30.1 min); 27/33 chunks
+[2026-11-22 04:07:00 AM IST] frequencies: chunk cols_081_084 done (6 gradients, 33.2 min); 28/33 chunks
+[2026-11-22 04:39:48 AM IST] frequencies: chunk cols_084_087 done (6 gradients, 32.8 min); 29/33 chunks
+[2026-11-22 05:09:35 AM IST] frequencies: chunk cols_087_090 done (6 gradients, 29.8 min); 30/33 chunks
+[2026-11-22 05:42:08 AM IST] frequencies: chunk cols_090_093 done (6 gradients, 32.5 min); 31/33 chunks
+[2026-11-22 06:13:58 AM IST] frequencies: chunk cols_093_096 done (6 gradients, 31.8 min); 32/33 chunks
+[2026-11-22 06:43:05 AM IST] frequencies: chunk cols_096_099 done (6 gradients, 29.1 min); 33/33 chunks
+[2026-11-22 06:43:05 AM IST] frequencies: frequencies (finite-difference (gradients, step 0.005 Bohr, dft/_fd_worker.py in 33 sequential chunks of 3 columns x 4 threads; dft/revision/c0_case.py)): 1 imaginary, lowest -59.1 cm-1, 1028 min; lowest [-59.1   4.6  17.3  27.8  46.9  47.9] cm-1; TR residual 0.00 cm-1
+[2026-11-22 06:43:05 AM IST] fmo: ./run_case.sh btpcz_gas 4 -- --stage fmo
+[2026-11-22 07:03:12 AM IST] fmo: done in 20.1 min
+[2026-11-22 07:03:12 AM IST] job c0_btpcz_gas_core finished (peak RSS 120 MB)

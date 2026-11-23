@@ -1,0 +1,63 @@
+[2026-11-22 01:58:56 PM IST] job dvr_gas_all (dft/revision/dvr.py) on <vm-1>: threads 1, smoke False, restart #0; numpy 2.4.6, scipy 1.17.1
+[2026-11-22 01:58:56 PM IST] selftest harmonic: PASS E_cm=[1500.0, 4500.0, 7500.0, 10500.0, 13500.0], exact_cm=[1500.0, 4500.0, 7500.0, 10500.0, 13500.0], max_rel_err=1.3340701951064737e-12
+[2026-11-22 01:58:56 PM IST] selftest morse: PASS E_cm=[1485.7615, 4371.8531, 7144.0363, 9802.3112, 12346.6776], exact_cm=[1485.7615, 4371.8531, 7144.0363, 9802.3112, 12346.6776], max_rel_err=4.125640422574136e-13
+[2026-11-22 01:58:56 PM IST] selftest sampled_harmonic: PASS E_cm=[1500.0, 4500.0, 7500.0], max_rel_err=1.0032228172683103e-10, P_outside_scan_v0=2.8520692803416054e-05
+[2026-11-22 01:58:56 PM IST] selftest double_well: PASS barrier_kcal=6.0, E_cm=[959.637, 1015.612, 2327.374, 2994.435], splitting_cm=55.975373129772, P_left_v0=0.4999999999865956
+[2026-11-22 01:58:56 PM IST] selftest sampled_double_well: PASS minima=[{'x_A': -0.3133, 'r_HO_A': 1.7533, 'V_kcal': 0.0, 'side': 'N'}, {'x_A': 0.2846, 'r_HO_A': 1.1554, 'V_kcal': 5.9938, 'side': 'O'}], barrier={'x_A': 0.0278, 'r_HO_A': 1.4122, 'V_kcal': 11.2051}, ZPE_cm=1447.33, ZPE_direct_cm=1447.33, P_O_v0=0.00199, P_O_v0_direct=0.00188, second_minimum_below_ZPE=False, verdict=test: ZPE 1447 cm-1 (4.14 kcal/mol); double well: second minimum on the O side at r(H...O) 1.155 A, 5.99 kcal/mol above the global minimum, barrier 11.21 kcal/mol; it lies above the zero-point level; ground-state weight on the O side 0.2 %
+[2026-11-22 01:58:59 PM IST] B3LYP: ZPE 391 cm-1 (1.12 kcal/mol); double well: second minimum on the N side at r(H...O) 1.434 A, 2.09 kcal/mol above the global minimum, barrier 2.41 kcal/mol; it lies above the zero-point level; ground-state weight on the O side 99.4 % | WARNINGS: DVR grid not converged (1.30 cm-1 between N and 2N-1 points)
+[2026-11-22 01:58:59 PM IST]   levels (cm-1): [391.01, 837.46, 1009.22, 1320.43, 1705.03, 2156.89]; P(O side): [0.99439, 0.36789, 0.51418, 0.29523, 0.46154, 0.41893]; grid check 1.3e+00 cm-1; m_eff of the path 103.85 u
+[2026-11-22 01:58:59 PM IST]   sensitivity xH/H/pchip/extrapolate: ZPE 371 cm-1, fundamental 449 cm-1, P(O, v=0) 99.4 %, second minimum below ZPE: False
+[2026-11-22 01:58:59 PM IST]   sensitivity xH/H/cubic/box: ZPE 430 cm-1, fundamental 445 cm-1, P(O, v=0) 99.2 %, second minimum below ZPE: False
+[2026-11-22 01:58:59 PM IST]   sensitivity xH/reduced/cubic/extrapolate: ZPE 397 cm-1, fundamental 446 cm-1, P(O, v=0) 99.4 %, second minimum below ZPE: False
+[2026-11-22 01:58:59 PM IST]   sensitivity half_delta/H/cubic/extrapolate: ZPE 544 cm-1, fundamental 529 cm-1, P(O, v=0) 96.6 %, second minimum below ZPE: False
+[2026-11-22 01:58:59 PM IST]   sensitivity rHO/H/cubic/extrapolate: ZPE 844 cm-1, fundamental 357 cm-1, P(O, v=0) 54.3 %, second minimum below ZPE: True
+[2026-11-22 01:58:59 PM IST]   sensitivity mwpath/unit (mass-weighted path)/cubic/extrapolate: ZPE 53 cm-1, fundamental 91 cm-1, P(O, v=0) 100.0 %, second minimum below ZPE: False
+[2026-11-22 01:59:02 PM IST] ωB97X-D3(BJ): ZPE 418 cm-1 (1.20 kcal/mol); double well: second minimum on the N side at r(H...O) 1.410 A, 3.17 kcal/mol above the global minimum, barrier 3.31 kcal/mol; it lies above the zero-point level; ground-state weight on the O side 99.8 % | WARNINGS: DVR grid not converged (1.16 cm-1 between N and 2N-1 points)
+[2026-11-22 01:59:02 PM IST]   levels (cm-1): [418.39, 1032.64, 1310.28, 1627.72, 1979.97, 2429.4]; P(O side): [0.9983, 0.86862, 0.17255, 0.35208, 0.43719, 0.36777]; grid check 1.2e+00 cm-1; m_eff of the path 103.85 u
+[2026-11-22 01:59:02 PM IST]   sensitivity xH/H/pchip/extrapolate: ZPE 409 cm-1, fundamental 612 cm-1, P(O, v=0) 99.8 %, second minimum below ZPE: False
+[2026-11-22 01:59:02 PM IST]   sensitivity xH/H/cubic/box: ZPE 465 cm-1, fundamental 633 cm-1, P(O, v=0) 99.7 %, second minimum below ZPE: False
+[2026-11-22 01:59:02 PM IST]   sensitivity xH/reduced/cubic/extrapolate: ZPE 425 cm-1, fundamental 621 cm-1, P(O, v=0) 99.8 %, second minimum below ZPE: False
+[2026-11-22 01:59:02 PM IST]   sensitivity half_delta/H/cubic/extrapolate: ZPE 584 cm-1, fundamental 775 cm-1, P(O, v=0) 98.8 %, second minimum below ZPE: False
+[2026-11-22 01:59:02 PM IST]   sensitivity rHO/H/cubic/extrapolate: ZPE 1026 cm-1, fundamental 505 cm-1, P(O, v=0) 79.1 %, second minimum below ZPE: False
+[2026-11-22 01:59:02 PM IST]   sensitivity mwpath/unit (mass-weighted path)/cubic/extrapolate: ZPE 58 cm-1, fundamental 101 cm-1, P(O, v=0) 100.0 %, second minimum below ZPE: False
+[2026-11-22 01:59:05 PM IST] M06-2X: ZPE 341 cm-1 (0.98 kcal/mol); double well: second minimum on the N side at r(H...O) 1.507 A, 3.49 kcal/mol above the global minimum, barrier 3.49 kcal/mol; it lies above the zero-point level; ground-state weight on the O side 99.6 % | WARNINGS: the interpolant has 2 interior minima, the points themselves 1; DVR grid not converged (1.30 cm-1 between N and 2N-1 points)
+[2026-11-22 01:59:05 PM IST]   levels (cm-1): [341.17, 875.19, 1288.92, 1556.43, 1908.11, 2354.39]; P(O side): [0.9955, 0.88034, 0.26172, 0.34083, 0.38293, 0.36571]; grid check 1.3e+00 cm-1; m_eff of the path 103.85 u
+[2026-11-22 01:59:05 PM IST]   sensitivity xH/H/pchip/extrapolate: ZPE 314 cm-1, fundamental 536 cm-1, P(O, v=0) 99.6 %, second minimum below ZPE: None
+[2026-11-22 01:59:05 PM IST]   sensitivity xH/H/cubic/box: ZPE 372 cm-1, fundamental 559 cm-1, P(O, v=0) 99.4 %, second minimum below ZPE: False
+[2026-11-22 01:59:05 PM IST]   sensitivity xH/reduced/cubic/extrapolate: ZPE 347 cm-1, fundamental 542 cm-1, P(O, v=0) 99.5 %, second minimum below ZPE: False
+[2026-11-22 01:59:05 PM IST]   sensitivity half_delta/H/cubic/extrapolate: ZPE 501 cm-1, fundamental 737 cm-1, P(O, v=0) 97.9 %, second minimum below ZPE: None
+[2026-11-22 01:59:05 PM IST]   sensitivity rHO/H/cubic/extrapolate: ZPE 889 cm-1, fundamental 628 cm-1, P(O, v=0) 80.1 %, second minimum below ZPE: None
+[2026-11-22 01:59:05 PM IST]   sensitivity mwpath/unit (mass-weighted path)/cubic/extrapolate: ZPE 48 cm-1, fundamental 74 cm-1, P(O, v=0) 100.0 %, second minimum below ZPE: False
+[2026-11-22 01:59:08 PM IST] PBE0: ZPE 329 cm-1 (0.94 kcal/mol); double well: second minimum on the N side at r(H...O) 1.302 A, 1.85 kcal/mol above the global minimum, barrier 1.85 kcal/mol; it lies above the zero-point level; ground-state weight on the O side 98.8 % | WARNINGS: the interpolant has 2 interior minima, the points themselves 1; DVR grid not converged (1.25 cm-1 between N and 2N-1 points)
+[2026-11-22 01:59:08 PM IST]   levels (cm-1): [328.74, 737.06, 970.1, 1283.27, 1664.28, 2116.48]; P(O side): [0.98783, 0.52839, 0.3949, 0.32578, 0.44262, 0.40404]; grid check 1.2e+00 cm-1; m_eff of the path 103.85 u
+[2026-11-22 01:59:08 PM IST]   sensitivity xH/H/pchip/extrapolate: ZPE 298 cm-1, fundamental 411 cm-1, P(O, v=0) 98.8 %, second minimum below ZPE: None
+[2026-11-22 01:59:08 PM IST]   sensitivity xH/H/cubic/box: ZPE 358 cm-1, fundamental 410 cm-1, P(O, v=0) 98.3 %, second minimum below ZPE: False
+[2026-11-22 01:59:08 PM IST]   sensitivity xH/reduced/cubic/extrapolate: ZPE 334 cm-1, fundamental 410 cm-1, P(O, v=0) 98.7 %, second minimum below ZPE: False
+[2026-11-22 01:59:08 PM IST]   sensitivity half_delta/H/cubic/extrapolate: ZPE 473 cm-1, fundamental 530 cm-1, P(O, v=0) 94.9 %, second minimum below ZPE: False
+[2026-11-22 01:59:08 PM IST]   sensitivity rHO/H/cubic/extrapolate: ZPE 738 cm-1, fundamental 455 cm-1, P(O, v=0) 59.2 %, second minimum below ZPE: None
+[2026-11-22 01:59:08 PM IST]   sensitivity mwpath/unit (mass-weighted path)/cubic/extrapolate: ZPE 44 cm-1, fundamental 69 cm-1, P(O, v=0) 100.0 %, second minimum below ZPE: False
+[2026-11-22 01:59:10 PM IST] CAM-B3LYP: ZPE 351 cm-1 (1.00 kcal/mol); double well: second minimum on the N side at r(H...O) 1.412 A, 2.11 kcal/mol above the global minimum, barrier 2.26 kcal/mol; it lies above the zero-point level; ground-state weight on the O side 99.3 % | WARNINGS: DVR grid not converged (1.27 cm-1 between N and 2N-1 points)
+[2026-11-22 01:59:10 PM IST]   levels (cm-1): [350.52, 815.9, 1006.67, 1326.17, 1706.24, 2157.7]; P(O side): [0.99334, 0.51695, 0.40309, 0.30463, 0.45603, 0.40498]; grid check 1.3e+00 cm-1; m_eff of the path 103.85 u
+[2026-11-22 01:59:10 PM IST]   sensitivity xH/H/pchip/extrapolate: ZPE 318 cm-1, fundamental 468 cm-1, P(O, v=0) 99.3 %, second minimum below ZPE: False
+[2026-11-22 01:59:10 PM IST]   sensitivity xH/H/cubic/box: ZPE 383 cm-1, fundamental 467 cm-1, P(O, v=0) 99.1 %, second minimum below ZPE: False
+[2026-11-22 01:59:10 PM IST]   sensitivity xH/reduced/cubic/extrapolate: ZPE 356 cm-1, fundamental 467 cm-1, P(O, v=0) 99.3 %, second minimum below ZPE: False
+[2026-11-22 01:59:10 PM IST]   sensitivity half_delta/H/cubic/extrapolate: ZPE 510 cm-1, fundamental 561 cm-1, P(O, v=0) 96.4 %, second minimum below ZPE: False
+[2026-11-22 01:59:10 PM IST]   sensitivity rHO/H/cubic/extrapolate: ZPE 816 cm-1, fundamental 404 cm-1, P(O, v=0) 59.7 %, second minimum below ZPE: True
+[2026-11-22 01:59:10 PM IST]   sensitivity mwpath/unit (mass-weighted path)/cubic/extrapolate: ZPE 45 cm-1, fundamental 72 cm-1, P(O, v=0) 100.0 %, second minimum below ZPE: False
+[2026-11-22 01:59:13 PM IST] DF-MP2: ZPE 349 cm-1 (1.00 kcal/mol); single well: no second minimum along the proton coordinate; the transfer point (r(N-H) = r(H...O)) lies 3.24 kcal/mol above the minimum, 2.24 kcal/mol above the ground level; ground-state weight on the O side 99.7 %
+[2026-11-22 01:59:13 PM IST]   levels (cm-1): [349.1, 909.58, 1560.56, 2045.64, 2469.9, 2911.47]; P(O side): [0.99729, 0.95538, 0.64642, 0.36159, 0.32157, 0.37067]; grid check 4.6e-01 cm-1; m_eff of the path 103.85 u
+[2026-11-22 01:59:13 PM IST]   sensitivity xH/H/pchip/extrapolate: ZPE 338 cm-1, fundamental 561 cm-1, P(O, v=0) 99.7 %, second minimum below ZPE: None
+[2026-11-22 01:59:13 PM IST]   sensitivity xH/H/cubic/box: ZPE 381 cm-1, fundamental 604 cm-1, P(O, v=0) 99.6 %, second minimum below ZPE: None
+[2026-11-22 01:59:13 PM IST]   sensitivity xH/reduced/cubic/extrapolate: ZPE 355 cm-1, fundamental 572 cm-1, P(O, v=0) 99.7 %, second minimum below ZPE: None
+[2026-11-22 01:59:13 PM IST]   sensitivity half_delta/H/cubic/extrapolate: ZPE 505 cm-1, fundamental 876 cm-1, P(O, v=0) 98.9 %, second minimum below ZPE: None
+[2026-11-22 01:59:13 PM IST]   sensitivity rHO/H/cubic/extrapolate: ZPE 954 cm-1, fundamental 1106 cm-1, P(O, v=0) 89.8 %, second minimum below ZPE: None
+[2026-11-22 01:59:13 PM IST]   sensitivity mwpath/unit (mass-weighted path)/cubic/extrapolate: ZPE 57 cm-1, fundamental 91 cm-1, P(O, v=0) 100.0 %, second minimum below ZPE: False
+[2026-11-22 01:59:15 PM IST] SCS-MP2: ZPE 502 cm-1 (1.44 kcal/mol); single well: no second minimum along the proton coordinate; the transfer point (r(N-H) = r(H...O)) lies 4.57 kcal/mol above the minimum, 3.13 kcal/mol above the ground level; ground-state weight on the O side 99.9 %
+[2026-11-22 01:59:15 PM IST]   levels (cm-1): [501.94, 1150.77, 1858.72, 2315.79, 2714.61, 3141.25]; P(O side): [0.99937, 0.97782, 0.71156, 0.30447, 0.31773, 0.37241]; grid check 5.1e-01 cm-1; m_eff of the path 103.85 u
+[2026-11-22 01:59:15 PM IST]   sensitivity xH/H/pchip/extrapolate: ZPE 496 cm-1, fundamental 649 cm-1, P(O, v=0) 99.9 %, second minimum below ZPE: None
+[2026-11-22 01:59:15 PM IST]   sensitivity xH/H/cubic/box: ZPE 563 cm-1, fundamental 689 cm-1, P(O, v=0) 99.9 %, second minimum below ZPE: None
+[2026-11-22 01:59:15 PM IST]   sensitivity xH/reduced/cubic/extrapolate: ZPE 509 cm-1, fundamental 660 cm-1, P(O, v=0) 99.9 %, second minimum below ZPE: None
+[2026-11-22 01:59:15 PM IST]   sensitivity half_delta/H/cubic/extrapolate: ZPE 639 cm-1, fundamental 996 cm-1, P(O, v=0) 99.6 %, second minimum below ZPE: None
+[2026-11-22 01:59:15 PM IST]   sensitivity rHO/H/cubic/extrapolate: ZPE 1171 cm-1, fundamental 1167 cm-1, P(O, v=0) 93.7 %, second minimum below ZPE: None
+[2026-11-22 01:59:15 PM IST]   sensitivity mwpath/unit (mass-weighted path)/cubic/extrapolate: ZPE 74 cm-1, fundamental 137 cm-1, P(O, v=0) 100.0 %, second minimum below ZPE: None
+[2026-11-22 01:59:16 PM IST] job dvr_gas_all finished

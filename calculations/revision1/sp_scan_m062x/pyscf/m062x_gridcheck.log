@@ -1,0 +1,488 @@
+#INFO: **** input file is <run-dir>/repo/dft/revision/singlepoints.py ****
+"""
+Single points with other functionals and DF-MP2 at given geometries (revision items 2 and 8).
+
+Geometries come from proton_scan.py outputs (--scan DIR, repeatable), neutral_start.py outputs (--neutral DIR),
+the stored minima (--minima: molecules/<system>/results/<system>_gas|pcm/opt.xyz) or plain XYZ files (--xyz).
+Every method uses the basis of record, 6-311++G(d,p) (spherical), with the case's charge, spin and basis
+overrides; the DFT settings are those of record (density fitting with PySCF's default auxiliary basis, grid level
+4, conv_tol 1e-10, max_cycle 150; IEF-PCM with Lebedev order 29 when --solvent is given).
+
+Methods (--methods, comma list):
+  wb97x-d3bj   omega-B97X-D3(BJ): PySCF 'wb97x-d3bj' = libxc HYB_GGA_XC_WB97X_V (466) without VV10, plus D3(BJ)
+               from pyscf-dispersion (Najibi & Goerigk's definition); checked on msi 20 Nov 2026
+  m062x        M06-2X (libxc 450+236) at grid 4; a grid-5 check at two geometries (the lowest-energy and the most
+               transferred one) gives the grid error of the absolute and of the relative energy
+  pbe0, cam-b3lyp, b3lyp, b3lyp-d3bj   (b3lyp recomputes the reference; the scan's own B3LYP energies are
+               tabulated anyway)
+  dfmp2        RI-MP2 on a density-fitted RHF reference (RI-JK with PySCF's default JK-fit basis), frozen core
+               (PySCF chemcore: 1s of C, N, O), RI auxiliary basis aug-cc-pVTZ-RI (PySCF's own default for
+               6-311++G(d,p) with mp2fit=True; set explicitly, because DFRMP2 would otherwise reuse the JK-fit basis
+               of a density-fitted reference).  Also SCS-MP2 (Grimme: 6/5 OS + 1/3 SS).  With --solvent: the
+               reference is IEF-PCM HF and the reaction field is frozen at the HF density (PTE scheme).
+Default methods: wb97x-d3bj, m062x, pbe0, cam-b3lyp, dfmp2.
+
+Usage:
+  python dft/revision/singlepoints.py --job ID --out DIR [--scan DIR ...] [--neutral DIR ...] [--minima]
+         [--xyz FILE ...] [--case btpc_gas] [--select lowest|all] [--methods LIST] [--solvent gas|water|<eps>]
+         [--grid-check-level 5] [--no-grid-check] [--mp2-aux aug-cc-pvtz-ri] [--max-geoms N] [--smoke]
+--select lowest (default): where several scan chains reached the same target, only the lowest-B3LYP geometry.
+Outputs in DIR: result.json (items '<geometry>|<method>'), log.txt, table.csv (long), table.md (relative
+energies, kcal/mol, per geometry and method), geoms/<geometry>.xyz (the geometries used), pyscf/<method>.log,
+chk/.  Restart: finished items are skipped; SCF guesses come from the item's own checkpoint, else the same
+method at the previous geometry, else the scan's B3LYP checkpoint.
+--smoke: STO-3G, grid 2 (check at 3), Lebedev 17, conv_tol 1e-6, at most 2 geometries; not for numbers.
+"""
+import sys, pathlib, argparse, json, time, gc, hashlib
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import rev_common as rc          # first: pins the thread pools
+import numpy as np
+import proton_scan as ps
+
+DFT = {'wb97x-d3bj': 'wB97X-D3(BJ)', 'm062x': 'M06-2X', 'pbe0': 'PBE0', 'cam-b3lyp': 'CAM-B3LYP',
+       'b3lyp': 'B3LYP', 'b3lyp-d3bj': 'B3LYP-D3(BJ)'}
+ALL = list(DFT) + ['dfmp2']
+DEFAULT_METHODS = 'wb97x-d3bj,m062x,pbe0,cam-b3lyp,dfmp2'
+MP2_AUX = 'aug-cc-pvtz-ri'
+SCS = (6 / 5, 1 / 3)       # Grimme 2003: OS, SS scaling
+
+
+def parser():
+    p = rc.add_common_args(argparse.ArgumentParser(description=__doc__.split('\n')[1]))
+    p.add_argument('--scan', action='append', default=[], help='proton_scan.py output directory (repeatable)')
+    p.add_argument('--neutral', action='append', default=[], help='neutral_start.py output directory (repeatable)')
+    p.add_argument('--xyz', action='append', default=[], help='XYZ file (repeatable)')
+    p.add_argument('--minima', action='store_true', help='add the stored gas and PCM minima of --system')
+    p.add_argument('--system', default='btpc', help='system of --minima (default btpc)')
+    p.add_argument('--case', default='btpc_gas', help='case giving charge, spin, basis overrides, fragments, proton')
+    p.add_argument('--select', choices=('lowest', 'all'), default='lowest')
+    p.add_argument('--methods', default=DEFAULT_METHODS, help=f'comma list from {ALL}')
+    p.add_argument('--solvent', default=None, help='gas (default), water or a dielectric constant (IEF-PCM)')
+    p.add_argument('--grid-check-level', type=int, default=5, help='grid level of the M06-2X check (default 5)')
+    p.add_argument('--no-grid-check', action='store_true', help='skip the M06-2X grid check')
+    p.add_argument('--mp2-aux', default=MP2_AUX, help=f'RI auxiliary basis of DF-MP2 (default {MP2_AUX})')
+    p.add_argument('--max-geoms', type=int, default=None, help='use only the first N geometries (by r(H...O))')
+    return p
+
+
+def _safe(label):
+    return label.replace(':', '__').replace('/', '_').replace('|', '_')
+
+
+def _geom_hash(path):
+    s, x = rc.read_xyz(path)
+    return hashlib.sha256((' '.join(s) + np.array2string(np.round(x, 5), precision=5)).encode()).hexdigest()[:16]
+
+
+def collect(args, case):
+    """Geometries to compute: list of dicts (label, source, path, r_target_A, chain, E_b3lyp_Ha, chk)."""
+    H, N, O = ps.proton_idx(case)
+    geoms = []
+    for d in args.scan:
+        d = pathlib.Path(d).resolve()
+        res = json.load(open(d / 'result.json'))
+        if res.get('smoke') != bool(args.smoke):
+            raise SystemExit(f'{d}: a {"smoke" if res.get("smoke") else "production"} scan; '
+                             f'this is a {"smoke" if args.smoke else "production"} run')
+        for key, it in res['items'].items():
+            if it.get('status') != 'done' or it.get('E_Ha') is None:
+                continue
+            geoms.append({'label': key, 'source': f"scan {res['job']}", 'path': d / it['xyz'],
+                          'r_target_A': it.get('r_target_A'), 'chain': it.get('chain'), 'E_b3lyp_Ha': it['E_Ha'],
+                          'chk': (d / it['chk']) if it.get('chk') else None, 'scan_dir': str(d)})
+    for d in args.neutral:
+        d = pathlib.Path(d).resolve()
+        res = json.load(open(d / 'result.json'))
+        if bool(res.get('smoke')) != bool(args.smoke):
+            raise SystemExit(f'{d}: smoke/production mismatch with this run')
+        for key, it in res['items'].items():
+            if it.get('status') == 'done' and it.get('xyz'):
+                geoms.append({'label': f'neutral_{key}', 'source': f"neutral_start {res['job']}", 'path': d / it['xyz'],
+                              'r_target_A': None, 'chain': f'neutral_start_{key}', 'E_b3lyp_Ha': None,
+                              'chk': (d / it['chk']) if it.get('chk') else None})
+    if args.minima:
+        for model in ('gas', 'pcm'):
+            c = rc.load_case(f'{args.system}_{model}')
+            p = ps.stored_minimum(c)
+            if p is not None:
+                geoms.append({'label': f'min_{c["name"]}', 'source': 'stored minimum', 'path': p, 'r_target_A': None,
+                              'chain': 'stored_min', 'E_b3lyp_Ha': None, 'chk': None})
+    for x in args.xyz:
+        p = pathlib.Path(x).resolve()
+        geoms.append({'label': p.stem, 'source': 'xyz', 'path': p, 'r_target_A': None, 'chain': 'xyz',
+                      'E_b3lyp_Ha': None, 'chk': None})
+    # identical geometries (the free minimum appears in every chain that starts from it) are computed once
+    seen, uniq = {}, []
+    for g in geoms:
+        h = _geom_hash(g['path'])
+        if h in seen:
+            continue
+        seen[h] = g; uniq.append(g)
+    geoms = uniq
+    if args.select == 'lowest':
+        best = {}
+        for g in geoms:
+            if g['r_target_A'] is None:
+                continue
+            t = round(g['r_target_A'], 3)
+            if t not in best or (g['E_b3lyp_Ha'] or 0) < (best[t]['E_b3lyp_Ha'] or 0):
+                best[t] = g
+        keep = {id(g) for g in best.values()}
+        geoms = [g for g in geoms if g['r_target_A'] is None or id(g) in keep]
+    labels = [g['label'] for g in geoms]
+    dup = {l for l in labels if labels.count(l) > 1}
+    for g in geoms:
+        if g['label'] in dup:
+            g['label'] = f"{g['source'].split()[-1]}:{g['label']}"
+        s, x = rc.read_xyz(g['path'])
+        g.update({k: round(v, 5) for k, v in ps.measure(x, H, N, O).items()})
+    geoms.sort(key=lambda g: -g['r_HO_A'])
+    if args.max_geoms:
+        geoms = geoms[:args.max_geoms]
+    return geoms
+
+
+def run_scf_robust(mf, guesses, log):
+    """SCF from the first readable guess; on non-convergence one second-order (Newton) attempt from there."""
+    g = next((c for c in guesses if c is not None and pathlib.Path(c).exists()), None)
+    try:
+        return rc.run_scf(mf, chk_guess=g, log=log), str(g) if g else 'minao', False
+    except RuntimeError as e:
+        log(f'{e}; second-order (Newton) SCF from the last orbitals')
+        t = time.time()
+        mo, occ = mf.mo_coeff, mf.mo_occ
+        mf2 = mf.newton()
+        mf2.max_cycle = 50
+        mf2.kernel(mo, occ)
+        if not mf2.converged:
+            raise RuntimeError('SCF did not converge (DIIS and Newton)')
+        mf.__dict__.update({k: getattr(mf2, k) for k in ('e_tot', 'mo_coeff', 'mo_occ', 'mo_energy', 'converged')})
+        mf._cycles = getattr(mf, '_cycles', 0) + 50
+        return time.time() - t, str(g) if g else 'minao', True
+
+
+def dft_point(job, g, method, case, L, grid_level, prev_chk, key, logf):
+    chk = job.chk_dir / f'{_safe(key)}.chk'
+    mol = rc.build_mol(str(job.out / g['local']), case['charge'], case['spin'], basis=L['basis'],
+                       basis_overrides=case.get('basis_overrides'), verbose=4, output=logf)
+    mf = rc.make_mf(mol, xc=method, solvent=L['eps'], conv_tol=L['conv_tol'], grid_level=grid_level,
+                    lebedev_order=L['pcm_lebedev_order'], chkfile=chk, max_cycle=rc.MAX_CYCLE)
+    wall, guess, newton = run_scf_robust(mf, [chk, prev_chk, g.get('chk')], job.log)
+    rec = {'geometry': g['label'], 'method': method, 'kind': 'dft', 'xc': mf.xc, 'grid_level': grid_level,
+           'E_Ha': float(mf.e_tot), 'scf_cycles': mf._cycles, 'scf_wall_s': round(wall, 1), 'guess': guess,
+           'newton_fallback': newton, 'scf_settings': rc.settings_of(mf), 'chk': str(chk.relative_to(job.out))}
+    summ = getattr(mf, 'scf_summary', {}) or {}
+    if 'dispersion' in summ:
+        rec['E_disp_Ha'] = float(summ['dispersion'])
+    if hasattr(mf, 'with_solvent') and getattr(mf.with_solvent, 'e', None) is not None:
+        rec['E_solvation_Ha'] = float(mf.with_solvent.e)
+    rec.update(ps.analyse(mf, case)); rec.update(rc.runtime_sizes(mf))
+    mol.stdout.close()
+    del mf; gc.collect()
+    return rec, chk
+
+
+def mp2_point(job, g, case, L, args, prev_chk, key, logf):
+    from pyscf import scf, df
+    from pyscf.mp import dfmp2
+    from pyscf.data import elements
+    chk = job.chk_dir / f'{_safe(key)}.chk'
+    mol = rc.build_mol(str(job.out / g['local']), case['charge'], case['spin'], basis=L['basis'],
+                       basis_overrides=case.get('basis_overrides'), verbose=4, output=logf)
+    mf = scf.RHF(mol).density_fit()
+    mf.conv_tol = L['conv_tol']; mf.max_cycle = rc.MAX_CYCLE; mf.chkfile = str(chk)
+    if L['eps'] is not None:
+        mf = mf.PCM()
+        mf.with_solvent.method = rc.PCM_METHOD; mf.with_solvent.eps = L['eps']
+        mf.with_solvent.lebedev_order = L['pcm_lebedev_order']
+    wall, guess, newton = run_scf_robust(mf, [chk, prev_chk, g.get('chk')], job.log)
+    e_hf = float(mf.e_tot)
+    nfc = int(elements.chemcore(mol))
+    t = time.time()
+    pt = dfmp2.DFMP2(mf, frozen=nfc)
+    pt.with_df = df.DF(mol, auxbasis=args.mp2_aux)        # RI basis for MP2, not the JK-fit basis of the reference
+    pt.max_memory = mol.max_memory
+    e_corr = pt.kernel()[0]
+    w_mp2 = time.time() - t
+    os_ = float(getattr(pt, 'e_corr_os', getattr(e_corr, 'e_corr_os', np.nan)))
+    ss = float(getattr(pt, 'e_corr_ss', getattr(e_corr, 'e_corr_ss', np.nan)))
+    auxmol = getattr(pt.with_df, 'auxmol', None)
+    occ = mf.mo_occ; n = int((occ > 0).sum())
+    rec = {'geometry': g['label'], 'method': 'dfmp2', 'kind': 'mp2', 'E_HF_Ha': e_hf, 'E_corr_Ha': float(e_corr),
+           'E_corr_os_Ha': os_, 'E_corr_ss_Ha': ss, 'E_Ha': e_hf + float(e_corr),
+           'E_SCS_MP2_Ha': e_hf + SCS[0] * os_ + SCS[1] * ss, 'frozen_core_orbitals': nfc,
+           'mp2_auxbasis': args.mp2_aux, 'n_aux_mp2': int(auxmol.nao_nr()) if auxmol is not None else None,
+           'hf_auxbasis': 'PySCF default JK-fit', 'hf_scf_cycles': mf._cycles, 'hf_wall_s': round(wall, 1),
+           'mp2_wall_s': round(w_mp2, 1), 'guess': guess, 'newton_fallback': newton,
+           'HF_HOMO_eV': float(mf.mo_energy[n - 1] * rc.HARTREE_EV), 'HF_LUMO_eV': float(mf.mo_energy[n] * rc.HARTREE_EV),
+           'scf_settings': rc.settings_of(mf), 'chk': str(chk.relative_to(job.out))}
+    if L['eps'] is not None:
+        rec['solvent_scheme'] = 'PTE: MP2 correlation with the IEF-PCM reaction field frozen at the HF density'
+        rec['E_solvation_HF_Ha'] = float(mf.with_solvent.e)
+    rec.update(rc.runtime_sizes(mf))
+    mol.stdout.close()
+    del mf, pt; gc.collect()
+    return rec, chk
+
+
+def tables(job, geoms, methods):
+    items = job.r['items']
+    cols = (['b3lyp_scan'] if any(g.get('E_b3lyp_Ha') is not None for g in geoms) else []) + methods
+    if 'dfmp2' in methods:
+        cols.append('scs-mp2')
+
+    def energy(g, m):
+        if m == 'b3lyp_scan':
+            return g.get('E_b3lyp_Ha')
+        it = items.get(f"{g['label']}|{'dfmp2' if m == 'scs-mp2' else m}")
+        if not it or it.get('status') != 'done':
+            return None
+        return it.get('E_SCS_MP2_Ha') if m == 'scs-mp2' else it.get('E_Ha')
+    ref = next((g for g in geoms if g['label'] == 'min' or g['label'].endswith(':min')), None)
+    rows, refE = [], {}
+    for m in cols:
+        es = [(g, energy(g, m)) for g in geoms if energy(g, m) is not None]
+        if not es:
+            continue
+        refE[m] = energy(ref, m) if ref is not None and energy(ref, m) is not None else min(e for _, e in es)
+    for g in geoms:
+        row = {'geometry': g['label'], 'r_HO_A': g['r_HO_A'], 'r_NH_A': g['r_NH_A'], 'r_NO_A': g['r_NO_A']}
+        for m in cols:
+            e = energy(g, m)
+            row[m] = None if e is None or m not in refE else round((e - refE[m]) * rc.HARTREE_KCAL, 3)
+        rows.append(row)
+    with open(job.out / 'table.csv', 'w') as f:
+        f.write('geometry,r_HO_A,r_NH_A,r_NO_A,method,E_Ha,dE_kcal\n')
+        for g in geoms:
+            for m in cols:
+                e = energy(g, m)
+                if e is not None and m in refE:
+                    f.write(f"{g['label']},{g['r_HO_A']},{g['r_NH_A']},{g['r_NO_A']},{m},{e:.10f},"
+                            f"{(e - refE[m]) * rc.HARTREE_KCAL:.4f}\n")
+    with open(job.out / 'table.md', 'w') as f:
+        f.write(f"Relative energies (kcal/mol) per method; zero = {'the free minimum (min)' if ref else 'the lowest geometry'}.\n\n")
+        f.write('| geometry | r(H...O) A | r(N-H) A | ' + ' | '.join(cols) + ' |\n')
+        f.write('|---|---|---|' + '---|' * len(cols) + '\n')
+        for r in rows:
+            f.write(f"| {r['geometry']} | {r['r_HO_A']:.3f} | {r['r_NH_A']:.3f} | "
+                    + ' | '.join('' if r[m] is None else f'{r[m]:.2f}' for m in cols) + ' |\n')
+    return {'reference_geometry': ref['label'] if ref else 'lowest per method', 'E_ref_Ha': refE,
+            'columns': cols, 'rows': rows}
+
+
+def run(job, args):
+    case = rc.load_case(args.case)
+    smoke = args.smoke
+    eps = rc.solvent_eps(None if args.solvent in (None, 'gas', 'none') else args.solvent)
+    L = {'basis': 'sto-3g' if smoke else rc.BASIS, 'grid_level': 2 if smoke else rc.GRID_LEVEL,
+         'grid_check_level': (3 if smoke else args.grid_check_level),
+         'pcm_lebedev_order': 17 if smoke else rc.PCM_LEBEDEV_ORDER, 'solvent': args.solvent if eps else None,
+         'eps': eps, 'pcm_method': rc.PCM_METHOD if eps else None, 'conv_tol': 1e-6 if smoke else rc.CONV_TOL_SP,
+         'max_cycle': rc.MAX_CYCLE, 'density_fit': True, 'dft_auxbasis': 'PySCF default (aug-cc-pVTZ-JKFIT)',
+         'mp2_auxbasis': args.mp2_aux, 'mp2_frozen_core': 'pyscf.data.elements.chemcore', 'scs_mp2': SCS}
+    methods = [m.strip().lower() for m in args.methods.split(',') if m.strip()]
+    bad = [m for m in methods if m not in ALL]
+    if bad:
+        raise SystemExit(f'unknown method(s) {bad}; choose from {ALL}')
+    if smoke and not args.max_geoms:
+        args.max_geoms = 2
+    job.r['script_sha256']['proton_scan.py'] = rc.sha256_file(pathlib.Path(ps.__file__).resolve())
+    geoms = collect(args, case)
+    if not geoms:
+        raise SystemExit('no geometries (give --scan, --neutral, --minima or --xyz)')
+    (job.out / 'geoms').mkdir(exist_ok=True); (job.out / 'pyscf').mkdir(exist_ok=True)
+    for g in geoms:
+        s, x = rc.read_xyz(g['path'])
+        local = job.out / 'geoms' / f"{_safe(g['label'])}.xyz"
+        if not local.exists():
+            rc.write_xyz(local, s, x, f"{g['label']} from {g['source']} ({g['path']})")
+        g['local'] = str(local.relative_to(job.out))
+    job.r['settings'].update(L)
+    job.r['settings'].update({'case': case['name'], 'methods': methods, 'select': args.select,
+                              'geometries': [{k: (str(v) if isinstance(v, pathlib.Path) else v) for k, v in g.items()}
+                                             for g in geoms]})
+    job.input_file('case', rc.ROOT / case['case_file'])
+    job.save()
+    job.log(f"{len(geoms)} geometries x {len(methods)} methods ({', '.join(methods)}); "
+            f"{'IEF-PCM eps ' + str(eps) if eps else 'gas phase'}; basis {L['basis']}, grid {L['grid_level']}")
+    if smoke:
+        job.log('SMOKE settings: STO-3G, grid 2, Lebedev 17, conv_tol 1e-6 -- not for production numbers')
+
+    for method in methods:
+        prev_chk = None
+        logf = job.out / 'pyscf' / f'{method}.log'
+        for g in geoms:
+            key = f"{g['label']}|{method}"
+            if job.done(key):
+                prev_chk = job.out / job.get(key)['chk']
+                continue
+            job.put(key, {'geometry': g['label'], 'method': method}, status='running')
+            t = time.time()
+            if method == 'dfmp2':
+                rec, prev_chk = mp2_point(job, g, case, L, args, prev_chk, key, logf)
+            else:
+                rec, prev_chk = dft_point(job, g, method, case, L, L['grid_level'], prev_chk, key, logf)
+            rec.update({'r_HO_A': g['r_HO_A'], 'wall_s': round(time.time() - t, 1),
+                        'peak_rss_mb': round(rc.peak_rss_mb(), 1)})
+            job.put(key, rec)
+            job.r['timings'][key] = rec['wall_s']; job.save()
+            job.log(f"{key}: E = {rec['E_Ha']:.10f} Ha ({rec['wall_s']:.0f} s"
+                    + (f", E_HF {rec['E_HF_Ha']:.8f}, E_corr {rec['E_corr_Ha']:.8f}" if method == 'dfmp2' else
+                       f", {rec['scf_cycles']} cycles, LUMO on anion {rec['frontier_composition_mulliken_pct']['LUMO']['anion']:.1f} %")
+                    + ')')
+        # M06-2X grid check: at the lowest-energy geometry (by the method itself) and the most transferred one
+        if method == 'm062x' and not args.no_grid_check:
+            done = [g for g in geoms if job.done(f"{g['label']}|m062x")]
+            if done:
+                lo = min(done, key=lambda g: job.get(f"{g['label']}|m062x")['E_Ha'])
+                tr = min(done, key=lambda g: g['r_HO_A'])
+                checks = {}
+                for g in ([lo] if lo is tr else [lo, tr]):
+                    key = f"{g['label']}|m062x@grid{L['grid_check_level']}"
+                    if not job.done(key):
+                        rec, _ = dft_point(job, g, 'm062x', case, L, L['grid_check_level'],
+                                           job.out / job.get(f"{g['label']}|m062x")['chk'], key,
+                                           job.out / 'pyscf' / 'm062x_gridcheck.log')
+                        rec['dE_vs_grid_default_Ha'] = rec['E_Ha'] - job.get(f"{g['label']}|m062x")['E_Ha']
+                        job.put(key, rec)
+                    checks[g['label']] = job.get(key)['dE_vs_grid_default_Ha']
+                gc_rec = {'grid_default': L['grid_level'], 'grid_check': L['grid_check_level'],
+                          'dE_abs_Ha': checks,
+                          'dE_abs_kcal': {k: round(v * rc.HARTREE_KCAL, 4) for k, v in checks.items()}}
+                if len(checks) == 2:
+                    a, b = list(checks.values())
+                    gc_rec['relative_energy_error_kcal'] = round((b - a) * rc.HARTREE_KCAL, 4)
+                job.r['m062x_grid_check'] = gc_rec; job.save()
+                job.log(f"M06-2X grid {L['grid_level']} -> {L['grid_check_level']}: {gc_rec}")
+    job.r['summary'] = tables(job, geoms, methods)
+    job.save()
+    with open(job.out / 'table.md') as f:
+        for line in f:
+            job.log('  ' + line.rstrip())
+    return True
+
+
+if __name__ == '__main__':
+    rc.install_sigterm_handler()
+    rc.main_wrapper(parser, run, __file__)
+#INFO: ******************** input file end ********************
+
+
+System: uname_result(system='Linux', node='<vm-1>', release='7.0.0-1017-gcp', version='#19~24.04.1-Ubuntu SMP PREEMPT Thu Oct 29 22:34:06 UTC 2026', machine='x86_64')  Threads 4
+Python 3.11.16 (main, Sep  2 2026, 23:39:52) [GCC 15.3.0]
+numpy 2.4.6  scipy 1.17.1  h5py 3.16.0
+Date: Sat Nov 21 23:17:38 2026
+PySCF version 2.14.0
+PySCF path  <run-dir>/env/lib/python3.11/site-packages/pyscf
+
+[ENV] PYSCF_TMPDIR <run-dir>/scratch/sp_scan_m062x
+[CONFIG] conf_file None
+[INPUT] verbose = 4
+[INPUT] num. atoms = 33
+[INPUT] num. electrons = 178
+[INPUT] charge = 0
+[INPUT] spin (= nelec alpha-beta = 2S) = 0
+[INPUT] symmetry False subgroup None
+[INPUT] Mole.unit = angstrom
+[INPUT] Symbol           X                Y                Z      unit          X                Y                Z       unit  Magmom
+[INPUT]  1 O     -0.549765430000   0.040549840000   0.067751950000 AA   -1.038906095454   0.076628091995   0.128032629905 Bohr   0.0
+[INPUT]  2 N     -0.439107670000   2.626026270000   1.563903500000 AA   -0.829793235496   4.962470446213   2.955349300249 Bohr   0.0
+[INPUT]  3 O      0.259723410000   1.704057810000   1.979146900000 AA    0.490806113038   3.220202561326   3.740045601282 Bohr   0.0
+[INPUT]  4 C     -1.263179190000   2.365728300000   0.374834920000 AA   -2.387062715350   4.470578572133   0.708335340723 Bohr   0.0
+[INPUT]  5 C     -1.233633630000   1.103224050000  -0.277688000000 AA   -2.331229698753   2.084791308533  -0.524754268078 Bohr   0.0
+[INPUT]  6 C     -2.085730760000   0.986273090000  -1.407813920000 AA   -3.941459905981   1.863786024129  -2.660382743150 Bohr   0.0
+[INPUT]  7 C     -2.917033760000   1.995479820000  -1.838937580000 AA   -5.512394902510   3.770910346896  -3.475088386370 Bohr   0.0
+[INPUT]  8 O     -0.494659660000   3.734572990000   2.070057580000 AA   -0.934771282270   7.057320143298   3.911841888280 Bohr   0.0
+[INPUT]  9 C     -2.888757330000   3.213223950000  -1.164707960000 AA   -5.458960194030   6.072113242393  -2.200979059501 Bohr   0.0
+[INPUT] 10 C     -2.071761000000   3.406368650000  -0.067324970000 AA   -3.915060885555   6.437103827804  -0.127225754645 Bohr   0.0
+[INPUT] 11 N     -2.104688960000  -0.275784010000  -2.181319300000 AA   -3.977285711796  -0.521156248434  -4.122096067228 Bohr   0.0
+[INPUT] 12 N     -3.752637390000   4.313927300000  -1.627840440000 AA   -7.091456911903   8.152141118284  -3.076172606091 Bohr   0.0
+[INPUT] 13 O     -4.455873970000   4.099252120000  -2.606158280000 AA   -8.420381448878   7.746463822343  -4.924925386468 Bohr   0.0
+[INPUT] 14 O     -3.708723470000   5.365566810000  -1.005477930000 AA   -7.008471630047  10.139451773956  -1.900077911995 Bohr   0.0
+[INPUT] 15 O     -3.204203410000  -0.712893040000  -2.488501730000 AA   -6.055066892297  -1.347172601709  -4.702586730206 Bohr   0.0
+[INPUT] 16 O     -1.031336230000  -0.766989260000  -2.489922870000 AA   -1.948943017041  -1.449399641883  -4.705272295591 Bohr   0.0
+[INPUT] 17 H     -2.059787870000   4.351690010000   0.456408590000 AA   -3.892434949001   8.223502297906   0.862487235999 Bohr   0.0
+[INPUT] 18 H     -3.573085400000   1.847775040000  -2.685829890000 AA   -6.752152825682   3.491788765407  -5.075482909271 Bohr   0.0
+[INPUT] 19 N      1.482848420000  -1.036489340000   1.508589270000 AA    2.802177398044  -1.958680983631   2.850820554758 Bohr   0.0
+[INPUT] 20 N      2.994037190000  -2.000092410000   2.684675220000 AA    5.657910295862  -3.779626878721   5.073300899206 Bohr   0.0
+[INPUT] 21 C      2.950213260000  -2.749389240000   1.542398760000 AA    5.575095070460  -5.195592673426   2.914711231269 Bohr   0.0
+[INPUT] 22 C      1.956871920000  -2.109635470000   0.779417530000 AA    3.697951989652  -3.986633260968   1.472885668385 Bohr   0.0
+[INPUT] 23 N      2.105627970000  -0.981786330000   2.636562560000 AA    3.979060183524  -1.855307276542   4.982381148682 Bohr   0.0
+[INPUT] 24 C      1.604241280000  -2.585254130000  -0.493054610000 AA    3.031576656922  -4.885422268101  -0.931738177354 Bohr   0.0
+[INPUT] 25 C      2.277304660000  -3.702602220000  -0.952117470000 AA    4.303482109596  -6.996904144007  -1.799241256714 Bohr   0.0
+[INPUT] 26 C      3.275541930000  -4.339027230000  -0.176416120000 AA    6.189877157229  -8.199573111730  -0.333378150758 Bohr   0.0
+[INPUT] 27 C      3.633588240000  -3.881148850000   1.080291160000 AA    6.866486623040  -7.334308375171   2.041454427189 Bohr   0.0
+[INPUT] 28 H      0.839150900000  -2.092018140000  -1.079568950000 AA    1.585765378182  -3.953341332222  -2.040089648084 Bohr   0.0
+[INPUT] 29 H      4.398602710000  -4.374224560000   1.667195870000 AA    8.312154452670  -8.266086425746   3.150543590306 Bohr   0.0
+[INPUT] 30 H      2.038039890000  -4.105606570000  -1.928897310000 AA    3.851337223039  -7.758471992515  -3.645087638310 Bohr   0.0
+[INPUT] 31 H      3.774273240000  -5.212358060000  -0.580569610000 AA    7.132342742875  -9.849929196569  -1.097117559146 Bohr   0.0
+[INPUT] 32 H      0.075490640000   0.124295390000   0.817712970000 AA    0.142656634568   0.234884245646   1.545253561805 Bohr   0.0
+[INPUT] 33 H      3.569437830000  -2.101565040000   3.506414390000 AA    6.745259917362  -3.971382358561   6.626162876334 Bohr   0.0
+
+nuclear repulsion = 2099.46545473534
+number of shells = 290
+number of NR pGTOs = 947
+number of NR cGTOs = 606
+basis = 6-311++g(d,p)
+ecp = {}
+CPU time:     32919.99
+
+
+******** <class 'pyscf.df.df_jk.DFRKS'> ********
+method = DFRKS
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-10
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/sp_scan_m062x/chk/neutral_0.980_m062x@grid5.chk
+max_memory 8000 MB (current use 289 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = m062x
+    Y. Zhao and D. G. Truhlar,  Theor. Chem. Acc. 120, 215 (2008)
+    Y. Zhao and D. G. Truhlar,  Theor. Chem. Acc. 120, 215 (2008)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x7e0ddb49b7e0>
+grids dens level: 5
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x7e0ddb49b740>
+small_rho_cutoff = 0
+Set gradient conv threshold to 1e-05
+tot grids = 1257592
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+init E= -1316.69610669431
+
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.313968995588283  LUMO = -0.0970200707737414  gap/eV = 5.90348
+cycle= 1 E= -1316.69610671275  delta_E= -1.84e-08  |g|= 5.5e-05  |ddm|= 0.0208
+  HOMO = -0.313972160709612  LUMO = -0.0970156726558874  gap/eV = 5.90369
+cycle= 2 E= -1316.69610671248  delta_E= 2.64e-10  |g|= 7.74e-05  |ddm|= 0.00179
+  HOMO = -0.313971923002193  LUMO = -0.0970163564222131  gap/eV = 5.90366
+cycle= 3 E= -1316.69610671353  delta_E= -1.04e-09  |g|= 1.63e-05  |ddm|= 0.000453
+  HOMO = -0.313971611309123  LUMO = -0.0970167297635609  gap/eV = 5.90364
+cycle= 4 E= -1316.69610671357  delta_E= -4.14e-11  |g|= 9.63e-06  |ddm|= 0.00017
+  HOMO = -0.313971957564795  LUMO = -0.0970165631467598  gap/eV = 5.90366
+Extra cycle  E= -1316.69610671354  delta_E= 2.77e-11  |g|= 1.67e-05  |ddm|= 0.000111
+converged SCF energy = -1316.69610671354
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)

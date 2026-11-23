@@ -1,0 +1,876 @@
+{
+  "job": "neutral_start_gas",
+  "script": "dft/revision/neutral_start.py",
+  "argv": [
+    "dft/revision/neutral_start.py",
+    "--job",
+    "neutral_start_gas",
+    "--out",
+    "<run-dir>/queue/out/neutral_start_gas",
+    "--system",
+    "btpc",
+    "--models",
+    "gas"
+  ],
+  "smoke": false,
+  "status": "done",
+  "started": "2026-11-21T14:32:05+05:30",
+  "restarts": 0,
+  "last_start": "2026-11-21T14:32:05+05:30",
+  "finished": "2026-11-21T19:11:05+05:30",
+  "host": {
+    "hostname": "<vm-1>",
+    "machine": "x86_64",
+    "cpu": "AMD EPYC 7B13",
+    "cpu_count": 32,
+    "ram_mb": 128799
+  },
+  "threads": 4,
+  "max_memory_mb": 8000,
+  "scratch": "<run-dir>/scratch/neutral_start_gas",
+  "software": {
+    "python": "3.11.16",
+    "pyscf": "2.14.0",
+    "numpy": "2.4.6",
+    "executable": "<run-dir>/env/bin/python",
+    "prefix": "<run-dir>/env",
+    "scipy": "1.17.1",
+    "h5py": "3.16.0",
+    "geometric": "1.1.1",
+    "libxc": "7.1.2",
+    "pyscf-dispersion": "1.5.0",
+    "conda_builds": {
+      "pyscf": "2.14.0 py311h990ede3_1302",
+      "pyscf-dispersion": "1.5.0 py311h5df2867_0",
+      "libxc-c": "7.1.2 cpu_hed2233d_2",
+      "libcint": "6.1.3 h64ba90f_2",
+      "libopenblas": "0.3.34 pthreads_hf13c14d_2",
+      "libblas": "3.11.0 12_h4a7cf45_openblas",
+      "numpy": "2.4.6 py311h2e04523_0",
+      "scipy": "1.17.1 py311hbe70eeb_1",
+      "geometric": "1.1.1 pyhd8ed1ab_0",
+      "python": "3.11.16 h5f976f7_2_cpython",
+      "_x86_64-microarch-level": "3 3_x86_64_v3"
+    }
+  },
+  "script_sha256": {
+    "neutral_start.py": "6643144a36efcfdb8413720e95ced8d469f2d8d983e7cb3166807b3f3e289ccb",
+    "rev_common.py": "fba929added9222d92adeca239e64fcb87eaaeefe6511ad436c2624eba72515a",
+    "proton_scan.py": "40700af2261d997133f57a35785309db744535ad3cd5022f207a2a260b800185"
+  },
+  "settings": {
+    "system": "btpc",
+    "models": [
+      "gas"
+    ],
+    "start_from": "opt",
+    "neutral_r_OH_A": 0.98,
+    "gas": {
+      "xc": "b3lyp",
+      "disp": null,
+      "basis": "6-311++g(d,p)",
+      "grid_level": 4,
+      "pcm_lebedev_order": 29,
+      "solvent": null,
+      "eps": null,
+      "pcm_method": null,
+      "density_fit": true,
+      "auxbasis": "PySCF default (aug-cc-pVTZ-JKFIT for 6-311++G(d,p))",
+      "conv_tol_opt": 1e-09,
+      "conv_tol_sp": 1e-10,
+      "max_cycle": 150,
+      "opt_engine": "geomeTRIC (TRIC coordinates) via pyscf.geomopt.geometric_solver",
+      "opt_criteria": {
+        "convergence_energy": 1e-06,
+        "convergence_grms": 0.0003,
+        "convergence_gmax": 0.00045,
+        "convergence_drms": 0.0012,
+        "convergence_dmax": 0.0018
+      },
+      "opt_criteria_name": "GAU (Gaussian defaults, as dft/optimize.py)",
+      "maxsteps": 300,
+      "constraint_enforce_au": 0.1,
+      "accept_unconverged": false,
+      "negligible_force_rule": {
+        "gmax": 0.00045,
+        "grms": 0.0003,
+        "dE": 1e-05,
+        "window": 5
+      }
+    },
+    "scf_settings": {
+      "method": "DFRKS",
+      "xc": "b3lyp",
+      "disp": null,
+      "basis": "6-311++g(d,p)",
+      "cart": false,
+      "nao": 606,
+      "nelectron": 178,
+      "charge": 0,
+      "spin": 0,
+      "grid_level": 4,
+      "conv_tol": 1e-09,
+      "max_cycle": 150,
+      "max_memory_mb": 8000,
+      "density_fit": true,
+      "solvent": null,
+      "auxbasis": null,
+      "auxbasis_default": {
+        "H": "aug-cc-pvtz-jkfit",
+        "N": "aug-cc-pvtz-jkfit",
+        "O": "aug-cc-pvtz-jkfit",
+        "C": "aug-cc-pvtz-jkfit"
+      }
+    }
+  },
+  "inputs": {
+    "gas_case": {
+      "path": "molecules/btpc/cases/btpc_gas.json",
+      "sha256": "2bfe9b766a4937b7bc9179ec861e86d5d3aac512a1687588a16f26ffff25aebc"
+    },
+    "gas_start_source": {
+      "path": "molecules/btpc/results/btpc_gas/opt.xyz",
+      "sha256": "3129d65de911de6f889286e346f85ee4c70ced9cac2f79a5ff4d75b793483a00"
+    }
+  },
+  "items": {
+    "gas": {
+      "case": "btpc_gas",
+      "start_source": "molecules/btpc/results/btpc_gas/opt.xyz",
+      "start_file": "start_gas.xyz",
+      "source_geometry": {
+        "r_NH_A": 1.1093441720006072,
+        "r_HO_A": 1.436973010173838,
+        "r_NO_A": 2.4782348029104186,
+        "NHO_deg": 153.21490812474585,
+        "delta_A": -0.32762883817323085
+      },
+      "labels": {
+        "H": "H4N",
+        "N": "N4",
+        "O": "O1"
+      },
+      "key": "gas",
+      "constraint": null,
+      "history": [
+        {
+          "step": 0,
+          "E_Ha": -1317.1910960518976,
+          "gmax": 0.05026178620330923,
+          "grms": 0.010703049311128577,
+          "r_NH_A": 1.49823,
+          "r_HO_A": 0.98,
+          "r_NO_A": 2.47823,
+          "wall_s": 301.7
+        },
+        {
+          "step": 1,
+          "E_Ha": -1317.1911116718438,
+          "gmax": 0.05763775455817566,
+          "grms": 0.008898219649078103,
+          "r_NH_A": 1.56338,
+          "r_HO_A": 1.0129,
+          "r_NO_A": 2.47209,
+          "wall_s": 472.6
+        },
+        {
+          "step": 2,
+          "E_Ha": -1317.203158038828,
+          "gmax": 0.03615785682329786,
+          "grms": 0.006226823623852732,
+          "r_NH_A": 1.52081,
+          "r_HO_A": 1.01989,
+          "r_NO_A": 2.48336,
+          "wall_s": 447.4
+        },
+        {
+          "step": 3,
+          "E_Ha": -1317.20335467955,
+          "gmax": 0.015769408086590886,
+          "grms": 0.004463373380583418,
+          "r_NH_A": 1.57358,
+          "r_HO_A": 1.04528,
+          "r_NO_A": 2.59551,
+          "wall_s": 468.4
+        },
+        {
+          "step": 4,
+          "E_Ha": -1317.2083683439555,
+          "gmax": 0.013267989725072482,
+          "grms": 0.0024779059985200304,
+          "r_NH_A": 1.56698,
+          "r_HO_A": 1.04787,
+          "r_NO_A": 2.56765,
+          "wall_s": 452.0
+        },
+        {
+          "step": 5,
+          "E_Ha": -1317.209472329972,
+          "gmax": 0.007514742725630352,
+          "grms": 0.0020116207117216868,
+          "r_NH_A": 1.57015,
+          "r_HO_A": 1.05258,
+          "r_NO_A": 2.53047,
+          "wall_s": 452.0
+        },
+        {
+          "step": 6,
+          "E_Ha": -1317.2097928034427,
+          "gmax": 0.013624283264888293,
+          "grms": 0.0022799480300597585,
+          "r_NH_A": 1.63225,
+          "r_HO_A": 1.04633,
+          "r_NO_A": 2.57339,
+          "wall_s": 453.8
+        },
+        {
+          "step": 7,
+          "E_Ha": -1317.210158916564,
+          "gmax": 0.008259358371027536,
+          "grms": 0.002029565123171216,
+          "r_NH_A": 1.69933,
+          "r_HO_A": 1.032,
+          "r_NO_A": 2.63789,
+          "wall_s": 421.6
+        },
+        {
+          "step": 8,
+          "E_Ha": -1317.2105454084954,
+          "gmax": 0.004421521254759142,
+          "grms": 0.0014520796008502,
+          "r_NH_A": 1.66426,
+          "r_HO_A": 1.01706,
+          "r_NO_A": 2.58643,
+          "wall_s": 455.4
+        },
+        {
+          "step": 9,
+          "E_Ha": -1317.2109848147793,
+          "gmax": 0.002818373923885842,
+          "grms": 0.0008099042910712529,
+          "r_NH_A": 1.71221,
+          "r_HO_A": 1.01621,
+          "r_NO_A": 2.61135,
+          "wall_s": 430.7
+        },
+        {
+          "step": 10,
+          "E_Ha": -1317.2110359898825,
+          "gmax": 0.004853477893773772,
+          "grms": 0.0010117782192354701,
+          "r_NH_A": 1.77616,
+          "r_HO_A": 1.01082,
+          "r_NO_A": 2.65814,
+          "wall_s": 449.5
+        },
+        {
+          "step": 11,
+          "E_Ha": -1317.2112136677538,
+          "gmax": 0.001541959362596046,
+          "grms": 0.0005226230416966694,
+          "r_NH_A": 1.78322,
+          "r_HO_A": 1.00459,
+          "r_NO_A": 2.65694,
+          "wall_s": 430.6
+        },
+        {
+          "step": 12,
+          "E_Ha": -1317.2112443276537,
+          "gmax": 0.002232025010445504,
+          "grms": 0.0007011773362916018,
+          "r_NH_A": 1.79171,
+          "r_HO_A": 1.00114,
+          "r_NO_A": 2.65546,
+          "wall_s": 422.8
+        },
+        {
+          "step": 13,
+          "E_Ha": -1317.2113412588692,
+          "gmax": 0.0010993506447061208,
+          "grms": 0.00031879516108236264,
+          "r_NH_A": 1.80957,
+          "r_HO_A": 1.00179,
+          "r_NO_A": 2.66437,
+          "wall_s": 402.8
+        },
+        {
+          "step": 14,
+          "E_Ha": -1317.2113851499312,
+          "gmax": 0.0012994554772447486,
+          "grms": 0.0004747464414299181,
+          "r_NH_A": 1.8365,
+          "r_HO_A": 1.00119,
+          "r_NO_A": 2.6792,
+          "wall_s": 430.4
+        },
+        {
+          "step": 15,
+          "E_Ha": -1317.211456959083,
+          "gmax": 0.0013736055892588084,
+          "grms": 0.00039400235716384295,
+          "r_NH_A": 1.8582,
+          "r_HO_A": 0.99923,
+          "r_NO_A": 2.68865,
+          "wall_s": 427.6
+        },
+        {
+          "step": 16,
+          "E_Ha": -1317.2115243076491,
+          "gmax": 0.0013361692797033697,
+          "grms": 0.00035222901416874074,
+          "r_NH_A": 1.87838,
+          "r_HO_A": 0.99788,
+          "r_NO_A": 2.69121,
+          "wall_s": 446.9
+        },
+        {
+          "step": 17,
+          "E_Ha": -1317.2115504849858,
+          "gmax": 0.0012601519732804434,
+          "grms": 0.00038366138162707075,
+          "r_NH_A": 1.89064,
+          "r_HO_A": 0.99845,
+          "r_NO_A": 2.69653,
+          "wall_s": 420.8
+        },
+        {
+          "step": 18,
+          "E_Ha": -1317.2115797331817,
+          "gmax": 0.0011438870478617247,
+          "grms": 0.0003193806083868715,
+          "r_NH_A": 1.88779,
+          "r_HO_A": 0.99903,
+          "r_NO_A": 2.69375,
+          "wall_s": 425.4
+        },
+        {
+          "step": 19,
+          "E_Ha": -1317.2115928321496,
+          "gmax": 0.0006661628183760593,
+          "grms": 0.00022921252109880849,
+          "r_NH_A": 1.87573,
+          "r_HO_A": 0.9986,
+          "r_NO_A": 2.68458,
+          "wall_s": 398.0
+        },
+        {
+          "step": 20,
+          "E_Ha": -1317.2116042732296,
+          "gmax": 0.0005634530467411025,
+          "grms": 0.00016134681171835915,
+          "r_NH_A": 1.8741,
+          "r_HO_A": 0.99835,
+          "r_NO_A": 2.68555,
+          "wall_s": 382.0
+        },
+        {
+          "step": 21,
+          "E_Ha": -1317.2116091208472,
+          "gmax": 0.0003782241840979417,
+          "grms": 0.0001170220607806842,
+          "r_NH_A": 1.87695,
+          "r_HO_A": 0.9987,
+          "r_NO_A": 2.68814,
+          "wall_s": 408.8
+        },
+        {
+          "step": 22,
+          "E_Ha": -1317.2116127313843,
+          "gmax": 0.0003324673702183034,
+          "grms": 7.4339820803587e-05,
+          "r_NH_A": 1.8766,
+          "r_HO_A": 0.99875,
+          "r_NO_A": 2.68786,
+          "wall_s": 403.7
+        },
+        {
+          "step": 23,
+          "E_Ha": -1317.211615966216,
+          "gmax": 0.0003758883253524026,
+          "grms": 0.00010069903921461488,
+          "r_NH_A": 1.87431,
+          "r_HO_A": 0.9984,
+          "r_NO_A": 2.68676,
+          "wall_s": 406.0
+        },
+        {
+          "step": 24,
+          "E_Ha": -1317.2116197736013,
+          "gmax": 0.0006862800768776545,
+          "grms": 0.00013532027078298306,
+          "r_NH_A": 1.87347,
+          "r_HO_A": 0.99809,
+          "r_NO_A": 2.68621,
+          "wall_s": 403.3
+        },
+        {
+          "step": 25,
+          "E_Ha": -1317.2116264043302,
+          "gmax": 0.00040449403325215627,
+          "grms": 0.00013411382605196047,
+          "r_NH_A": 1.88039,
+          "r_HO_A": 0.99794,
+          "r_NO_A": 2.69023,
+          "wall_s": 404.1
+        },
+        {
+          "step": 26,
+          "E_Ha": -1317.2116307684769,
+          "gmax": 0.00046849079655064685,
+          "grms": 0.00015349939874052319,
+          "r_NH_A": 1.8876,
+          "r_HO_A": 0.99796,
+          "r_NO_A": 2.69379,
+          "wall_s": 419.6
+        },
+        {
+          "step": 27,
+          "E_Ha": -1317.2116360722002,
+          "gmax": 0.0003395313089034069,
+          "grms": 9.886411123774508e-05,
+          "r_NH_A": 1.88669,
+          "r_HO_A": 0.99799,
+          "r_NO_A": 2.69243,
+          "wall_s": 393.6
+        },
+        {
+          "step": 28,
+          "E_Ha": -1317.2116413301555,
+          "gmax": 0.0002681841864031753,
+          "grms": 8.617066041587387e-05,
+          "r_NH_A": 1.88736,
+          "r_HO_A": 0.99786,
+          "r_NO_A": 2.69239,
+          "wall_s": 402.1
+        },
+        {
+          "step": 29,
+          "E_Ha": -1317.2116509033904,
+          "gmax": 0.0007629987018673567,
+          "grms": 0.0002075381351115677,
+          "r_NH_A": 1.8835,
+          "r_HO_A": 0.99849,
+          "r_NO_A": 2.69016,
+          "wall_s": 415.2
+        },
+        {
+          "step": 30,
+          "E_Ha": -1317.2116564829298,
+          "gmax": 0.000975710557210796,
+          "grms": 0.00025433065015919415,
+          "r_NH_A": 1.88101,
+          "r_HO_A": 0.99853,
+          "r_NO_A": 2.68886,
+          "wall_s": 427.4
+        },
+        {
+          "step": 31,
+          "E_Ha": -1317.2116606120776,
+          "gmax": 0.0007213258590583749,
+          "grms": 0.00017370277198448835,
+          "r_NH_A": 1.88263,
+          "r_HO_A": 0.9983,
+          "r_NO_A": 2.69001,
+          "wall_s": 429.7
+        },
+        {
+          "step": 32,
+          "E_Ha": -1317.2116633962132,
+          "gmax": 0.0002544171273251017,
+          "grms": 7.763506454236409e-05,
+          "r_NH_A": 1.88051,
+          "r_HO_A": 0.99855,
+          "r_NO_A": 2.68742,
+          "wall_s": 380.4
+        },
+        {
+          "step": 33,
+          "E_Ha": -1317.2116650895,
+          "gmax": 0.0002313456622669019,
+          "grms": 6.578451253780762e-05,
+          "r_NH_A": 1.88099,
+          "r_HO_A": 0.99838,
+          "r_NO_A": 2.68678,
+          "wall_s": 381.3
+        },
+        {
+          "step": 34,
+          "E_Ha": -1317.2116661761065,
+          "gmax": 0.00023435789451609068,
+          "grms": 5.685565602639319e-05,
+          "r_NH_A": 1.88446,
+          "r_HO_A": 0.99793,
+          "r_NO_A": 2.6884,
+          "wall_s": 374.7
+        },
+        {
+          "step": 35,
+          "E_Ha": -1317.2116677726067,
+          "gmax": 0.00021808806293055483,
+          "grms": 5.6821772790707745e-05,
+          "r_NH_A": 1.88774,
+          "r_HO_A": 0.99777,
+          "r_NO_A": 2.68952,
+          "wall_s": 408.8
+        },
+        {
+          "step": 36,
+          "E_Ha": -1317.2116694270962,
+          "gmax": 0.00028696536846850584,
+          "grms": 6.485682903833187e-05,
+          "r_NH_A": 1.89079,
+          "r_HO_A": 0.9977,
+          "r_NO_A": 2.68951,
+          "wall_s": 404.3
+        },
+        {
+          "step": 37,
+          "E_Ha": -1317.2116697742472,
+          "gmax": 0.00013209330162866628,
+          "grms": 4.1843752081959006e-05,
+          "r_NH_A": 1.89276,
+          "r_HO_A": 0.99755,
+          "r_NO_A": 2.69015,
+          "wall_s": 390.6
+        },
+        {
+          "step": 38,
+          "E_Ha": -1317.2116701694458,
+          "gmax": 5.5978542494505845e-05,
+          "grms": 1.5756871031669822e-05,
+          "r_NH_A": 1.89207,
+          "r_HO_A": 0.99768,
+          "r_NO_A": 2.68989,
+          "wall_s": 336.0
+        }
+      ],
+      "restarted_from_step": null,
+      "wall_s": 16739.2,
+      "start": {
+        "r_NH_A": 1.4982348029104189,
+        "r_HO_A": 0.98,
+        "r_NO_A": 2.4782348029104186,
+        "NHO_deg": 179.99999914622634,
+        "delta_A": 0.5182348029104189
+      },
+      "scf_settings": {
+        "method": "DFRKS",
+        "xc": "b3lyp",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-09,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "opt_steps": 39,
+      "converged": true,
+      "converged_on": "geomeTRIC criteria (GAU (Gaussian defaults, as dft/optimize.py))",
+      "r_NH_A": 1.8920653092548199,
+      "r_HO_A": 0.9976814946319076,
+      "r_NO_A": 2.689890020536756,
+      "NHO_deg": 134.79963773157024,
+      "delta_A": 0.8943838146229123,
+      "E_Ha": -1317.211670170273,
+      "E_opt_last_Ha": -1317.2116701694458,
+      "sp_scf_cycles": 5,
+      "sp_wall_s": 169.9,
+      "charges": {
+        "mulliken": {
+          "picrate": -0.62282,
+          "cation_core": -0.02911,
+          "H": 0.65193,
+          "picrate_plus_H": 0.02911,
+          "cation_with_H": 0.62282
+        },
+        "lowdin": {
+          "picrate": -0.21413,
+          "cation_core": 0.08729,
+          "H": 0.12684,
+          "picrate_plus_H": -0.08729,
+          "cation_with_H": 0.21413
+        }
+      },
+      "HOMO_eV": -7.318752228785745,
+      "LUMO_eV": -3.619871356547733,
+      "gap_eV": 3.698880872238012,
+      "frontier_composition_mulliken_pct": {
+        "HOMO-1": {
+          "anion": 0.05,
+          "cation": 99.95
+        },
+        "HOMO": {
+          "anion": 0.09,
+          "cation": 99.91
+        },
+        "LUMO": {
+          "anion": 99.86,
+          "cation": 0.14
+        },
+        "LUMO+1": {
+          "anion": 99.81,
+          "cation": 0.19
+        }
+      },
+      "dipole_debye": [
+        5.5504,
+        -5.1727,
+        1.9191
+      ],
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_mo": 602,
+      "xyz": "points/gas.xyz",
+      "chk": "chk/gas.chk",
+      "peak_rss_mb": 7734.9,
+      "proton_on": "O1",
+      "outcome": "proton stays on O1 (neutral form is a stationary point here)",
+      "returned_at_step": null,
+      "history_r": [
+        [
+          0,
+          1.49823,
+          0.98
+        ],
+        [
+          1,
+          1.56338,
+          1.0129
+        ],
+        [
+          2,
+          1.52081,
+          1.01989
+        ],
+        [
+          3,
+          1.57358,
+          1.04528
+        ],
+        [
+          4,
+          1.56698,
+          1.04787
+        ],
+        [
+          5,
+          1.57015,
+          1.05258
+        ],
+        [
+          6,
+          1.63225,
+          1.04633
+        ],
+        [
+          7,
+          1.69933,
+          1.032
+        ],
+        [
+          8,
+          1.66426,
+          1.01706
+        ],
+        [
+          9,
+          1.71221,
+          1.01621
+        ],
+        [
+          10,
+          1.77616,
+          1.01082
+        ],
+        [
+          11,
+          1.78322,
+          1.00459
+        ],
+        [
+          12,
+          1.79171,
+          1.00114
+        ],
+        [
+          13,
+          1.80957,
+          1.00179
+        ],
+        [
+          14,
+          1.8365,
+          1.00119
+        ],
+        [
+          15,
+          1.8582,
+          0.99923
+        ],
+        [
+          16,
+          1.87838,
+          0.99788
+        ],
+        [
+          17,
+          1.89064,
+          0.99845
+        ],
+        [
+          18,
+          1.88779,
+          0.99903
+        ],
+        [
+          19,
+          1.87573,
+          0.9986
+        ],
+        [
+          20,
+          1.8741,
+          0.99835
+        ],
+        [
+          21,
+          1.87695,
+          0.9987
+        ],
+        [
+          22,
+          1.8766,
+          0.99875
+        ],
+        [
+          23,
+          1.87431,
+          0.9984
+        ],
+        [
+          24,
+          1.87347,
+          0.99809
+        ],
+        [
+          25,
+          1.88039,
+          0.99794
+        ],
+        [
+          26,
+          1.8876,
+          0.99796
+        ],
+        [
+          27,
+          1.88669,
+          0.99799
+        ],
+        [
+          28,
+          1.88736,
+          0.99786
+        ],
+        [
+          29,
+          1.8835,
+          0.99849
+        ],
+        [
+          30,
+          1.88101,
+          0.99853
+        ],
+        [
+          31,
+          1.88263,
+          0.9983
+        ],
+        [
+          32,
+          1.88051,
+          0.99855
+        ],
+        [
+          33,
+          1.88099,
+          0.99838
+        ],
+        [
+          34,
+          1.88446,
+          0.99793
+        ],
+        [
+          35,
+          1.88774,
+          0.99777
+        ],
+        [
+          36,
+          1.89079,
+          0.9977
+        ],
+        [
+          37,
+          1.89276,
+          0.99755
+        ],
+        [
+          38,
+          1.89207,
+          0.99768
+        ]
+      ],
+      "heavy_atom_rmsd_to_stored_min_A": 0.2562,
+      "all_atom_rmsd_to_stored_min_A": 0.2813,
+      "stored_min_geometry": {
+        "r_NH_A": 1.1093441720006072,
+        "r_HO_A": 1.436973010173838,
+        "r_NO_A": 2.4782348029104186,
+        "NHO_deg": 153.21490812474585,
+        "delta_A": -0.32762883817323085
+      },
+      "E_stored_ionic_min_Ha": -1317.20823093777,
+      "dE_vs_stored_min_kcal": -2.1582,
+      "note": "the proton stayed on the acceptor: confirm with a Hessian (or displacements along the proton coordinate) before calling it a minimum",
+      "status": "done",
+      "at": "2026-11-21T19:11:05+05:30"
+    }
+  },
+  "timings": {
+    "gas": 16739.2
+  },
+  "error": null,
+  "summary": {
+    "gas": {
+      "outcome": "proton stays on O1 (neutral form is a stationary point here)",
+      "proton_on": "O1",
+      "returned_at_step": null,
+      "E_Ha": -1317.211670170273,
+      "dE_vs_stored_min_kcal": -2.1582,
+      "r_NH_A": 1.8920653092548199,
+      "r_HO_A": 0.9976814946319076,
+      "r_NO_A": 2.689890020536756,
+      "opt_steps": 39,
+      "converged_on": "geomeTRIC criteria (GAU (Gaussian defaults, as dft/optimize.py))",
+      "heavy_atom_rmsd_to_stored_min_A": 0.2562
+    }
+  },
+  "peak_rss_mb": 7734.9
+}

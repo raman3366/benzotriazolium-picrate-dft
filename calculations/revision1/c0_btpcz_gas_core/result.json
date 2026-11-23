@@ -1,0 +1,270 @@
+{
+  "job": "c0_btpcz_gas_core",
+  "script": "dft/revision/c0_case.py",
+  "argv": [
+    "dft/revision/c0_case.py",
+    "--job",
+    "c0_btpcz_gas_core",
+    "--out",
+    "<run-dir>/queue/out/c0_btpcz_gas_core",
+    "--case",
+    "btpcz_gas",
+    "--freq",
+    "fd",
+    "--fd-chunk",
+    "3",
+    "--preopt-max-hours",
+    "3",
+    "--opt-maxsteps",
+    "100",
+    "--opt-max-hours",
+    "12",
+    "--negligible-stop",
+    "10"
+  ],
+  "smoke": false,
+  "status": "done",
+  "started": "2026-11-21T03:10:30+05:30",
+  "restarts": 0,
+  "last_start": "2026-11-21T03:10:30+05:30",
+  "finished": "2026-11-22T07:03:12+05:30",
+  "host": {
+    "hostname": "<vm-1>",
+    "machine": "x86_64",
+    "cpu": "AMD EPYC 7B13",
+    "cpu_count": 32,
+    "ram_mb": 128799
+  },
+  "threads": 4,
+  "max_memory_mb": 8000,
+  "scratch": "<run-dir>/scratch/c0_btpcz_gas_core",
+  "software": {
+    "python": "3.11.16",
+    "pyscf": "2.14.0",
+    "numpy": "2.4.6",
+    "executable": "<run-dir>/env/bin/python",
+    "prefix": "<run-dir>/env",
+    "scipy": "1.17.1",
+    "h5py": "3.16.0",
+    "geometric": "1.1.1",
+    "libxc": "7.1.2",
+    "pyscf-dispersion": "1.5.0",
+    "conda_builds": {
+      "pyscf": "2.14.0 py311h990ede3_1302",
+      "pyscf-dispersion": "1.5.0 py311h5df2867_0",
+      "libxc-c": "7.1.2 cpu_hed2233d_2",
+      "libcint": "6.1.3 h64ba90f_2",
+      "libopenblas": "0.3.34 pthreads_hf13c14d_2",
+      "libblas": "3.11.0 12_h4a7cf45_openblas",
+      "numpy": "2.4.6 py311h2e04523_0",
+      "scipy": "1.17.1 py311hbe70eeb_1",
+      "geometric": "1.1.1 pyhd8ed1ab_0",
+      "python": "3.11.16 h5f976f7_2_cpython",
+      "_x86_64-microarch-level": "3 3_x86_64_v3"
+    }
+  },
+  "script_sha256": {
+    "c0_case.py": "0f069b7d2e9d85f8ad2397d78980ef07cf1eef0d7ff0da377f6c6d4fa1338890",
+    "rev_common.py": "fba929added9222d92adeca239e64fcb87eaaeefe6511ad436c2624eba72515a"
+  },
+  "settings": {
+    "case": "btpcz_gas",
+    "case_dir": "<run-dir>/repo/molecules/btpcz/results/btpcz_gas",
+    "stages": [
+      "preopt",
+      "optimize",
+      "proton_check",
+      "frequencies",
+      "fmo"
+    ],
+    "freq": "fd",
+    "fd_chunk_columns": 3,
+    "fd_step_bohr": 0.005,
+    "ref_hessian": null,
+    "nmodes": null,
+    "soft_step_bohr": 0.02,
+    "preopt_basis": "6-31g(d)",
+    "preopt_maxsteps": 300,
+    "opt_maxsteps": 100,
+    "opt_max_hours": 12.0,
+    "negligible_stop_window": 10,
+    "basis": "case basis (6-311++G(d,p) + overrides)",
+    "xc": "b3lyp",
+    "grid_level": 4,
+    "pcm_lebedev_order": null,
+    "solvent": null,
+    "density_fit": true,
+    "env_for_published_code": {
+      "OMP_NUM_THREADS": "4",
+      "DFT_THREADS": "4",
+      "DFT_MAX_MEMORY_MB": "8000",
+      "GRID_LEVEL": "4",
+      "PCM_LEBEDEV_ORDER": "29",
+      "NO_AUTO_PCM": "1"
+    }
+  },
+  "inputs": {
+    "case": {
+      "path": "molecules/btpcz/cases/btpcz_gas.json",
+      "sha256": "f4f61fa58945fc5a6ca8ca94a05eca798b5e3dd36958558bb4677c3c125c726a"
+    }
+  },
+  "items": {
+    "preopt": {
+      "steps": 45,
+      "converged": true,
+      "how": "converged (GAU_LOOSE)",
+      "E_Ha": -1316.7997289901405,
+      "wall_s": 4372.1,
+      "status": "done",
+      "at": "2026-11-21T04:23:22+05:30"
+    },
+    "optimize": {
+      "E_Ha": -1317.2113973932933,
+      "steps": 99,
+      "converged": true,
+      "converged_on": "geomeTRIC criteria (all five)",
+      "opt_xyz_sha256": "73ba98f9fd217065ffd630fab622edabe4eb079d1b220329169916d648c926b4",
+      "status": "done",
+      "at": "2026-11-21T13:32:22+05:30"
+    },
+    "proton_check": {
+      "wall_s": 0.8,
+      "outputs": [
+        "proton_check.json"
+      ],
+      "opt_xyz_sha256": "73ba98f9fd217065ffd630fab622edabe4eb079d1b220329169916d648c926b4",
+      "status": "done",
+      "at": "2026-11-21T13:32:23+05:30"
+    },
+    "fd": {
+      "chunk_wall_s": {
+        "cols_000_003": 1949.1,
+        "cols_003_006": 1933.3,
+        "cols_006_009": 1904.0,
+        "cols_009_012": 1722.8,
+        "cols_012_015": 1927.7,
+        "cols_015_018": 1901.5,
+        "cols_018_021": 1704.8,
+        "cols_021_024": 1878.0,
+        "cols_024_027": 1903.1,
+        "cols_027_030": 1908.0,
+        "cols_030_033": 1912.5,
+        "cols_033_036": 1867.0,
+        "cols_036_039": 1876.7,
+        "cols_039_042": 1898.4,
+        "cols_042_045": 1867.9,
+        "cols_045_048": 1873.5,
+        "cols_048_051": 1929.1,
+        "cols_051_054": 1936.8,
+        "cols_054_057": 1932.8,
+        "cols_057_060": 1852.4,
+        "cols_060_063": 1715.9,
+        "cols_063_066": 1832.0,
+        "cols_066_069": 1694.0,
+        "cols_069_072": 1881.9,
+        "cols_072_075": 1749.8,
+        "cols_075_078": 1992.6,
+        "cols_078_081": 1805.8,
+        "cols_081_084": 1990.8,
+        "cols_084_087": 1967.7,
+        "cols_087_090": 1787.1,
+        "cols_090_093": 1952.4,
+        "cols_093_096": 1910.8,
+        "cols_096_099": 1746.2
+      },
+      "chunks_done": 33,
+      "chunks": 33,
+      "status": "done",
+      "at": "2026-11-22T06:43:05+05:30"
+    },
+    "frequencies": {
+      "method": "fd",
+      "n_imaginary": 1,
+      "lowest_cm-1": [
+        -59.10207355929025,
+        4.570021512024776,
+        17.33518218215339,
+        27.754969872967308,
+        46.93727043991932,
+        47.887056457472426
+      ],
+      "tr_residual_cm-1": 2.7851668438049745e-05,
+      "hessian_wall_min": 1028.4,
+      "opt_xyz_sha256": "73ba98f9fd217065ffd630fab622edabe4eb079d1b220329169916d648c926b4",
+      "status": "done",
+      "at": "2026-11-22T06:43:05+05:30"
+    },
+    "fmo": {
+      "wall_s": 1207.6,
+      "outputs": [
+        "fmo.json",
+        "final.molden",
+        "esp.cube"
+      ],
+      "opt_xyz_sha256": "73ba98f9fd217065ffd630fab622edabe4eb079d1b220329169916d648c926b4",
+      "status": "done",
+      "at": "2026-11-22T07:03:12+05:30"
+    }
+  },
+  "timings": {},
+  "error": null,
+  "summary": {
+    "preopt": {
+      "steps": 45,
+      "converged": true,
+      "how": "converged (GAU_LOOSE)",
+      "E_Ha": -1316.7997289901405,
+      "wall_s": 4372.1,
+      "status": "done",
+      "at": "2026-11-21T04:23:22+05:30"
+    },
+    "optimize": {
+      "E_Ha": -1317.2113973932933,
+      "steps": 99,
+      "converged": true,
+      "converged_on": "geomeTRIC criteria (all five)",
+      "opt_xyz_sha256": "73ba98f9fd217065ffd630fab622edabe4eb079d1b220329169916d648c926b4",
+      "status": "done",
+      "at": "2026-11-21T13:32:22+05:30"
+    },
+    "proton_check": {
+      "wall_s": 0.8,
+      "outputs": [
+        "proton_check.json"
+      ],
+      "opt_xyz_sha256": "73ba98f9fd217065ffd630fab622edabe4eb079d1b220329169916d648c926b4",
+      "status": "done",
+      "at": "2026-11-21T13:32:23+05:30"
+    },
+    "frequencies": {
+      "method": "fd",
+      "n_imaginary": 1,
+      "lowest_cm-1": [
+        -59.10207355929025,
+        4.570021512024776,
+        17.33518218215339,
+        27.754969872967308,
+        46.93727043991932,
+        47.887056457472426
+      ],
+      "tr_residual_cm-1": 2.7851668438049745e-05,
+      "hessian_wall_min": 1028.4,
+      "opt_xyz_sha256": "73ba98f9fd217065ffd630fab622edabe4eb079d1b220329169916d648c926b4",
+      "status": "done",
+      "at": "2026-11-22T06:43:05+05:30"
+    },
+    "fmo": {
+      "wall_s": 1207.6,
+      "outputs": [
+        "fmo.json",
+        "final.molden",
+        "esp.cube"
+      ],
+      "opt_xyz_sha256": "73ba98f9fd217065ffd630fab622edabe4eb079d1b220329169916d648c926b4",
+      "status": "done",
+      "at": "2026-11-22T07:03:12+05:30"
+    }
+  },
+  "peak_rss_mb": 120.2
+}

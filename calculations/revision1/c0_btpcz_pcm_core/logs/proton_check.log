@@ -1,0 +1,5 @@
+
+===== 2026-11-21T12:10:33  $ bash <run-dir>/repo/run_case.sh btpcz_pcm 4 -- --stage proton_check
+[run_case] btpcz_pcm  threads=4  mem=8000MB  fd=autox2  2026-11-21T12:10:33+00:00
+[pipeline] proton check: H-N 1.052 A, H-O 1.636 A -> proton retained on the donor; bonds broken none, formed none
+[pipeline] proton_check: done (0.0 min) ionic form retained

@@ -1,0 +1,59 @@
+
+===== queue: start deltascf_gasgeom attempt 1 at 2026-11-21T19:17:05+05:30 =====
+$ MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/deltascf.py --job deltascf_gasgeom --out <run-dir>/queue/out/deltascf_gasgeom --combos gas/gas,gas/pcm --plus cation,anion --minus homo
+[2026-11-21 07:17:06 PM IST] job deltascf_gasgeom (dft/revision/deltascf.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/deltascf_gasgeom, smoke False, restart #0; PySCF 2.14.0
+[2026-11-21 07:17:06 PM IST] gas/gas|N: RKS (606 AO), guess <run-dir>/repo/data/r2/molecules/btpc/results/btpc_gas/final.chk
+[2026-11-21 07:17:06 PM IST] initial density from <run-dir>/repo/data/r2/molecules/btpc/results/btpc_gas/final.chk
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 07:19:43 PM IST] gas/gas|N: E = -1317.2082309382 Ha (4 cycles, 145 s); LUMO on cation, HOMO on anion
+[2026-11-21 07:19:44 PM IST] gas/gas|N+1|cation|aufbau: UKS doublet, electron added to MO 89 (cation), aufbau
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+WARN: HOMO -0.02699298707318 >= LUMO -0.0268929931398608
+[2026-11-21 07:42:50 PM IST] gas/gas|N+1|cation|aufbau: E = -1317.2748871754 Ha, <S2> 0.7604, spin on cation (anion +0.400, cation +0.600), 1370 s
+[2026-11-21 07:42:50 PM IST] gas/gas|N+1|anion|aufbau: UKS doublet, electron added to MO 90 (anion), aufbau
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+WARN: HOMO -0.0304409902849265 >= LUMO -0.0303627161912452
+WARN: HOMO -0.00396990788186757 >= LUMO -0.00379500972368095
+[2026-11-21 08:03:41 PM IST] gas/gas|N+1|anion|aufbau: E = -1317.2748871808 Ha, <S2> 0.7604, spin on cation (anion +0.400, cation +0.600), 1234 s
+[2026-11-21 08:03:41 PM IST] gas/gas|N-1|homo|aufbau: UKS doublet, electron removed from MO 88 (anion), aufbau
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+WARN: HOMO -0.397847991411551 >= LUMO -0.397814272934985
+WARN: HOMO -0.268992181239346 >= LUMO -0.270380336995468
+[2026-11-21 08:24:19 PM IST] gas/gas|N-1|homo|aufbau: E = -1316.8981175814 Ha, <S2> 0.7815, spin on anion (anion +0.984, cation +0.016), 1221 s
+[2026-11-21 08:24:19 PM IST] gas/gas: EA(dSCF) 1.814 eV (electron on cation), IE(dSCF) 8.439 eV (hole on anion); Koopmans EA 3.342, IP 6.818 eV; LUMO on cation
+[2026-11-21 08:24:19 PM IST] gas/pcm|N: RKS (606 AO), guess <run-dir>/repo/data/r2/molecules/btpc/results/btpc_pcm/final.chk
+WARN: Large deviations found between the input molecule and the molecule from chkfile
+Initial guess density matrix may have large error.
+[2026-11-21 08:24:19 PM IST] initial density from <run-dir>/repo/data/r2/molecules/btpc/results/btpc_pcm/final.chk
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+WARN: HOMO -0.225297428903237 == LUMO -0.22479949414883
+[2026-11-21 08:42:02 PM IST] gas/pcm|N: E = -1317.2490931285 Ha (17 cycles, 1053 s); LUMO on anion, HOMO on anion
+[2026-11-21 08:42:02 PM IST] gas/pcm|N+1|cation|aufbau: UKS doublet, electron added to MO 92 (cation), aufbau
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+WARN: HOMO -0.114267085451359 >= LUMO -0.113851433604392
+[2026-11-21 09:15:11 PM IST] gas/pcm|N+1|cation|aufbau: E = -1317.3724683024 Ha, <S2> 0.7629, spin on anion (anion +0.996, cation +0.004), 1971 s
+[2026-11-21 09:15:11 PM IST] gas/pcm|N+1|anion|aufbau: UKS doublet, electron added to MO 89 (anion), aufbau
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 09:48:33 PM IST] gas/pcm|N+1|anion|aufbau: E = -1317.3724683038 Ha, <S2> 0.7629, spin on anion (anion +0.996, cation +0.004), 1985 s
+[2026-11-21 09:48:33 PM IST] gas/pcm|N-1|homo|aufbau: UKS doublet, electron removed from MO 88 (anion), aufbau
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+WARN: HOMO -0.276786069252799 >= LUMO -0.276495513108344
+[2026-11-21 10:23:35 PM IST] gas/pcm|N-1|homo|aufbau: E = -1316.9975483808 Ha, <S2> 0.7841, spin on anion (anion +0.986, cation +0.014), 2083 s
+[2026-11-21 10:23:35 PM IST] gas/pcm: EA(dSCF) 3.357 eV (electron on anion), IE(dSCF) 6.845 eV (hole on anion); Koopmans EA 3.206, IP 7.024 eV; LUMO on anion
+[2026-11-21 10:23:35 PM IST] job deltascf_gasgeom finished (peak RSS 9746 MB)

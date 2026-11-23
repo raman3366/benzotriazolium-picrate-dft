@@ -1,0 +1,16 @@
+
+===== queue: start cc_neutral_631gd attempt 1 at 2026-11-22T21:40:50+05:30 =====
+$ export MAX_MEMORY_MB=24000; <run-dir>/env/bin/python dft/revision/cc_correction.py --job cc_neutral_631gd --out <run-dir>/queue/out/cc_neutral_631gd --xyz <run-dir>/queue/out/sp_neutral_pcm/geoms/neutral_pcm.xyz --labels neutral --solvent water --basis '6-31g*' --fno-fracs 0.5
+[2026-11-22 09:40:50 PM IST] job cc_neutral_631gd (dft/revision/cc_correction.py) on <vm-1>: threads 4, max_memory 24000 MB, scratch <run-dir>/scratch/cc_neutral_631gd, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 09:40:50 PM IST] 1 geometries (neutral); basis 6-31g*; IEF-PCM eps 78.3553; FNO fractions of the virtual space 0.5
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-22 09:44:50 PM IST] neutral: E_HF = -1309.3852326465 Ha (15 cycles), nao 366; RI basis {'H': 'cc-pvdz-ri', 'O': 'cc-pvdz-ri', 'N': 'cc-pvdz-ri', 'C': 'cc-pvdz-ri'}; full-space MP2 for the NOs
+[2026-11-22 09:45:32 PM IST] neutral: MP2 full space (RI) -3.77401617 Ha (42 s), 64 occ x 277 vir; NO sets [138]
+[2026-11-22 09:45:32 PM IST] neutral|f0.500: FNO-CCSD(T) with 138 of 277 virtual NOs (93.03 % of the NO occupation, smallest kept 3.73e-03)
+[2026-11-22 09:46:14 PM IST]   DF-CCSD space: 64 occ x 138 vir, naux 1512; MP2 (same space, RI) -3.05069766 Ha; |F_offdiag| max oo/vv/ov 4.0e-07/1.3e-07/3.0e-07
+[2026-11-22 10:19:05 PM IST]   CCSD -3.05002551 Ha (2006 s); T1 0.0151, D1 0.0701, D2 0.2026
+[2026-11-22 11:36:49 PM IST]   (T) -0.10310816 Ha (4664 s); delta = CCSD(T) - MP2 = -0.10243601 Ha
+[2026-11-22 11:36:49 PM IST] neutral|f0.500: delta_CCSD 0.00067215, delta_T -0.10310816, delta -0.10243601 Ha (with scaled (T) -0.12688289); MP2 truncation -0.723319 Ha (1.85 h)
+[2026-11-22 11:36:49 PM IST] neutral: all fractions done (1.93 h)
+[2026-11-22 11:36:49 PM IST] job cc_neutral_631gd finished (peak RSS 10322 MB)

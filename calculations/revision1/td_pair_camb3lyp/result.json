@@ -1,0 +1,2404 @@
+{
+  "job": "td_pair_camb3lyp",
+  "script": "dft/revision/tddft.py",
+  "argv": [
+    "dft/revision/tddft.py",
+    "--job",
+    "td_pair_camb3lyp",
+    "--out",
+    "<run-dir>/queue/out/td_pair_camb3lyp",
+    "--systems",
+    "pair-gas,pair-pcm",
+    "--xc",
+    "camb3lyp",
+    "--nstates",
+    "20",
+    "--tda"
+  ],
+  "smoke": false,
+  "status": "done",
+  "started": "2026-11-21T22:23:36+05:30",
+  "restarts": 0,
+  "last_start": "2026-11-21T22:23:36+05:30",
+  "finished": "2026-11-22T11:28:47+05:30",
+  "host": {
+    "hostname": "<vm-1>",
+    "machine": "x86_64",
+    "cpu": "AMD EPYC 7B13",
+    "cpu_count": 32,
+    "ram_mb": 128799
+  },
+  "threads": 4,
+  "max_memory_mb": 8000,
+  "scratch": "<run-dir>/scratch/td_pair_camb3lyp",
+  "software": {
+    "python": "3.11.16",
+    "pyscf": "2.14.0",
+    "numpy": "2.4.6",
+    "executable": "<run-dir>/env/bin/python",
+    "prefix": "<run-dir>/env",
+    "scipy": "1.17.1",
+    "h5py": "3.16.0",
+    "geometric": "1.1.1",
+    "libxc": "7.1.2",
+    "pyscf-dispersion": "1.5.0",
+    "conda_builds": {
+      "pyscf": "2.14.0 py311h990ede3_1302",
+      "pyscf-dispersion": "1.5.0 py311h5df2867_0",
+      "libxc-c": "7.1.2 cpu_hed2233d_2",
+      "libcint": "6.1.3 h64ba90f_2",
+      "libopenblas": "0.3.34 pthreads_hf13c14d_2",
+      "libblas": "3.11.0 12_h4a7cf45_openblas",
+      "numpy": "2.4.6 py311h2e04523_0",
+      "scipy": "1.17.1 py311hbe70eeb_1",
+      "geometric": "1.1.1 pyhd8ed1ab_0",
+      "python": "3.11.16 h5f976f7_2_cpython",
+      "_x86_64-microarch-level": "3 3_x86_64_v3"
+    }
+  },
+  "script_sha256": {
+    "tddft.py": "d58215eceb0a10520f1707c7fe0167e472ad493ff8a7ff90d9175a1eca5d2f7d",
+    "rev_common.py": "fba929added9222d92adeca239e64fcb87eaaeefe6511ad436c2624eba72515a"
+  },
+  "settings": {
+    "basis": "6-311++g(d,p)",
+    "grid_level": 4,
+    "lebedev_order": 29,
+    "conv_tol": 1e-10,
+    "xc": [
+      "camb3lyp"
+    ],
+    "nstates": 20,
+    "response": "TDA",
+    "td_conv_tol_Ha": 1e-06,
+    "pcm_method": "IEF-PCM",
+    "pcm_ground_state_eps": 78.3553,
+    "pcm_response": "non-equilibrium, optical eps 1.78 (PySCF 2.14 default)",
+    "free_species_optimisation": "B3LYP, geomeTRIC default criteria",
+    "ct_analysis": "Omega matrix of X+Y (X for TDA), Loewdin partition"
+  },
+  "inputs": {
+    "geometry_gas": {
+      "path": "molecules/btpc/results/btpc_gas/opt.xyz",
+      "sha256": "3129d65de911de6f889286e346f85ee4c70ced9cac2f79a5ff4d75b793483a00"
+    },
+    "geometry_pcm": {
+      "path": "molecules/btpc/results/btpc_pcm/opt.xyz",
+      "sha256": "bc3eba08ce8205f9ec8dcb011700c2347fd331012c58fdd29080c4f091050538"
+    }
+  },
+  "items": {
+    "pair-gas/camb3lyp": {
+      "system": "pair-gas",
+      "xc": "camb3lyp",
+      "geometry": "<run-dir>/repo/molecules/btpc/results/btpc_gas/opt.xyz",
+      "charge": 0,
+      "settings": {
+        "method": "DFRKS",
+        "xc": "camb3lyp",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "E_Ha": -1316.6554066666436,
+      "scf_cycles": 17,
+      "scf_wall_s": 538.2,
+      "frontier": {
+        "n_occ": 89,
+        "n_mo": 602,
+        "orbitals": {
+          "HOMO-1": {
+            "index": 87,
+            "eV": -9.427561960944233,
+            "mulliken": {
+              "anion": 97.565,
+              "cation": 2.435
+            },
+            "lowdin": {
+              "anion": 97.281,
+              "cation": 2.719
+            },
+            "on": "anion"
+          },
+          "HOMO": {
+            "index": 88,
+            "eV": -8.15193785765716,
+            "mulliken": {
+              "anion": 99.426,
+              "cation": 0.574
+            },
+            "lowdin": {
+              "anion": 99.172,
+              "cation": 0.828
+            },
+            "on": "anion"
+          },
+          "LUMO": {
+            "index": 89,
+            "eV": -2.0798028600641594,
+            "mulliken": {
+              "anion": 0.401,
+              "cation": 99.599
+            },
+            "lowdin": {
+              "anion": 0.713,
+              "cation": 99.287
+            },
+            "on": "cation"
+          },
+          "LUMO+1": {
+            "index": 90,
+            "eV": -1.6584718316305005,
+            "mulliken": {
+              "anion": 99.496,
+              "cation": 0.504
+            },
+            "lowdin": {
+              "anion": 99.586,
+              "cation": 0.414
+            },
+            "on": "anion"
+          },
+          "LUMO+2": {
+            "index": 91,
+            "eV": -1.2938750274398614,
+            "mulliken": {
+              "anion": 99.362,
+              "cation": 0.638
+            },
+            "lowdin": {
+              "anion": 99.378,
+              "cation": 0.622
+            },
+            "on": "anion"
+          },
+          "LUMO+3": {
+            "index": 92,
+            "eV": -1.0732554036960715,
+            "mulliken": {
+              "anion": 99.107,
+              "cation": 0.893
+            },
+            "lowdin": {
+              "anion": 98.935,
+              "cation": 1.065
+            },
+            "on": "anion"
+          }
+        },
+        "HOMO_eV": -8.15193785765716,
+        "LUMO_eV": -2.0798028600641594,
+        "gap_eV": 6.072134997593,
+        "LUMO_on": "cation",
+        "HOMO_on": "anion",
+        "lowest_virtual_on": {
+          "cation": {
+            "index": 89,
+            "label": "LUMO",
+            "eV": -2.0798028600641594,
+            "share_pct": 99.599
+          },
+          "anion": {
+            "index": 90,
+            "label": "LUMO+1",
+            "eV": -1.6584718316305005,
+            "share_pct": 99.496
+          }
+        },
+        "highest_occupied_on": {
+          "anion": {
+            "index": 88,
+            "label": "HOMO",
+            "eV": -8.15193785765716,
+            "share_pct": 99.426
+          },
+          "cation": {
+            "index": 85,
+            "label": "HOMO-3",
+            "eV": -9.772419596034634,
+            "share_pct": 98.494
+          }
+        },
+        "delta_virt_cation_minus_anion_eV": -0.4213310284336589
+      },
+      "td_class": "TDA",
+      "td_wall_s": 22131.3,
+      "states": [
+        {
+          "state": 1,
+          "E_eV": 3.734609012972463,
+          "lambda_nm": 331.987091471506,
+          "f": 0.1370888132225434,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+1",
+              "weight_pct": 65.9
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+3",
+              "weight_pct": 4.6
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO+1",
+              "weight_pct": 4.3
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+3",
+              "weight_pct": 4.0
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9887520562329317,
+            "anion->cation": 0.004047898016819486,
+            "cation->anion": 0.006229124956239319,
+            "cation->cation": 0.0009709207940093716
+          },
+          "hole": {
+            "anion": 0.9927999542497513,
+            "cation": 0.007200045750248691
+          },
+          "electron": {
+            "anion": 0.9949811811891711,
+            "cation": 0.005018818810828858
+          },
+          "CT_number": 0.010277022973058804
+        },
+        {
+          "state": 2,
+          "E_eV": 3.893901022140453,
+          "lambda_nm": 318.40613743142,
+          "f": 0.009693419710865236,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+1",
+              "weight_pct": 23.3
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO+3",
+              "weight_pct": 20.7
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO+1",
+              "weight_pct": 9.3
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+3",
+              "weight_pct": 8.3
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9911344784020439,
+            "anion->cation": 0.004666319878405107,
+            "cation->anion": 0.004032376515421249,
+            "cation->cation": 0.00016682520412975114
+          },
+          "hole": {
+            "anion": 0.9958007982804491,
+            "cation": 0.004199201719551
+          },
+          "electron": {
+            "anion": 0.9951668549174653,
+            "cation": 0.004833145082534858
+          },
+          "CT_number": 0.008698696393826354
+        },
+        {
+          "state": 3,
+          "E_eV": 4.006269497040989,
+          "lambda_nm": 309.4754321734324,
+          "f": 6.0352329213717926e-05,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+2",
+              "weight_pct": 86.9
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9989115049224461,
+            "anion->cation": 0.000946852538118385,
+            "cation->anion": 0.00014041873817451718,
+            "cation->cation": 1.2238012610217627e-06
+          },
+          "hole": {
+            "anion": 0.9998583574605645,
+            "cation": 0.00014164253943553892
+          },
+          "electron": {
+            "anion": 0.9990519236606206,
+            "cation": 0.0009480763393794068
+          },
+          "CT_number": 0.0010872712762929023
+        },
+        {
+          "state": 4,
+          "E_eV": 4.025060211271372,
+          "lambda_nm": 308.0306675979832,
+          "f": 0.032077130155363676,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+1",
+              "weight_pct": 23.9
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO+1",
+              "weight_pct": 22.0
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+3",
+              "weight_pct": 20.1
+            },
+            {
+              "from": "HOMO-11",
+              "to": "LUMO+3",
+              "weight_pct": 7.6
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9898296185097917,
+            "anion->cation": 0.005003407034144109,
+            "cation->anion": 0.004804695614469341,
+            "cation->cation": 0.0003622788415949
+          },
+          "hole": {
+            "anion": 0.9948330255439358,
+            "cation": 0.0051669744560642415
+          },
+          "electron": {
+            "anion": 0.994634314124261,
+            "cation": 0.005365685875739009
+          },
+          "CT_number": 0.009808102648613452
+        },
+        {
+          "state": 5,
+          "E_eV": 4.275640293008351,
+          "lambda_nm": 289.9780849262331,
+          "f": 0.02503464774978431,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO",
+              "weight_pct": 60.8
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+3",
+              "weight_pct": 7.6
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+1",
+              "weight_pct": 7.2
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+1",
+              "weight_pct": 6.5
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.3994602097763768,
+            "anion->cation": 0.5874884997750419,
+            "cation->anion": 0.0034420205148535895,
+            "cation->cation": 0.009609269933727658
+          },
+          "hole": {
+            "anion": 0.9869487095514188,
+            "cation": 0.013051290448581247
+          },
+          "electron": {
+            "anion": 0.4029022302912304,
+            "cation": 0.5970977697087696
+          },
+          "CT_number": 0.5909305202898955
+        },
+        {
+          "state": 6,
+          "E_eV": 4.32720695904131,
+          "lambda_nm": 286.52246026954214,
+          "f": 0.005603790074890159,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO",
+              "weight_pct": 33.0
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+1",
+              "weight_pct": 16.2
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+1",
+              "weight_pct": 12.4
+            },
+            {
+              "from": "HOMO-12",
+              "to": "LUMO+3",
+              "weight_pct": 9.7
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.642974377399173,
+            "anion->cation": 0.3463465264390723,
+            "cation->anion": 0.005790748173471921,
+            "cation->cation": 0.004888347988282642
+          },
+          "hole": {
+            "anion": 0.9893209038382454,
+            "cation": 0.010679096161754564
+          },
+          "electron": {
+            "anion": 0.648765125572645,
+            "cation": 0.351234874427355
+          },
+          "CT_number": 0.3521372746125443
+        },
+        {
+          "state": 7,
+          "E_eV": 4.421215295790614,
+          "lambda_nm": 280.43013086931967,
+          "f": 0.022194032796486966,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-12",
+              "to": "LUMO+1",
+              "weight_pct": 16.7
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+3",
+              "weight_pct": 16.7
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+3",
+              "weight_pct": 12.2
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+3",
+              "weight_pct": 11.3
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9777739782605187,
+            "anion->cation": 0.016941469464093983,
+            "cation->anion": 0.004694172974122042,
+            "cation->cation": 0.0005903793012653005
+          },
+          "hole": {
+            "anion": 0.9947154477246127,
+            "cation": 0.005284552275387343
+          },
+          "electron": {
+            "anion": 0.9824681512346407,
+            "cation": 0.017531848765359282
+          },
+          "CT_number": 0.021635642438216026
+        },
+        {
+          "state": 8,
+          "E_eV": 4.501382359039786,
+          "lambda_nm": 275.43582950915487,
+          "f": 0.27522444038784444,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+2",
+              "weight_pct": 55.1
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+3",
+              "weight_pct": 17.8
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+3",
+              "weight_pct": 5.2
+            },
+            {
+              "from": "HOMO-12",
+              "to": "LUMO+1",
+              "weight_pct": 3.5
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9877393138305727,
+            "anion->cation": 0.004108356636929176,
+            "cation->anion": 0.006549729020756633,
+            "cation->cation": 0.0016026005117416237
+          },
+          "hole": {
+            "anion": 0.9918476704675019,
+            "cation": 0.008152329532498257
+          },
+          "electron": {
+            "anion": 0.9942890428513292,
+            "cation": 0.005710957148670799
+          },
+          "CT_number": 0.01065808565768581
+        },
+        {
+          "state": 9,
+          "E_eV": 4.575231947074183,
+          "lambda_nm": 270.98997347945755,
+          "f": 0.00072462379309459,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-8",
+              "to": "LUMO+2",
+              "weight_pct": 50.6
+            },
+            {
+              "from": "HOMO-12",
+              "to": "LUMO+2",
+              "weight_pct": 12.3
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO+2",
+              "weight_pct": 11.2
+            },
+            {
+              "from": "HOMO-10",
+              "to": "LUMO+2",
+              "weight_pct": 8.9
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9988836609567644,
+            "anion->cation": 0.0010383927651231274,
+            "cation->anion": 7.597303758422413e-05,
+            "cation->cation": 1.973240528193383e-06
+          },
+          "hole": {
+            "anion": 0.9999220537218876,
+            "cation": 7.794627811241751e-05
+          },
+          "electron": {
+            "anion": 0.9989596339943486,
+            "cation": 0.0010403660056513208
+          },
+          "CT_number": 0.0011143658027073515
+        },
+        {
+          "state": 10,
+          "E_eV": 4.629758246218421,
+          "lambda_nm": 267.79842878679483,
+          "f": 0.1876036831348608,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+3",
+              "weight_pct": 36.6
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+2",
+              "weight_pct": 31.3
+            },
+            {
+              "from": "HOMO-12",
+              "to": "LUMO+3",
+              "weight_pct": 6.1
+            },
+            {
+              "from": "HOMO-11",
+              "to": "LUMO+1",
+              "weight_pct": 5.8
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9400061969192479,
+            "anion->cation": 0.04682716064251498,
+            "cation->anion": 0.006357742786791762,
+            "cation->cation": 0.006808899651445204
+          },
+          "hole": {
+            "anion": 0.9868333575617629,
+            "cation": 0.013166642438236967
+          },
+          "electron": {
+            "anion": 0.9463639397060397,
+            "cation": 0.05363606029396018
+          },
+          "CT_number": 0.05318490342930674
+        },
+        {
+          "state": 11,
+          "E_eV": 5.040082394183339,
+          "lambda_nm": 245.99637208924943,
+          "f": 0.0017566090006860644,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO",
+              "weight_pct": 52.5
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO",
+              "weight_pct": 15.1
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+2",
+              "weight_pct": 5.1
+            },
+            {
+              "from": "HOMO-13",
+              "to": "LUMO+3",
+              "weight_pct": 4.3
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.3039442280090041,
+            "anion->cation": 0.6302311607124157,
+            "cation->anion": 0.01058442340852601,
+            "cation->cation": 0.055240187870054226
+          },
+          "hole": {
+            "anion": 0.9341753887214198,
+            "cation": 0.06582461127858025
+          },
+          "electron": {
+            "anion": 0.3145286514175301,
+            "cation": 0.6854713485824699
+          },
+          "CT_number": 0.6408155841209418
+        },
+        {
+          "state": 12,
+          "E_eV": 5.128218664040944,
+          "lambda_nm": 241.76854873482065,
+          "f": 0.0606248799959836,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-3",
+              "to": "LUMO",
+              "weight_pct": 33.1
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO",
+              "weight_pct": 10.6
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+2",
+              "weight_pct": 7.9
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+3",
+              "weight_pct": 7.6
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.39400128908488513,
+            "anion->cation": 0.11291449221970624,
+            "cation->anion": 0.016344822536147264,
+            "cation->cation": 0.4767393961592613
+          },
+          "hole": {
+            "anion": 0.5069157813045914,
+            "cation": 0.4930842186954086
+          },
+          "electron": {
+            "anion": 0.41034611162103235,
+            "cation": 0.5896538883789676
+          },
+          "CT_number": 0.1292593147558535
+        },
+        {
+          "state": 13,
+          "E_eV": 5.151353819430212,
+          "lambda_nm": 240.6827462177968,
+          "f": 0.051757315994344605,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-3",
+              "to": "LUMO",
+              "weight_pct": 37.6
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO",
+              "weight_pct": 9.9
+            },
+            {
+              "from": "HOMO-5",
+              "to": "LUMO",
+              "weight_pct": 6.2
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+2",
+              "weight_pct": 5.9
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.2844955633269526,
+            "anion->cation": 0.19415864446817463,
+            "cation->anion": 0.012214958219755963,
+            "cation->cation": 0.5091308339851167
+          },
+          "hole": {
+            "anion": 0.47865420779512724,
+            "cation": 0.5213457922048728
+          },
+          "electron": {
+            "anion": 0.2967105215467085,
+            "cation": 0.7032894784532914
+          },
+          "CT_number": 0.2063736026879306
+        },
+        {
+          "state": 14,
+          "E_eV": 5.299450165335073,
+          "lambda_nm": 233.95672104062655,
+          "f": 0.009776215958321219,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+1",
+              "weight_pct": 27.6
+            },
+            {
+              "from": "HOMO-13",
+              "to": "LUMO+1",
+              "weight_pct": 21.4
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+1",
+              "weight_pct": 16.5
+            },
+            {
+              "from": "HOMO-12",
+              "to": "LUMO+3",
+              "weight_pct": 10.6
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9518167987441618,
+            "anion->cation": 0.008643359675998554,
+            "cation->anion": 0.03413070067530751,
+            "cation->cation": 0.0054091409045321755
+          },
+          "hole": {
+            "anion": 0.9604601584201603,
+            "cation": 0.03953984157983969
+          },
+          "electron": {
+            "anion": 0.9859474994194692,
+            "cation": 0.014052500580530728
+          },
+          "CT_number": 0.04277406035130606
+        },
+        {
+          "state": 15,
+          "E_eV": 5.402710273014559,
+          "lambda_nm": 229.4851882383475,
+          "f": 0.05001651571677294,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-5",
+              "to": "LUMO",
+              "weight_pct": 43.5
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO",
+              "weight_pct": 14.2
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+5",
+              "weight_pct": 13.0
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO",
+              "weight_pct": 6.8
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.12000509743540713,
+            "anion->cation": 0.006739190690941621,
+            "cation->anion": 0.0032004610898728083,
+            "cation->cation": 0.8700552507837784
+          },
+          "hole": {
+            "anion": 0.12674428812634875,
+            "cation": 0.8732557118736514
+          },
+          "electron": {
+            "anion": 0.12320555852527992,
+            "cation": 0.8767944414747202
+          },
+          "CT_number": 0.009939651780814428
+        },
+        {
+          "state": 16,
+          "E_eV": 5.48489797158144,
+          "lambda_nm": 226.04649902767852,
+          "f": 0.1769362263860618,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+2",
+              "weight_pct": 16.1
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+2",
+              "weight_pct": 13.8
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+3",
+              "weight_pct": 13.3
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+10",
+              "weight_pct": 12.0
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.8658986315331956,
+            "anion->cation": 0.012053915273287691,
+            "cation->anion": 0.001995056708241592,
+            "cation->cation": 0.12005239648527515
+          },
+          "hole": {
+            "anion": 0.8779525468064833,
+            "cation": 0.12204745319351674
+          },
+          "electron": {
+            "anion": 0.8678936882414372,
+            "cation": 0.13210631175856283
+          },
+          "CT_number": 0.014048971981529284
+        },
+        {
+          "state": 17,
+          "E_eV": 5.658614967296628,
+          "lambda_nm": 219.1069707279143,
+          "f": 0.21519455965802428,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+1",
+              "weight_pct": 32.8
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+1",
+              "weight_pct": 18.1
+            },
+            {
+              "from": "HOMO-11",
+              "to": "LUMO+1",
+              "weight_pct": 10.4
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+2",
+              "weight_pct": 8.3
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9855733526153035,
+            "anion->cation": 0.010337346105400387,
+            "cation->anion": 0.001372991507440688,
+            "cation->cation": 0.0027163097718554364
+          },
+          "hole": {
+            "anion": 0.9959106987207039,
+            "cation": 0.004089301279296124
+          },
+          "electron": {
+            "anion": 0.9869463441227442,
+            "cation": 0.013053655877255823
+          },
+          "CT_number": 0.011710337612841074
+        },
+        {
+          "state": 18,
+          "E_eV": 5.84058111317617,
+          "lambda_nm": 212.28058646475344,
+          "f": 0.0021757437235577232,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO",
+              "weight_pct": 57.4
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO",
+              "weight_pct": 16.3
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO",
+              "weight_pct": 9.8
+            },
+            {
+              "from": "HOMO-13",
+              "to": "LUMO",
+              "weight_pct": 4.9
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.029348710645599338,
+            "anion->cation": 0.944713490196642,
+            "cation->anion": 0.00015070114901865404,
+            "cation->cation": 0.0257870980087401
+          },
+          "hole": {
+            "anion": 0.9740622008422413,
+            "cation": 0.025937799157758755
+          },
+          "electron": {
+            "anion": 0.029499411794617993,
+            "cation": 0.9705005882053821
+          },
+          "CT_number": 0.9448641913456606
+        },
+        {
+          "state": 19,
+          "E_eV": 5.894786275421665,
+          "lambda_nm": 210.32857275411766,
+          "f": 0.03816381052266972,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+2",
+              "weight_pct": 31.4
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+3",
+              "weight_pct": 21.5
+            },
+            {
+              "from": "HOMO-11",
+              "to": "LUMO+3",
+              "weight_pct": 14.1
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+2",
+              "weight_pct": 5.0
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9813333828459289,
+            "anion->cation": 0.014885517367760838,
+            "cation->anion": 0.002253459192182474,
+            "cation->cation": 0.0015276405941277193
+          },
+          "hole": {
+            "anion": 0.9962189002136898,
+            "cation": 0.003781099786310193
+          },
+          "electron": {
+            "anion": 0.9835868420381113,
+            "cation": 0.01641315796188856
+          },
+          "CT_number": 0.01713897655994331
+        },
+        {
+          "state": 20,
+          "E_eV": 5.9560657285124865,
+          "lambda_nm": 208.16459060629734,
+          "f": 0.016869833059970196,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+2",
+              "weight_pct": 39.6
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+3",
+              "weight_pct": 18.9
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+2",
+              "weight_pct": 11.7
+            },
+            {
+              "from": "HOMO-13",
+              "to": "LUMO+3",
+              "weight_pct": 6.5
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9585669645767411,
+            "anion->cation": 0.007208715014378572,
+            "cation->anion": 0.03379800057770111,
+            "cation->cation": 0.00042631983117915256
+          },
+          "hole": {
+            "anion": 0.9657756795911198,
+            "cation": 0.034224320408880265
+          },
+          "electron": {
+            "anion": 0.9923649651544423,
+            "cation": 0.007635034845557725
+          },
+          "CT_number": 0.041006715592079676
+        }
+      ],
+      "all_converged": true,
+      "lowest_bright": {
+        "state": 1,
+        "E_eV": 3.734609012972463,
+        "lambda_nm": 331.987091471506,
+        "f": 0.1370888132225434,
+        "converged": true,
+        "transitions": [
+          {
+            "from": "HOMO",
+            "to": "LUMO+1",
+            "weight_pct": 65.9
+          },
+          {
+            "from": "HOMO-2",
+            "to": "LUMO+3",
+            "weight_pct": 4.6
+          },
+          {
+            "from": "HOMO-6",
+            "to": "LUMO+1",
+            "weight_pct": 4.3
+          },
+          {
+            "from": "HOMO",
+            "to": "LUMO+3",
+            "weight_pct": 4.0
+          }
+        ],
+        "omega": {
+          "anion->anion": 0.9887520562329317,
+          "anion->cation": 0.004047898016819486,
+          "cation->anion": 0.006229124956239319,
+          "cation->cation": 0.0009709207940093716
+        },
+        "hole": {
+          "anion": 0.9927999542497513,
+          "cation": 0.007200045750248691
+        },
+        "electron": {
+          "anion": 0.9949811811891711,
+          "cation": 0.005018818810828858
+        },
+        "CT_number": 0.010277022973058804
+      },
+      "strongest": {
+        "state": 8,
+        "E_eV": 4.501382359039786,
+        "lambda_nm": 275.43582950915487,
+        "f": 0.27522444038784444,
+        "converged": true,
+        "transitions": [
+          {
+            "from": "HOMO",
+            "to": "LUMO+2",
+            "weight_pct": 55.1
+          },
+          {
+            "from": "HOMO",
+            "to": "LUMO+3",
+            "weight_pct": 17.8
+          },
+          {
+            "from": "HOMO-2",
+            "to": "LUMO+3",
+            "weight_pct": 5.2
+          },
+          {
+            "from": "HOMO-12",
+            "to": "LUMO+1",
+            "weight_pct": 3.5
+          }
+        ],
+        "omega": {
+          "anion->anion": 0.9877393138305727,
+          "anion->cation": 0.004108356636929176,
+          "cation->anion": 0.006549729020756633,
+          "cation->cation": 0.0016026005117416237
+        },
+        "hole": {
+          "anion": 0.9918476704675019,
+          "cation": 0.008152329532498257
+        },
+        "electron": {
+          "anion": 0.9942890428513292,
+          "cation": 0.005710957148670799
+        },
+        "CT_number": 0.01065808565768581
+      },
+      "status": "done",
+      "at": "2026-11-22T04:41:26+05:30"
+    },
+    "pair-pcm/camb3lyp": {
+      "system": "pair-pcm",
+      "xc": "camb3lyp",
+      "geometry": "<run-dir>/repo/molecules/btpc/results/btpc_pcm/opt.xyz",
+      "charge": 0,
+      "settings": {
+        "method": "PCMDFRKS",
+        "xc": "camb3lyp",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": {
+          "model": "IEF-PCM",
+          "eps": 78.3553,
+          "lebedev_order": 29,
+          "vdw_scale": 1.2,
+          "r_probe": 0.0,
+          "radii_table": null,
+          "surface_discretization_method": "SWIG",
+          "equilibrium_solvation": false
+        },
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "E_Ha": -1316.6994159926962,
+      "scf_cycles": 15,
+      "scf_wall_s": 981.6,
+      "frontier": {
+        "n_occ": 89,
+        "n_mo": 603,
+        "orbitals": {
+          "HOMO-1": {
+            "index": 87,
+            "eV": -8.951706454024922,
+            "mulliken": {
+              "anion": 0.172,
+              "cation": 99.828
+            },
+            "lowdin": {
+              "anion": 0.233,
+              "cation": 99.767
+            },
+            "on": "cation"
+          },
+          "HOMO": {
+            "index": 88,
+            "eV": -8.195777088299339,
+            "mulliken": {
+              "anion": 99.93,
+              "cation": 0.07
+            },
+            "lowdin": {
+              "anion": 99.724,
+              "cation": 0.276
+            },
+            "on": "anion"
+          },
+          "LUMO": {
+            "index": 89,
+            "eV": -1.9230871577096276,
+            "mulliken": {
+              "anion": 99.806,
+              "cation": 0.194
+            },
+            "lowdin": {
+              "anion": 99.736,
+              "cation": 0.264
+            },
+            "on": "anion"
+          },
+          "LUMO+1": {
+            "index": 90,
+            "eV": -1.7649874783038821,
+            "mulliken": {
+              "anion": 99.786,
+              "cation": 0.214
+            },
+            "lowdin": {
+              "anion": 99.846,
+              "cation": 0.154
+            },
+            "on": "anion"
+          },
+          "LUMO+2": {
+            "index": 91,
+            "eV": -1.348775771726541,
+            "mulliken": {
+              "anion": 50.614,
+              "cation": 49.386
+            },
+            "lowdin": {
+              "anion": 50.523,
+              "cation": 49.477
+            },
+            "on": "anion"
+          },
+          "LUMO+3": {
+            "index": 92,
+            "eV": -1.3063577233061925,
+            "mulliken": {
+              "anion": 49.419,
+              "cation": 50.581
+            },
+            "lowdin": {
+              "anion": 49.322,
+              "cation": 50.678
+            },
+            "on": "cation"
+          }
+        },
+        "HOMO_eV": -8.195777088299339,
+        "LUMO_eV": -1.9230871577096276,
+        "gap_eV": 6.272689930589712,
+        "LUMO_on": "anion",
+        "HOMO_on": "anion",
+        "lowest_virtual_on": {
+          "anion": {
+            "index": 89,
+            "label": "LUMO",
+            "eV": -1.9230871577096276,
+            "share_pct": 99.806
+          },
+          "cation": {
+            "index": 92,
+            "label": "LUMO+3",
+            "eV": -1.3063577233061925,
+            "share_pct": 50.581
+          }
+        },
+        "highest_occupied_on": {
+          "anion": {
+            "index": 88,
+            "label": "HOMO",
+            "eV": -8.195777088299339,
+            "share_pct": 99.93
+          },
+          "cation": {
+            "index": 87,
+            "label": "HOMO-1",
+            "eV": -8.951706454024922,
+            "share_pct": 99.828
+          }
+        },
+        "delta_virt_cation_minus_anion_eV": 0.6167294344034351
+      },
+      "td_solvent": {
+        "eps_response": 1.78,
+        "equilibrium_solvation": false
+      },
+      "td_class": "PCMTDA",
+      "td_wall_s": 23455.2,
+      "states": [
+        {
+          "state": 1,
+          "E_eV": 3.532141435813452,
+          "lambda_nm": 351.01708312947676,
+          "f": 0.24478457884203558,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO",
+              "weight_pct": 83.6
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+1",
+              "weight_pct": 3.4
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+1",
+              "weight_pct": 2.8
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9951735759370253,
+            "anion->cation": 0.001945932305920048,
+            "cation->anion": 0.002563243567900438,
+            "cation->cation": 0.0003172481891541961
+          },
+          "hole": {
+            "anion": 0.9971195082429453,
+            "cation": 0.0028804917570546336
+          },
+          "electron": {
+            "anion": 0.9977368195049257,
+            "cation": 0.0022631804950742442
+          },
+          "CT_number": 0.004509175873820486
+        },
+        {
+          "state": 2,
+          "E_eV": 3.8450816173230544,
+          "lambda_nm": 322.4488079561697,
+          "f": 0.08772852288090577,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-4",
+              "to": "LUMO",
+              "weight_pct": 15.0
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+1",
+              "weight_pct": 11.9
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO+2",
+              "weight_pct": 10.5
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO+3",
+              "weight_pct": 10.0
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9962552110597573,
+            "anion->cation": 0.0018851063476630339,
+            "cation->anion": 0.00180888248079094,
+            "cation->cation": 5.080011178875788e-05
+          },
+          "hole": {
+            "anion": 0.9981403174074204,
+            "cation": 0.0018596825925796979
+          },
+          "electron": {
+            "anion": 0.9980640935405483,
+            "cation": 0.0019359064594517918
+          },
+          "CT_number": 0.003693988828453974
+        },
+        {
+          "state": 3,
+          "E_eV": 3.966798811320227,
+          "lambda_nm": 312.5547936693459,
+          "f": 0.022833188306464414,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-6",
+              "to": "LUMO",
+              "weight_pct": 36.8
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+2",
+              "weight_pct": 8.7
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+3",
+              "weight_pct": 8.0
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO",
+              "weight_pct": 7.0
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9951793810846146,
+            "anion->cation": 0.0026853135049301567,
+            "cation->anion": 0.002072249994064672,
+            "cation->cation": 6.305541639072756e-05
+          },
+          "hole": {
+            "anion": 0.9978646945895446,
+            "cation": 0.0021353054104554
+          },
+          "electron": {
+            "anion": 0.9972516310786792,
+            "cation": 0.002748368921320884
+          },
+          "CT_number": 0.004757563498994828
+        },
+        {
+          "state": 4,
+          "E_eV": 4.013419948608379,
+          "lambda_nm": 308.9240597485705,
+          "f": 0.00023682602672312256,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-5",
+              "to": "LUMO+1",
+              "weight_pct": 82.5
+            },
+            {
+              "from": "HOMO-5",
+              "to": "LUMO",
+              "weight_pct": 5.4
+            },
+            {
+              "from": "HOMO-5",
+              "to": "LUMO+12",
+              "weight_pct": 3.1
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9993787419781646,
+            "anion->cation": 0.00045558173305966146,
+            "cation->anion": 0.00016461606628824374,
+            "cation->cation": 1.0602224875438114e-06
+          },
+          "hole": {
+            "anion": 0.9998343237112243,
+            "cation": 0.00016567628877578753
+          },
+          "electron": {
+            "anion": 0.9995433580444528,
+            "cation": 0.0004566419555472053
+          },
+          "CT_number": 0.0006201977993479052
+        },
+        {
+          "state": 5,
+          "E_eV": 4.088656177314897,
+          "lambda_nm": 303.2394826640153,
+          "f": 0.38031935744970335,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+1",
+              "weight_pct": 65.9
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO",
+              "weight_pct": 4.5
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO+2",
+              "weight_pct": 3.0
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO+3",
+              "weight_pct": 2.7
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.995783137964318,
+            "anion->cation": 0.0012491133074046096,
+            "cation->anion": 0.002131572158319288,
+            "cation->cation": 0.0008361765699581528
+          },
+          "hole": {
+            "anion": 0.9970322512717227,
+            "cation": 0.0029677487282774415
+          },
+          "electron": {
+            "anion": 0.9979147101226373,
+            "cation": 0.002085289877362763
+          },
+          "CT_number": 0.0033806854657238983
+        },
+        {
+          "state": 6,
+          "E_eV": 4.1928158801131445,
+          "lambda_nm": 295.7062793719772,
+          "f": 0.09384130113616136,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-3",
+              "to": "LUMO",
+              "weight_pct": 31.0
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+2",
+              "weight_pct": 16.1
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+3",
+              "weight_pct": 14.3
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+1",
+              "weight_pct": 8.5
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9875309497000269,
+            "anion->cation": 0.00438706730312258,
+            "cation->anion": 0.006981025742857158,
+            "cation->cation": 0.0011009572539933338
+          },
+          "hole": {
+            "anion": 0.9919180170031494,
+            "cation": 0.00808198299685049
+          },
+          "electron": {
+            "anion": 0.9945119754428839,
+            "cation": 0.0054880245571159135
+          },
+          "CT_number": 0.011368093045979737
+        },
+        {
+          "state": 7,
+          "E_eV": 4.41034251116969,
+          "lambda_nm": 281.1214731871641,
+          "f": 0.021409978906034886,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+2",
+              "weight_pct": 18.7
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+3",
+              "weight_pct": 17.4
+            },
+            {
+              "from": "HOMO-11",
+              "to": "LUMO",
+              "weight_pct": 8.6
+            },
+            {
+              "from": "HOMO-13",
+              "to": "LUMO",
+              "weight_pct": 7.5
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9863164516209662,
+            "anion->cation": 0.0037730305663658966,
+            "cation->anion": 0.009648639441809357,
+            "cation->cation": 0.00026187837085852846
+          },
+          "hole": {
+            "anion": 0.9900894821873321,
+            "cation": 0.009910517812667887
+          },
+          "electron": {
+            "anion": 0.9959650910627755,
+            "cation": 0.004034908937224425
+          },
+          "CT_number": 0.013421670008175252
+        },
+        {
+          "state": 8,
+          "E_eV": 4.515777469584341,
+          "lambda_nm": 274.5578125474199,
+          "f": 0.07706273897674981,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+2",
+              "weight_pct": 21.6
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+3",
+              "weight_pct": 17.8
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO",
+              "weight_pct": 9.7
+            },
+            {
+              "from": "HOMO-10",
+              "to": "LUMO",
+              "weight_pct": 4.4
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9888050615367258,
+            "anion->cation": 0.004510226960564186,
+            "cation->anion": 0.004240528284967495,
+            "cation->cation": 0.0024441832177424113
+          },
+          "hole": {
+            "anion": 0.99331528849729,
+            "cation": 0.006684711502709906
+          },
+          "electron": {
+            "anion": 0.9930455898216933,
+            "cation": 0.006954410178306597
+          },
+          "CT_number": 0.00875075524553168
+        },
+        {
+          "state": 9,
+          "E_eV": 4.70597657096943,
+          "lambda_nm": 263.4611467571741,
+          "f": 0.0005091065154925592,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-11",
+              "to": "LUMO+1",
+              "weight_pct": 48.3
+            },
+            {
+              "from": "HOMO-12",
+              "to": "LUMO+1",
+              "weight_pct": 18.7
+            },
+            {
+              "from": "HOMO-13",
+              "to": "LUMO+1",
+              "weight_pct": 13.7
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO+1",
+              "weight_pct": 4.1
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9995017471332243,
+            "anion->cation": 0.00044717252207533015,
+            "cation->anion": 5.0593862613393274e-05,
+            "cation->cation": 4.864820868382125e-07
+          },
+          "hole": {
+            "anion": 0.9999489196552996,
+            "cation": 5.108034470023149e-05
+          },
+          "electron": {
+            "anion": 0.9995523409958377,
+            "cation": 0.0004476590041621683
+          },
+          "CT_number": 0.0004977663846887234
+        },
+        {
+          "state": 10,
+          "E_eV": 4.839211595785884,
+          "lambda_nm": 256.20743368190136,
+          "f": 0.0027644535904687508,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+1",
+              "weight_pct": 25.5
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+2",
+              "weight_pct": 9.5
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+3",
+              "weight_pct": 8.6
+            },
+            {
+              "from": "HOMO-11",
+              "to": "LUMO",
+              "weight_pct": 7.4
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9812691321074795,
+            "anion->cation": 0.003817809684018529,
+            "cation->anion": 0.014749127137091759,
+            "cation->cation": 0.000163931071410283
+          },
+          "hole": {
+            "anion": 0.985086941791498,
+            "cation": 0.014913058208502042
+          },
+          "electron": {
+            "anion": 0.9960182592445713,
+            "cation": 0.003981740755428812
+          },
+          "CT_number": 0.01856693682111029
+        },
+        {
+          "state": 11,
+          "E_eV": 5.083666289204638,
+          "lambda_nm": 243.88736661036393,
+          "f": 0.07677531909322378,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-3",
+              "to": "LUMO",
+              "weight_pct": 19.8
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+2",
+              "weight_pct": 13.6
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+3",
+              "weight_pct": 13.3
+            },
+            {
+              "from": "HOMO-13",
+              "to": "LUMO",
+              "weight_pct": 12.8
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.6871939755768056,
+            "anion->cation": 0.0035035945806298234,
+            "cation->anion": 0.01107482774690539,
+            "cation->cation": 0.298227602095659
+          },
+          "hole": {
+            "anion": 0.6906975701574355,
+            "cation": 0.30930242984256445
+          },
+          "electron": {
+            "anion": 0.698268803323711,
+            "cation": 0.30173119667628884
+          },
+          "CT_number": 0.014578422327535213
+        },
+        {
+          "state": 12,
+          "E_eV": 5.097717099733654,
+          "lambda_nm": 243.21514115892768,
+          "f": 0.06715825205701452,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+2",
+              "weight_pct": 32.9
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+3",
+              "weight_pct": 30.2
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO",
+              "weight_pct": 9.4
+            },
+            {
+              "from": "HOMO-13",
+              "to": "LUMO",
+              "weight_pct": 5.4
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.2994385952308255,
+            "anion->cation": 0.0020477290585511547,
+            "cation->anion": 0.008109323279968422,
+            "cation->cation": 0.6904043524306549
+          },
+          "hole": {
+            "anion": 0.30148632428937666,
+            "cation": 0.6985136757106234
+          },
+          "electron": {
+            "anion": 0.30754791851079394,
+            "cation": 0.692452081489206
+          },
+          "CT_number": 0.010157052338519577
+        },
+        {
+          "state": 13,
+          "E_eV": 5.212969709382149,
+          "lambda_nm": 237.83794135012312,
+          "f": 0.0025051994449379975,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+3",
+              "weight_pct": 51.7
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+2",
+              "weight_pct": 44.6
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.00689758949233648,
+            "anion->cation": 0.9772553598152036,
+            "cation->anion": 0.00011163023064507858,
+            "cation->cation": 0.015735420461814913
+          },
+          "hole": {
+            "anion": 0.98415294930754,
+            "cation": 0.01584705069245999
+          },
+          "electron": {
+            "anion": 0.007009219722981559,
+            "cation": 0.9929907802770185
+          },
+          "CT_number": 0.9773669900458487
+        },
+        {
+          "state": 14,
+          "E_eV": 5.274996559614208,
+          "lambda_nm": 235.04128770288278,
+          "f": 0.16541155393432036,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+3",
+              "weight_pct": 35.1
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+2",
+              "weight_pct": 33.9
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+5",
+              "weight_pct": 20.1
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+7",
+              "weight_pct": 2.4
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.013743936642903543,
+            "anion->cation": 0.011078292085510618,
+            "cation->anion": 0.006456647512998443,
+            "cation->cation": 0.9687211237585875
+          },
+          "hole": {
+            "anion": 0.02482222872841416,
+            "cation": 0.9751777712715859
+          },
+          "electron": {
+            "anion": 0.020200584155901986,
+            "cation": 0.9797994158440981
+          },
+          "CT_number": 0.01753493959850906
+        },
+        {
+          "state": 15,
+          "E_eV": 5.342506522266035,
+          "lambda_nm": 232.07121579219307,
+          "f": 0.07607941531671737,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+1",
+              "weight_pct": 49.8
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+3",
+              "weight_pct": 11.4
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+2",
+              "weight_pct": 11.3
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+8",
+              "weight_pct": 8.7
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9842041610226296,
+            "anion->cation": 0.004187304937107872,
+            "cation->anion": 0.0017065581450826707,
+            "cation->cation": 0.009901975895179875
+          },
+          "hole": {
+            "anion": 0.9883914659597375,
+            "cation": 0.011608534040262547
+          },
+          "electron": {
+            "anion": 0.9859107191677123,
+            "cation": 0.014089280832287747
+          },
+          "CT_number": 0.005893863082190543
+        },
+        {
+          "state": 16,
+          "E_eV": 5.488178456963319,
+          "lambda_nm": 225.91138275157704,
+          "f": 0.10084006873241298,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-4",
+              "to": "LUMO",
+              "weight_pct": 31.3
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+1",
+              "weight_pct": 21.0
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+1",
+              "weight_pct": 7.6
+            },
+            {
+              "from": "HOMO-7",
+              "to": "LUMO",
+              "weight_pct": 5.4
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9797276800667315,
+            "anion->cation": 0.0027520398845910688,
+            "cation->anion": 0.015965301065788043,
+            "cation->cation": 0.0015549789828893557
+          },
+          "hole": {
+            "anion": 0.9824797199513225,
+            "cation": 0.017520280048677398
+          },
+          "electron": {
+            "anion": 0.9956929811325195,
+            "cation": 0.004307018867480424
+          },
+          "CT_number": 0.018717340950379115
+        },
+        {
+          "state": 17,
+          "E_eV": 5.504923117651572,
+          "lambda_nm": 225.2242143081778,
+          "f": 0.13684750778248336,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+1",
+              "weight_pct": 29.0
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO",
+              "weight_pct": 21.7
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO",
+              "weight_pct": 5.4
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO",
+              "weight_pct": 4.8
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9576638727474441,
+            "anion->cation": 0.002568918362736619,
+            "cation->anion": 0.038030543234626735,
+            "cation->cation": 0.001736665655192628
+          },
+          "hole": {
+            "anion": 0.9602327911101807,
+            "cation": 0.03976720888981937
+          },
+          "electron": {
+            "anion": 0.9956944159820708,
+            "cation": 0.004305584017929247
+          },
+          "CT_number": 0.04059946159736335
+        },
+        {
+          "state": 18,
+          "E_eV": 5.6131148727529,
+          "lambda_nm": 220.88305906911378,
+          "f": 0.0055404968372823864,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO",
+              "weight_pct": 89.9
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+3",
+              "weight_pct": 2.1
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.05204246802956565,
+            "anion->cation": 0.0001272930128703747,
+            "cation->anion": 0.9379400870111182,
+            "cation->cation": 0.00989015194644578
+          },
+          "hole": {
+            "anion": 0.05216976104243602,
+            "cation": 0.9478302389575639
+          },
+          "electron": {
+            "anion": 0.9899825550406838,
+            "cation": 0.010017444959316153
+          },
+          "CT_number": 0.9380673800239886
+        },
+        {
+          "state": 19,
+          "E_eV": 5.65322609966883,
+          "lambda_nm": 219.31583172883018,
+          "f": 0.10892905722189883,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+1",
+              "weight_pct": 26.1
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+2",
+              "weight_pct": 12.6
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+3",
+              "weight_pct": 10.8
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+8",
+              "weight_pct": 4.4
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.9843112151473582,
+            "anion->cation": 0.001085802995456416,
+            "cation->anion": 0.014162420165692627,
+            "cation->cation": 0.00044056169149266295
+          },
+          "hole": {
+            "anion": 0.9853970181428147,
+            "cation": 0.014602981857185289
+          },
+          "electron": {
+            "anion": 0.9984736353130509,
+            "cation": 0.0015263646869490789
+          },
+          "CT_number": 0.015248223161149042
+        },
+        {
+          "state": 20,
+          "E_eV": 5.934989460302573,
+          "lambda_nm": 208.9038223728861,
+          "f": 0.00015878731744920085,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+3",
+              "weight_pct": 49.0
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+2",
+              "weight_pct": 44.9
+            }
+          ],
+          "omega": {
+            "anion->anion": 0.005416793722782843,
+            "anion->cation": 0.9467152382934535,
+            "cation->anion": 0.0008900008712109464,
+            "cation->cation": 0.04697796711255273
+          },
+          "hole": {
+            "anion": 0.9521320320162364,
+            "cation": 0.047867967983763686
+          },
+          "electron": {
+            "anion": 0.006306794593993788,
+            "cation": 0.9936932054060063
+          },
+          "CT_number": 0.9476052391646644
+        }
+      ],
+      "all_converged": true,
+      "lowest_bright": {
+        "state": 1,
+        "E_eV": 3.532141435813452,
+        "lambda_nm": 351.01708312947676,
+        "f": 0.24478457884203558,
+        "converged": true,
+        "transitions": [
+          {
+            "from": "HOMO",
+            "to": "LUMO",
+            "weight_pct": 83.6
+          },
+          {
+            "from": "HOMO",
+            "to": "LUMO+1",
+            "weight_pct": 3.4
+          },
+          {
+            "from": "HOMO-4",
+            "to": "LUMO+1",
+            "weight_pct": 2.8
+          }
+        ],
+        "omega": {
+          "anion->anion": 0.9951735759370253,
+          "anion->cation": 0.001945932305920048,
+          "cation->anion": 0.002563243567900438,
+          "cation->cation": 0.0003172481891541961
+        },
+        "hole": {
+          "anion": 0.9971195082429453,
+          "cation": 0.0028804917570546336
+        },
+        "electron": {
+          "anion": 0.9977368195049257,
+          "cation": 0.0022631804950742442
+        },
+        "CT_number": 0.004509175873820486
+      },
+      "strongest": {
+        "state": 5,
+        "E_eV": 4.088656177314897,
+        "lambda_nm": 303.2394826640153,
+        "f": 0.38031935744970335,
+        "converged": true,
+        "transitions": [
+          {
+            "from": "HOMO",
+            "to": "LUMO+1",
+            "weight_pct": 65.9
+          },
+          {
+            "from": "HOMO-3",
+            "to": "LUMO",
+            "weight_pct": 4.5
+          },
+          {
+            "from": "HOMO-6",
+            "to": "LUMO+2",
+            "weight_pct": 3.0
+          },
+          {
+            "from": "HOMO-6",
+            "to": "LUMO+3",
+            "weight_pct": 2.7
+          }
+        ],
+        "omega": {
+          "anion->anion": 0.995783137964318,
+          "anion->cation": 0.0012491133074046096,
+          "cation->anion": 0.002131572158319288,
+          "cation->cation": 0.0008361765699581528
+        },
+        "hole": {
+          "anion": 0.9970322512717227,
+          "cation": 0.0029677487282774415
+        },
+        "electron": {
+          "anion": 0.9979147101226373,
+          "cation": 0.002085289877362763
+        },
+        "CT_number": 0.0033806854657238983
+      },
+      "status": "done",
+      "at": "2026-11-22T11:28:46+05:30"
+    }
+  },
+  "timings": {
+    "pair-gas/camb3lyp": 22669.5,
+    "pair-pcm/camb3lyp": 24436.9
+  },
+  "error": null,
+  "summary": {
+    "pair-gas/camb3lyp": {
+      "S1_eV": 3.734609012972463,
+      "S1_nm": 331.987091471506,
+      "S1_f": 0.1370888132225434,
+      "S1_CT": 0.010277022973058804,
+      "lowest_bright": {
+        "state": 1,
+        "E_eV": 3.734609012972463,
+        "lambda_nm": 331.987091471506,
+        "f": 0.1370888132225434,
+        "converged": true,
+        "transitions": [
+          {
+            "from": "HOMO",
+            "to": "LUMO+1",
+            "weight_pct": 65.9
+          },
+          {
+            "from": "HOMO-2",
+            "to": "LUMO+3",
+            "weight_pct": 4.6
+          },
+          {
+            "from": "HOMO-6",
+            "to": "LUMO+1",
+            "weight_pct": 4.3
+          },
+          {
+            "from": "HOMO",
+            "to": "LUMO+3",
+            "weight_pct": 4.0
+          }
+        ],
+        "omega": {
+          "anion->anion": 0.9887520562329317,
+          "anion->cation": 0.004047898016819486,
+          "cation->anion": 0.006229124956239319,
+          "cation->cation": 0.0009709207940093716
+        },
+        "hole": {
+          "anion": 0.9927999542497513,
+          "cation": 0.007200045750248691
+        },
+        "electron": {
+          "anion": 0.9949811811891711,
+          "cation": 0.005018818810828858
+        },
+        "CT_number": 0.010277022973058804
+      },
+      "LUMO_on": "cation",
+      "all_converged": true
+    },
+    "pair-pcm/camb3lyp": {
+      "S1_eV": 3.532141435813452,
+      "S1_nm": 351.01708312947676,
+      "S1_f": 0.24478457884203558,
+      "S1_CT": 0.004509175873820486,
+      "lowest_bright": {
+        "state": 1,
+        "E_eV": 3.532141435813452,
+        "lambda_nm": 351.01708312947676,
+        "f": 0.24478457884203558,
+        "converged": true,
+        "transitions": [
+          {
+            "from": "HOMO",
+            "to": "LUMO",
+            "weight_pct": 83.6
+          },
+          {
+            "from": "HOMO",
+            "to": "LUMO+1",
+            "weight_pct": 3.4
+          },
+          {
+            "from": "HOMO-4",
+            "to": "LUMO+1",
+            "weight_pct": 2.8
+          }
+        ],
+        "omega": {
+          "anion->anion": 0.9951735759370253,
+          "anion->cation": 0.001945932305920048,
+          "cation->anion": 0.002563243567900438,
+          "cation->cation": 0.0003172481891541961
+        },
+        "hole": {
+          "anion": 0.9971195082429453,
+          "cation": 0.0028804917570546336
+        },
+        "electron": {
+          "anion": 0.9977368195049257,
+          "cation": 0.0022631804950742442
+        },
+        "CT_number": 0.004509175873820486
+      },
+      "LUMO_on": "anion",
+      "all_converged": true
+    }
+  },
+  "peak_rss_mb": 12107.1
+}

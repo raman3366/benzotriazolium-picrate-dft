@@ -1,0 +1,49 @@
+[2026-11-22 03:45:45 AM IST] job sp_scan_pbe0 (dft/revision/singlepoints.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/sp_scan_pbe0, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 03:45:45 AM IST] 14 geometries x 1 methods (pbe0); gas phase; basis 6-311++g(d,p), grid 4
+[2026-11-22 03:45:45 AM IST] initial density from <run-dir>/queue/out/scan_gas_up/chk/up_1.700.chk
+[2026-11-22 03:51:27 AM IST] up_1.700|pbe0: E = -1315.7728317703 Ha (342 s, 12 cycles, LUMO on anion 0.2 %)
+[2026-11-22 03:51:27 AM IST] initial density from <run-dir>/queue/out/sp_scan_pbe0/chk/up_1.700_pbe0.chk
+[2026-11-22 03:57:09 AM IST] up_1.600|pbe0: E = -1315.7734508747 Ha (342 s, 13 cycles, LUMO on anion 0.2 %)
+[2026-11-22 03:57:09 AM IST] initial density from <run-dir>/queue/out/sp_scan_pbe0/chk/up_1.600_pbe0.chk
+[2026-11-22 04:03:20 AM IST] up_1.520|pbe0: E = -1315.7738911965 Ha (371 s, 13 cycles, LUMO on anion 0.3 %)
+[2026-11-22 04:03:20 AM IST] initial density from <run-dir>/queue/out/sp_scan_pbe0/chk/up_1.520_pbe0.chk
+[2026-11-22 04:09:21 AM IST] up_1.460|pbe0: E = -1315.7741321325 Ha (362 s, 13 cycles, LUMO on anion 0.3 %)
+[2026-11-22 04:09:21 AM IST] initial density from <run-dir>/queue/out/sp_scan_pbe0/chk/up_1.460_pbe0.chk
+[2026-11-22 04:14:07 AM IST] min|pbe0: E = -1315.7742288744 Ha (285 s, 10 cycles, LUMO on anion 0.3 %)
+[2026-11-22 04:14:07 AM IST] initial density from <run-dir>/queue/out/sp_scan_pbe0/chk/min_pbe0.chk
+[2026-11-22 04:19:22 AM IST] down_1.400|pbe0: E = -1315.7743301939 Ha (315 s, 11 cycles, LUMO on anion 0.4 %)
+[2026-11-22 04:19:22 AM IST] initial density from <run-dir>/queue/out/sp_scan_pbe0/chk/down_1.400_pbe0.chk
+[2026-11-22 04:24:55 AM IST] down_1.340|pbe0: E = -1315.7744021417 Ha (333 s, 12 cycles, LUMO on anion 0.7 %)
+[2026-11-22 04:24:55 AM IST] initial density from <run-dir>/queue/out/sp_scan_pbe0/chk/down_1.340_pbe0.chk
+[2026-11-22 04:30:22 AM IST] neutral_1.280|pbe0: E = -1315.7744098263 Ha (327 s, 12 cycles, LUMO on anion 2.2 %)
+[2026-11-22 04:30:22 AM IST] initial density from <run-dir>/queue/out/sp_scan_pbe0/chk/neutral_1.280_pbe0.chk
+[2026-11-22 04:36:20 AM IST] down_1.230|pbe0: E = -1315.7744490258 Ha (358 s, 13 cycles, LUMO on anion 96.6 %)
+[2026-11-22 04:36:20 AM IST] initial density from <run-dir>/queue/out/sp_scan_pbe0/chk/down_1.230_pbe0.chk
+[2026-11-22 04:41:53 AM IST] down_1.180|pbe0: E = -1315.7746581609 Ha (334 s, 12 cycles, LUMO on anion 99.5 %)
+[2026-11-22 04:41:53 AM IST] initial density from <run-dir>/queue/out/sp_scan_pbe0/chk/down_1.180_pbe0.chk
+[2026-11-22 04:47:40 AM IST] down_1.130|pbe0: E = -1315.7751856826 Ha (347 s, 13 cycles, LUMO on anion 99.6 %)
+[2026-11-22 04:47:40 AM IST] initial density from <run-dir>/queue/out/sp_scan_pbe0/chk/down_1.130_pbe0.chk
+[2026-11-22 04:54:02 AM IST] down_1.080|pbe0: E = -1315.7761104894 Ha (382 s, 14 cycles, LUMO on anion 99.7 %)
+[2026-11-22 04:54:02 AM IST] initial density from <run-dir>/queue/out/sp_scan_pbe0/chk/down_1.080_pbe0.chk
+[2026-11-22 05:00:56 AM IST] neutral_1.030|pbe0: E = -1315.7771382043 Ha (414 s, 16 cycles, LUMO on anion 99.8 %)
+[2026-11-22 05:00:56 AM IST] initial density from <run-dir>/queue/out/sp_scan_pbe0/chk/neutral_1.030_pbe0.chk
+[2026-11-22 05:06:30 AM IST] neutral_0.980|pbe0: E = -1315.7772236515 Ha (334 s, 12 cycles, LUMO on anion 99.9 %)
+[2026-11-22 05:06:30 AM IST]   Relative energies (kcal/mol) per method; zero = the free minimum (min).
+[2026-11-22 05:06:30 AM IST]   
+[2026-11-22 05:06:30 AM IST]   | geometry | r(H...O) A | r(N-H) A | b3lyp_scan | pbe0 |
+[2026-11-22 05:06:30 AM IST]   |---|---|---|---|---|
+[2026-11-22 05:06:30 AM IST]   | up_1.700 | 1.700 | 1.059 | 0.56 | 0.88 |
+[2026-11-22 05:06:30 AM IST]   | up_1.600 | 1.600 | 1.071 | 0.25 | 0.49 |
+[2026-11-22 05:06:30 AM IST]   | up_1.520 | 1.520 | 1.086 | 0.07 | 0.21 |
+[2026-11-22 05:06:30 AM IST]   | up_1.460 | 1.460 | 1.102 | 0.01 | 0.06 |
+[2026-11-22 05:06:30 AM IST]   | min | 1.437 | 1.109 | 0.00 | 0.00 |
+[2026-11-22 05:06:30 AM IST]   | down_1.400 | 1.400 | 1.123 | 0.02 | -0.06 |
+[2026-11-22 05:06:30 AM IST]   | down_1.340 | 1.340 | 1.152 | 0.12 | -0.11 |
+[2026-11-22 05:06:30 AM IST]   | neutral_1.280 | 1.280 | 1.193 | 0.25 | -0.11 |
+[2026-11-22 05:06:30 AM IST]   | down_1.230 | 1.230 | 1.241 | 0.32 | -0.14 |
+[2026-11-22 05:06:30 AM IST]   | down_1.180 | 1.180 | 1.307 | 0.21 | -0.27 |
+[2026-11-22 05:06:30 AM IST]   | down_1.130 | 1.130 | 1.404 | -0.20 | -0.60 |
+[2026-11-22 05:06:30 AM IST]   | down_1.080 | 1.080 | 1.545 | -0.96 | -1.18 |
+[2026-11-22 05:06:30 AM IST]   | neutral_1.030 | 1.030 | 1.764 | -1.87 | -1.83 |
+[2026-11-22 05:06:30 AM IST]   | neutral_0.980 | 0.980 | 1.951 | -2.04 | -1.88 |
+[2026-11-22 05:06:30 AM IST] job sp_scan_pbe0 finished (peak RSS 6214 MB)

@@ -1,0 +1,13 @@
+[2026-11-21 03:14:12 AM IST] job opt_d3_gas (dft/revision/opt_d3.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/opt_d3_gas, smoke False, restart #0; PySCF 2.14.0
+[2026-11-21 03:14:12 AM IST] seed Hessian <run-dir>/repo/data/r2/molecules/btpc/results/btpc_gas/hessian.npy: 0 internal eigenvalues floored at 5e-05 Ha/Bohr^2; lowest [5.40e-05 1.66e-04 4.80e-04 9.49e-04]
+[2026-11-21 03:24:22 AM IST] opt step 0: E = -1317.2812769731 Ha  dE None  grad rms/max 5.42e-04/1.65e-03
+[2026-11-21 03:32:00 AM IST] opt step 1: E = -1317.2814855767 Ha  dE -2.09e-04  grad rms/max 1.46e-04/3.94e-04  step rms/max 1.03e-01/1.98e-01 A
+[2026-11-21 03:40:06 AM IST] opt step 2: E = -1317.2814755394 Ha  dE +1.00e-05  grad rms/max 1.37e-04/3.25e-04  step rms/max 1.33e-01/2.46e-01 A
+[2026-11-21 03:47:50 AM IST] opt step 3: E = -1317.2814985539 Ha  dE -2.30e-05  grad rms/max 2.06e-05/7.07e-05  step rms/max 6.63e-02/1.26e-01 A
+[2026-11-21 03:55:06 AM IST] opt step 4: E = -1317.2814987259 Ha  dE -1.72e-07  grad rms/max 1.67e-05/6.22e-05  step rms/max 2.27e-02/4.19e-02 A
+[2026-11-21 04:01:41 AM IST] opt step 5: E = -1317.2814989809 Ha  dE -2.55e-07  grad rms/max 4.87e-06/1.44e-05  step rms/max 4.61e-03/8.08e-03 A
+[2026-11-21 04:07:27 AM IST] opt step 6: E = -1317.2814989721 Ha  dE +8.80e-09  grad rms/max 4.27e-06/1.41e-05  step rms/max 4.18e-04/7.21e-04 A
+[2026-11-21 04:07:27 AM IST] optimisation CONVERGED after 7 evaluations, E(opt.xyz) = -1317.2814989721 Ha, RMSD vs stored B3LYP minimum 0.065 A
+[2026-11-21 04:07:27 AM IST] initial density from <run-dir>/queue/out/opt_d3_gas/chk/opt.chk
+[2026-11-21 04:10:34 AM IST] final: E = -1317.2814989723 Ha; HOMO -6.8244 eV (anion), LUMO -3.3347 eV (cation), gap 3.4897 eV; picrate charge Hirshfeld -0.577, CM5 -0.645 e
+[2026-11-21 04:10:34 AM IST] job opt_d3_gas finished (peak RSS 7682 MB)

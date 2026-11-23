@@ -1,0 +1,3004 @@
+{
+  "job": "dvr_gas_all",
+  "script": "dft/revision/dvr.py",
+  "argv": [
+    "dft/revision/dvr.py",
+    "--job",
+    "dvr_gas_all",
+    "--out",
+    "<run-dir>/queue/out/dvr_gas_all",
+    "--scan",
+    "<run-dir>/queue/out/scan_gas_up",
+    "--scan",
+    "<run-dir>/queue/out/scan_gas_down",
+    "--scan",
+    "<run-dir>/queue/out/scan_gas_neutral",
+    "--scan",
+    "<run-dir>/queue/out/scan_gas_oside",
+    "--sp",
+    "<run-dir>/queue/out/sp_scan_wb97xd3bj",
+    "--sp",
+    "<run-dir>/queue/out/sp_scan_m062x",
+    "--sp",
+    "<run-dir>/queue/out/sp_scan_dfmp2",
+    "--sp",
+    "<run-dir>/queue/out/sp_scan_pbe0",
+    "--sp",
+    "<run-dir>/queue/out/sp_scan_camb3lyp",
+    "--selftest",
+    "--sp",
+    "<run-dir>/queue/out/sp_oside_all"
+  ],
+  "smoke": false,
+  "status": "done",
+  "started": "2026-11-22T13:58:56+05:30",
+  "restarts": 0,
+  "last_start": "2026-11-22T13:58:56+05:30",
+  "finished": "2026-11-22T13:59:16+05:30",
+  "host": {
+    "hostname": "<vm-1>",
+    "machine": "x86_64",
+    "cpu_count": 32
+  },
+  "threads": 1,
+  "software": {
+    "python": "3.11.16",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "executable": "<run-dir>/env/bin/python",
+    "matplotlib": "3.11.2"
+  },
+  "script_sha256": {
+    "dvr.py": "30b53ef71ae5b64a3b5443fca748e2fe979ed072ec61e1c2263e04b23737e60a"
+  },
+  "settings": {
+    "coord": "xH",
+    "mass": "H",
+    "interp": "cubic",
+    "walls": "extrapolate",
+    "npts": 801,
+    "pad_A": 0.3,
+    "nlevels": 6,
+    "chains": "all",
+    "methods": "all",
+    "sensitivity": [
+      [
+        "xH",
+        "H",
+        "pchip",
+        "extrapolate"
+      ],
+      [
+        "xH",
+        "H",
+        "cubic",
+        "box"
+      ],
+      [
+        "xH",
+        "reduced",
+        "cubic",
+        "extrapolate"
+      ],
+      [
+        "half_delta",
+        "H",
+        "cubic",
+        "extrapolate"
+      ],
+      [
+        "rHO",
+        "H",
+        "cubic",
+        "extrapolate"
+      ],
+      [
+        "mwpath",
+        "unit",
+        "cubic",
+        "extrapolate"
+      ]
+    ],
+    "masses_u": {
+      "H": 1.00782503207,
+      "C": 12.0,
+      "N": 14.0030740048,
+      "O": 15.99491461956,
+      "Cl": 34.96885268,
+      "S": 31.972071,
+      "Zn": 63.9291422
+    },
+    "constants": {
+      "bohr_A": 0.529177210903,
+      "u_me": 1822.888486209,
+      "hartree_cm": 219474.6313632,
+      "hartree_kcal": 627.509474
+    },
+    "proton_atoms_0based": {
+      "H": 31,
+      "donor_N": 18,
+      "acceptor_O": 0
+    }
+  },
+  "inputs": {
+    "result:<run-dir>/queue/out/scan_gas_up": {
+      "path": "<run-dir>/queue/out/scan_gas_up/result.json",
+      "sha256": "79e5c67d2aa7c9f8c4fb622c6871e84b4e4fd2254e870a24d631b948075e6493"
+    },
+    "result:<run-dir>/queue/out/scan_gas_down": {
+      "path": "<run-dir>/queue/out/scan_gas_down/result.json",
+      "sha256": "e44a4aa69012e79792a882ee4435358a87dff4a3dba8b5fae542b98bbf40b909"
+    },
+    "result:<run-dir>/queue/out/scan_gas_neutral": {
+      "path": "<run-dir>/queue/out/scan_gas_neutral/result.json",
+      "sha256": "e95aee95a818c905f66e587ce883452a16a9e483e86f97ff2d5781c3a9d23379"
+    },
+    "result:<run-dir>/queue/out/scan_gas_oside": {
+      "path": "<run-dir>/queue/out/scan_gas_oside/result.json",
+      "sha256": "c92efb1376d24159ccc7ddae0586d85e8e772397b42f44d1c4a7fc5331e41f66"
+    },
+    "result:<run-dir>/queue/out/sp_scan_wb97xd3bj": {
+      "path": "<run-dir>/queue/out/sp_scan_wb97xd3bj/result.json",
+      "sha256": "c1ec19b8488348e96ebc4490721152d742391aa94a2b0419c736a79a6a7b6a3e"
+    },
+    "result:<run-dir>/queue/out/sp_scan_m062x": {
+      "path": "<run-dir>/queue/out/sp_scan_m062x/result.json",
+      "sha256": "6e306d59deed8c2feaddec5679cdc30b0ccb7729d8f325cb012a6c20f75001e9"
+    },
+    "result:<run-dir>/queue/out/sp_scan_dfmp2": {
+      "path": "<run-dir>/queue/out/sp_scan_dfmp2/result.json",
+      "sha256": "d31e2cda15dcd6deed87288aa1e9d042e4643deca236e76a0789d9afebfcc697"
+    },
+    "result:<run-dir>/queue/out/sp_scan_pbe0": {
+      "path": "<run-dir>/queue/out/sp_scan_pbe0/result.json",
+      "sha256": "9824292a414ae68fc5c5b027c939d967e8dd503fe2d60601ecdfb09931df6e31"
+    },
+    "result:<run-dir>/queue/out/sp_scan_camb3lyp": {
+      "path": "<run-dir>/queue/out/sp_scan_camb3lyp/result.json",
+      "sha256": "f2bd8c1672369c6f38db48453ca2b991c0b8ba83e41dccad238aab54aa089f1d"
+    },
+    "result:<run-dir>/queue/out/sp_oside_all": {
+      "path": "<run-dir>/queue/out/sp_oside_all/result.json",
+      "sha256": "33f43a66403cef9c3221be906aca24e4ca611fefaef81ead28bd6fd159260f80"
+    }
+  },
+  "items": {
+    "b3lyp": {
+      "coord": "xH",
+      "mass": "H",
+      "mass_u": 1.00782503207,
+      "interp": "cubic",
+      "walls": "extrapolate",
+      "npts": 801,
+      "dx_A": 0.0027573104405506045,
+      "grid_A": [
+        -1.7753795036482651,
+        0.4304688487922505
+      ],
+      "scan_range_A": [
+        -1.475379503648265,
+        0.1304688487922505
+      ],
+      "grid_convergence_cm": 1.2977105657553378,
+      "ZPE_cm": 391.01,
+      "ZPE_kcal": 1.118,
+      "fundamental_cm": 446.45,
+      "levels": [
+        {
+          "n": 0,
+          "E_cm": 391.01,
+          "E_kcal": 1.118,
+          "P_O_side": 0.99439,
+          "P_outside_scan": 0.00489
+        },
+        {
+          "n": 1,
+          "E_cm": 837.46,
+          "E_kcal": 2.3944,
+          "P_O_side": 0.36789,
+          "P_outside_scan": 0.01689
+        },
+        {
+          "n": 2,
+          "E_cm": 1009.22,
+          "E_kcal": 2.8855,
+          "P_O_side": 0.51418,
+          "P_outside_scan": 0.05675
+        },
+        {
+          "n": 3,
+          "E_cm": 1320.43,
+          "E_kcal": 3.7753,
+          "P_O_side": 0.29523,
+          "P_outside_scan": 0.16606
+        },
+        {
+          "n": 4,
+          "E_cm": 1705.03,
+          "E_kcal": 4.8749,
+          "P_O_side": 0.46154,
+          "P_outside_scan": 0.21237
+        },
+        {
+          "n": 5,
+          "E_cm": 2156.89,
+          "E_kcal": 6.1669,
+          "P_O_side": 0.41893,
+          "P_outside_scan": 0.22292
+        }
+      ],
+      "minima": [
+        {
+          "x_A": -1.0149,
+          "r_HO_A": 1.4337,
+          "V_kcal": 2.0937,
+          "side": "N"
+        },
+        {
+          "x_A": -0.0365,
+          "r_HO_A": 0.9932,
+          "V_kcal": 0.0,
+          "side": "O"
+        }
+      ],
+      "maxima": [
+        {
+          "x_A": -0.7327,
+          "r_HO_A": 1.232,
+          "V_kcal": 2.4092
+        }
+      ],
+      "boundary_minimum": [],
+      "transfer_point_x_A": -0.7378,
+      "V_transfer_point_kcal": 2.4087,
+      "ground_turning_points_A": [
+        -0.42154007733789867,
+        0.07477580196121743
+      ],
+      "barrier": {
+        "x_A": -0.7327,
+        "r_HO_A": 1.232,
+        "V_kcal": 2.4092
+      },
+      "second_minimum": {
+        "x_A": -1.0149,
+        "r_HO_A": 1.4337,
+        "V_kcal": 2.0937,
+        "side": "N"
+      },
+      "second_minimum_below_ZPE": false,
+      "range_limited": false,
+      "data_minima": [
+        {
+          "index": 4,
+          "r_HO_A": 1.437,
+          "V_kcal": 2.0429
+        },
+        {
+          "index": 13,
+          "r_HO_A": 0.98,
+          "V_kcal": 0.0
+        }
+      ],
+      "spline_undershoot_kcal": 0.051,
+      "warnings": [
+        "DVR grid not converged (1.30 cm-1 between N and 2N-1 points)"
+      ],
+      "method": "b3lyp",
+      "source": "proton_scan",
+      "n_points": 16,
+      "points": [
+        {
+          "label": "up_1.700",
+          "r_HO_A": 1.7,
+          "r_NH_A": 1.0592,
+          "x_A": -1.47538,
+          "dE_kcal": 2.6025
+        },
+        {
+          "label": "up_1.600",
+          "r_HO_A": 1.6,
+          "r_NH_A": 1.0714,
+          "x_A": -1.32997,
+          "dE_kcal": 2.2936
+        },
+        {
+          "label": "up_1.520",
+          "r_HO_A": 1.52,
+          "r_NH_A": 1.0865,
+          "x_A": -1.19929,
+          "dE_kcal": 2.1117
+        },
+        {
+          "label": "up_1.460",
+          "r_HO_A": 1.46,
+          "r_NH_A": 1.1019,
+          "x_A": -1.04527,
+          "dE_kcal": 2.0504
+        },
+        {
+          "label": "min",
+          "r_HO_A": 1.437,
+          "r_NH_A": 1.1093,
+          "x_A": -1.01909,
+          "dE_kcal": 2.0429
+        },
+        {
+          "label": "down_1.400",
+          "r_HO_A": 1.4,
+          "r_NH_A": 1.1235,
+          "x_A": -0.97226,
+          "dE_kcal": 2.0601
+        },
+        {
+          "label": "down_1.340",
+          "r_HO_A": 1.34,
+          "r_NH_A": 1.1523,
+          "x_A": -0.88875,
+          "dE_kcal": 2.1583
+        },
+        {
+          "label": "neutral_1.280",
+          "r_HO_A": 1.28,
+          "r_NH_A": 1.1932,
+          "x_A": -0.79955,
+          "dE_kcal": 2.2959
+        },
+        {
+          "label": "down_1.230",
+          "r_HO_A": 1.23,
+          "r_NH_A": 1.2412,
+          "x_A": -0.72982,
+          "dE_kcal": 2.358
+        },
+        {
+          "label": "down_1.180",
+          "r_HO_A": 1.18,
+          "r_NH_A": 1.3074,
+          "x_A": -0.66158,
+          "dE_kcal": 2.2512
+        },
+        {
+          "label": "down_1.130",
+          "r_HO_A": 1.13,
+          "r_NH_A": 1.4036,
+          "x_A": -0.57157,
+          "dE_kcal": 1.8431
+        },
+        {
+          "label": "down_1.080",
+          "r_HO_A": 1.08,
+          "r_NH_A": 1.5446,
+          "x_A": -0.4233,
+          "dE_kcal": 1.0816
+        },
+        {
+          "label": "neutral_1.030",
+          "r_HO_A": 1.03,
+          "r_NH_A": 1.7638,
+          "x_A": -0.13865,
+          "dE_kcal": 0.174
+        },
+        {
+          "label": "neutral_0.980",
+          "r_HO_A": 0.98,
+          "r_NH_A": 1.9507,
+          "x_A": 0.0,
+          "dE_kcal": 0.0
+        },
+        {
+          "label": "neutral_0.940",
+          "r_HO_A": 0.94,
+          "r_NH_A": 2.0521,
+          "x_A": 0.07976,
+          "dE_kcal": 1.352
+        },
+        {
+          "label": "neutral_0.900",
+          "r_HO_A": 0.9,
+          "r_NH_A": 2.1282,
+          "x_A": 0.13047,
+          "dE_kcal": 4.753
+        }
+      ],
+      "m_eff_path_u": 103.84683136120131,
+      "m_eff_segments_u": [
+        51.063,
+        72.308,
+        138.84,
+        35.708,
+        33.848,
+        104.877,
+        98.096,
+        92.963,
+        11.853,
+        116.565,
+        174.85,
+        189.8,
+        60.957,
+        107.571,
+        122.312
+      ],
+      "sensitivity": [
+        {
+          "coord": "xH",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "pchip",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 371.09,
+          "fundamental_cm": 448.74,
+          "second_minimum": {
+            "x_A": -1.0189,
+            "r_HO_A": 1.4368,
+            "V_kcal": 2.0429,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 0.08578412792306621,
+          "warnings": [],
+          "P_O_side_v0": 0.99443,
+          "P_outside_v0": 0.00591
+        },
+        {
+          "coord": "xH",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "box",
+          "skipped": null,
+          "ZPE_cm": 430.45,
+          "fundamental_cm": 445.27,
+          "second_minimum": {
+            "x_A": -1.0149,
+            "r_HO_A": 1.4337,
+            "V_kcal": 2.0937,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 0.9536730018890206,
+          "warnings": [],
+          "P_O_side_v0": 0.99156,
+          "P_outside_v0": 2e-05
+        },
+        {
+          "coord": "xH",
+          "mass": "reduced",
+          "mass_u": 0.9750662950627464,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 396.81,
+          "fundamental_cm": 445.63,
+          "second_minimum": {
+            "x_A": -1.0149,
+            "r_HO_A": 1.4337,
+            "V_kcal": 2.0937,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 0.10125940563820532,
+          "warnings": [],
+          "P_O_side_v0": 0.99373,
+          "P_outside_v0": 0.005
+        },
+        {
+          "coord": "half_delta",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 543.73,
+          "fundamental_cm": 528.62,
+          "second_minimum": {
+            "x_A": -0.6479,
+            "r_HO_A": 1.435,
+            "V_kcal": 2.1682,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 0.4242300094887218,
+          "warnings": [],
+          "P_O_side_v0": 0.96593,
+          "P_outside_v0": 0.00963
+        },
+        {
+          "coord": "rHO",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 843.55,
+          "fundamental_cm": 357.06,
+          "second_minimum": {
+            "x_A": -0.4552,
+            "r_HO_A": 1.4352,
+            "V_kcal": 2.1526,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": true,
+          "range_limited": true,
+          "grid_convergence_cm": 1.0190237482642543,
+          "warnings": [
+            "3.0 % of the ground state lies outside the scanned range",
+            "DVR grid not converged (1.02 cm-1 between N and 2N-1 points)"
+          ],
+          "P_O_side_v0": 0.54315,
+          "P_outside_v0": 0.03013
+        },
+        {
+          "coord": "mwpath",
+          "mass": "unit (mass-weighted path)",
+          "mass_u": 1.0,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 52.7,
+          "fundamental_cm": 90.89,
+          "second_minimum": {
+            "x_A": -10.7981,
+            "r_HO_A": 1.435,
+            "V_kcal": 2.0788,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 1.8086149112413766e-07,
+          "warnings": [],
+          "P_O_side_v0": 1.0,
+          "P_outside_v0": 0.0
+        }
+      ],
+      "figures": [
+        "dvr_b3lyp.png"
+      ],
+      "wall_s": 3.05,
+      "verdict": "B3LYP: ZPE 391 cm-1 (1.12 kcal/mol); double well: second minimum on the N side at r(H...O) 1.434 A, 2.09 kcal/mol above the global minimum, barrier 2.41 kcal/mol; it lies above the zero-point level; ground-state weight on the O side 99.4 % | WARNINGS: DVR grid not converged (1.30 cm-1 between N and 2N-1 points)",
+      "status": "done",
+      "at": "2026-11-22T13:58:59+05:30"
+    },
+    "wb97x-d3bj": {
+      "coord": "xH",
+      "mass": "H",
+      "mass_u": 1.00782503207,
+      "interp": "cubic",
+      "walls": "extrapolate",
+      "npts": 801,
+      "dx_A": 0.0027573104405506045,
+      "grid_A": [
+        -1.7753795036482651,
+        0.4304688487922505
+      ],
+      "scan_range_A": [
+        -1.475379503648265,
+        0.1304688487922505
+      ],
+      "grid_convergence_cm": 1.1640828803786103,
+      "ZPE_cm": 418.39,
+      "ZPE_kcal": 1.1962,
+      "fundamental_cm": 614.26,
+      "levels": [
+        {
+          "n": 0,
+          "E_cm": 418.39,
+          "E_kcal": 1.1962,
+          "P_O_side": 0.9983,
+          "P_outside_scan": 0.00577
+        },
+        {
+          "n": 1,
+          "E_cm": 1032.64,
+          "E_kcal": 2.9525,
+          "P_O_side": 0.86862,
+          "P_outside_scan": 0.00946
+        },
+        {
+          "n": 2,
+          "E_cm": 1310.28,
+          "E_kcal": 3.7463,
+          "P_O_side": 0.17255,
+          "P_outside_scan": 0.03238
+        },
+        {
+          "n": 3,
+          "E_cm": 1627.72,
+          "E_kcal": 4.6539,
+          "P_O_side": 0.35208,
+          "P_outside_scan": 0.12012
+        },
+        {
+          "n": 4,
+          "E_cm": 1979.97,
+          "E_kcal": 5.661,
+          "P_O_side": 0.43719,
+          "P_outside_scan": 0.20472
+        },
+        {
+          "n": 5,
+          "E_cm": 2429.4,
+          "E_kcal": 6.946,
+          "P_O_side": 0.36777,
+          "P_outside_scan": 0.2455
+        }
+      ],
+      "minima": [
+        {
+          "x_A": -0.9844,
+          "r_HO_A": 1.4096,
+          "V_kcal": 3.1671,
+          "side": "N"
+        },
+        {
+          "x_A": -0.0261,
+          "r_HO_A": 0.9894,
+          "V_kcal": 0.0,
+          "side": "O"
+        }
+      ],
+      "maxima": [
+        {
+          "x_A": -0.764,
+          "r_HO_A": 1.2545,
+          "V_kcal": 3.3082
+        }
+      ],
+      "boundary_minimum": [],
+      "transfer_point_x_A": -0.7378,
+      "V_transfer_point_kcal": 3.2945,
+      "ground_turning_points_A": [
+        -0.410510835575696,
+        0.07753311240176804
+      ],
+      "barrier": {
+        "x_A": -0.764,
+        "r_HO_A": 1.2545,
+        "V_kcal": 3.3082
+      },
+      "second_minimum": {
+        "x_A": -0.9844,
+        "r_HO_A": 1.4096,
+        "V_kcal": 3.1671,
+        "side": "N"
+      },
+      "second_minimum_below_ZPE": false,
+      "range_limited": false,
+      "data_minima": [
+        {
+          "index": 5,
+          "r_HO_A": 1.4,
+          "V_kcal": 3.1389
+        },
+        {
+          "index": 13,
+          "r_HO_A": 0.98,
+          "V_kcal": 0.0
+        }
+      ],
+      "spline_undershoot_kcal": 0.0293,
+      "warnings": [
+        "DVR grid not converged (1.16 cm-1 between N and 2N-1 points)"
+      ],
+      "method": "wb97x-d3bj",
+      "source": "singlepoints sp_scan_wb97xd3bj",
+      "n_points": 16,
+      "points": [
+        {
+          "label": "up_1.700",
+          "r_HO_A": 1.7,
+          "r_NH_A": 1.0592,
+          "x_A": -1.47538,
+          "dE_kcal": 3.9254
+        },
+        {
+          "label": "up_1.600",
+          "r_HO_A": 1.6,
+          "r_NH_A": 1.0714,
+          "x_A": -1.32997,
+          "dE_kcal": 3.5582
+        },
+        {
+          "label": "up_1.520",
+          "r_HO_A": 1.52,
+          "r_NH_A": 1.0865,
+          "x_A": -1.19929,
+          "dE_kcal": 3.3212
+        },
+        {
+          "label": "up_1.460",
+          "r_HO_A": 1.46,
+          "r_NH_A": 1.1019,
+          "x_A": -1.04527,
+          "dE_kcal": 3.1922
+        },
+        {
+          "label": "min",
+          "r_HO_A": 1.437,
+          "r_NH_A": 1.1093,
+          "x_A": -1.01909,
+          "dE_kcal": 3.1543
+        },
+        {
+          "label": "down_1.400",
+          "r_HO_A": 1.4,
+          "r_NH_A": 1.1235,
+          "x_A": -0.97226,
+          "dE_kcal": 3.1389
+        },
+        {
+          "label": "down_1.340",
+          "r_HO_A": 1.34,
+          "r_NH_A": 1.1523,
+          "x_A": -0.88875,
+          "dE_kcal": 3.1785
+        },
+        {
+          "label": "neutral_1.280",
+          "r_HO_A": 1.28,
+          "r_NH_A": 1.1932,
+          "x_A": -0.79955,
+          "dE_kcal": 3.2624
+        },
+        {
+          "label": "down_1.230",
+          "r_HO_A": 1.23,
+          "r_NH_A": 1.2412,
+          "x_A": -0.72982,
+          "dE_kcal": 3.2545
+        },
+        {
+          "label": "down_1.180",
+          "r_HO_A": 1.18,
+          "r_NH_A": 1.3074,
+          "x_A": -0.66158,
+          "dE_kcal": 3.0156
+        },
+        {
+          "label": "down_1.130",
+          "r_HO_A": 1.13,
+          "r_NH_A": 1.4036,
+          "x_A": -0.57157,
+          "dE_kcal": 2.3721
+        },
+        {
+          "label": "down_1.080",
+          "r_HO_A": 1.08,
+          "r_NH_A": 1.5446,
+          "x_A": -0.4233,
+          "dE_kcal": 1.255
+        },
+        {
+          "label": "neutral_1.030",
+          "r_HO_A": 1.03,
+          "r_NH_A": 1.7638,
+          "x_A": -0.13865,
+          "dE_kcal": 0.2623
+        },
+        {
+          "label": "neutral_0.980",
+          "r_HO_A": 0.98,
+          "r_NH_A": 1.9507,
+          "x_A": 0.0,
+          "dE_kcal": 0.0
+        },
+        {
+          "label": "neutral_0.940",
+          "r_HO_A": 0.94,
+          "r_NH_A": 2.0521,
+          "x_A": 0.07976,
+          "dE_kcal": 1.3058
+        },
+        {
+          "label": "neutral_0.900",
+          "r_HO_A": 0.9,
+          "r_NH_A": 2.1282,
+          "x_A": 0.13047,
+          "dE_kcal": 4.6676
+        }
+      ],
+      "m_eff_path_u": 103.84683136120131,
+      "m_eff_segments_u": [
+        51.063,
+        72.308,
+        138.84,
+        35.708,
+        33.848,
+        104.877,
+        98.096,
+        92.963,
+        11.853,
+        116.565,
+        174.85,
+        189.8,
+        60.957,
+        107.571,
+        122.312
+      ],
+      "sensitivity": [
+        {
+          "coord": "xH",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "pchip",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 409.06,
+          "fundamental_cm": 611.9,
+          "second_minimum": {
+            "x_A": -0.9723,
+            "r_HO_A": 1.4001,
+            "V_kcal": 3.1389,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 0.03971926757327798,
+          "warnings": [],
+          "P_O_side_v0": 0.99829,
+          "P_outside_v0": 0.00713
+        },
+        {
+          "coord": "xH",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "box",
+          "skipped": null,
+          "ZPE_cm": 464.51,
+          "fundamental_cm": 633.21,
+          "second_minimum": {
+            "x_A": -0.9844,
+            "r_HO_A": 1.4096,
+            "V_kcal": 3.1671,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 0.8066280397618255,
+          "warnings": [],
+          "P_O_side_v0": 0.99743,
+          "P_outside_v0": 2e-05
+        },
+        {
+          "coord": "xH",
+          "mass": "reduced",
+          "mass_u": 0.9750662950627464,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 424.82,
+          "fundamental_cm": 621.43,
+          "second_minimum": {
+            "x_A": -0.9844,
+            "r_HO_A": 1.4096,
+            "V_kcal": 3.1671,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 0.04956367799629173,
+          "warnings": [],
+          "P_O_side_v0": 0.99808,
+          "P_outside_v0": 0.00591
+        },
+        {
+          "coord": "half_delta",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 584.46,
+          "fundamental_cm": 774.59,
+          "second_minimum": {
+            "x_A": -0.6287,
+            "r_HO_A": 1.4073,
+            "V_kcal": 3.2319,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": true,
+          "grid_convergence_cm": 0.2292018634005647,
+          "warnings": [
+            "1.1 % of the ground state lies outside the scanned range"
+          ],
+          "P_O_side_v0": 0.98791,
+          "P_outside_v0": 0.01088
+        },
+        {
+          "coord": "rHO",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 1026.44,
+          "fundamental_cm": 504.52,
+          "second_minimum": {
+            "x_A": -0.4264,
+            "r_HO_A": 1.4064,
+            "V_kcal": 3.2186,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": true,
+          "grid_convergence_cm": 0.8376491905438348,
+          "warnings": [
+            "2.4 % of the ground state lies outside the scanned range"
+          ],
+          "P_O_side_v0": 0.79106,
+          "P_outside_v0": 0.0241
+        },
+        {
+          "coord": "mwpath",
+          "mass": "unit (mass-weighted path)",
+          "mass_u": 1.0,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 57.65,
+          "fundamental_cm": 100.97,
+          "second_minimum": {
+            "x_A": -10.6025,
+            "r_HO_A": 1.4083,
+            "V_kcal": 3.1573,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 1.9880193213992603e-07,
+          "warnings": [],
+          "P_O_side_v0": 1.0,
+          "P_outside_v0": 0.0
+        }
+      ],
+      "figures": [
+        "dvr_wb97x-d3bj.png"
+      ],
+      "wall_s": 2.84,
+      "verdict": "\u03c9B97X-D3(BJ): ZPE 418 cm-1 (1.20 kcal/mol); double well: second minimum on the N side at r(H...O) 1.410 A, 3.17 kcal/mol above the global minimum, barrier 3.31 kcal/mol; it lies above the zero-point level; ground-state weight on the O side 99.8 % | WARNINGS: DVR grid not converged (1.16 cm-1 between N and 2N-1 points)",
+      "status": "done",
+      "at": "2026-11-22T13:59:02+05:30"
+    },
+    "m062x": {
+      "coord": "xH",
+      "mass": "H",
+      "mass_u": 1.00782503207,
+      "interp": "cubic",
+      "walls": "extrapolate",
+      "npts": 801,
+      "dx_A": 0.0027573104405506045,
+      "grid_A": [
+        -1.7753795036482651,
+        0.4304688487922505
+      ],
+      "scan_range_A": [
+        -1.475379503648265,
+        0.1304688487922505
+      ],
+      "grid_convergence_cm": 1.2996913218722388,
+      "ZPE_cm": 341.17,
+      "ZPE_kcal": 0.9755,
+      "fundamental_cm": 534.02,
+      "levels": [
+        {
+          "n": 0,
+          "E_cm": 341.17,
+          "E_kcal": 0.9755,
+          "P_O_side": 0.9955,
+          "P_outside_scan": 0.00369
+        },
+        {
+          "n": 1,
+          "E_cm": 875.19,
+          "E_kcal": 2.5023,
+          "P_O_side": 0.88034,
+          "P_outside_scan": 0.00728
+        },
+        {
+          "n": 2,
+          "E_cm": 1288.92,
+          "E_kcal": 3.6852,
+          "P_O_side": 0.26172,
+          "P_outside_scan": 0.02532
+        },
+        {
+          "n": 3,
+          "E_cm": 1556.43,
+          "E_kcal": 4.45,
+          "P_O_side": 0.34083,
+          "P_outside_scan": 0.13273
+        },
+        {
+          "n": 4,
+          "E_cm": 1908.11,
+          "E_kcal": 5.4556,
+          "P_O_side": 0.38293,
+          "P_outside_scan": 0.22305
+        },
+        {
+          "n": 5,
+          "E_cm": 2354.39,
+          "E_kcal": 6.7315,
+          "P_O_side": 0.36571,
+          "P_outside_scan": 0.24575
+        }
+      ],
+      "minima": [
+        {
+          "x_A": -1.1659,
+          "r_HO_A": 1.507,
+          "V_kcal": 3.4893,
+          "side": "N"
+        },
+        {
+          "x_A": -0.0434,
+          "r_HO_A": 0.9956,
+          "V_kcal": 0.0,
+          "side": "O"
+        }
+      ],
+      "maxima": [
+        {
+          "x_A": -1.1458,
+          "r_HO_A": 1.4992,
+          "V_kcal": 3.4896
+        }
+      ],
+      "boundary_minimum": [],
+      "transfer_point_x_A": -0.7378,
+      "V_transfer_point_kcal": 2.5872,
+      "ground_turning_points_A": [
+        -0.4794435965894621,
+        0.06650387063956562
+      ],
+      "barrier": {
+        "x_A": -1.1458,
+        "r_HO_A": 1.4992,
+        "V_kcal": 3.4896
+      },
+      "second_minimum": {
+        "x_A": -1.1659,
+        "r_HO_A": 1.507,
+        "V_kcal": 3.4893,
+        "side": "N"
+      },
+      "second_minimum_below_ZPE": false,
+      "range_limited": false,
+      "data_minima": [
+        {
+          "index": 13,
+          "r_HO_A": 0.98,
+          "V_kcal": 0.0
+        }
+      ],
+      "spline_undershoot_kcal": 0.0721,
+      "warnings": [
+        "the interpolant has 2 interior minima, the points themselves 1",
+        "DVR grid not converged (1.30 cm-1 between N and 2N-1 points)"
+      ],
+      "method": "m062x",
+      "source": "singlepoints sp_scan_m062x",
+      "n_points": 16,
+      "points": [
+        {
+          "label": "up_1.700",
+          "r_HO_A": 1.7,
+          "r_NH_A": 1.0592,
+          "x_A": -1.47538,
+          "dE_kcal": 3.7888
+        },
+        {
+          "label": "up_1.600",
+          "r_HO_A": 1.6,
+          "r_NH_A": 1.0714,
+          "x_A": -1.32997,
+          "dE_kcal": 3.596
+        },
+        {
+          "label": "up_1.520",
+          "r_HO_A": 1.52,
+          "r_NH_A": 1.0865,
+          "x_A": -1.19929,
+          "dE_kcal": 3.4228
+        },
+        {
+          "label": "up_1.460",
+          "r_HO_A": 1.46,
+          "r_NH_A": 1.1019,
+          "x_A": -1.04527,
+          "dE_kcal": 3.3141
+        },
+        {
+          "label": "min",
+          "r_HO_A": 1.437,
+          "r_NH_A": 1.1093,
+          "x_A": -1.01909,
+          "dE_kcal": 3.2324
+        },
+        {
+          "label": "down_1.400",
+          "r_HO_A": 1.4,
+          "r_NH_A": 1.1235,
+          "x_A": -0.97226,
+          "dE_kcal": 3.125
+        },
+        {
+          "label": "down_1.340",
+          "r_HO_A": 1.34,
+          "r_NH_A": 1.1523,
+          "x_A": -0.88875,
+          "dE_kcal": 2.9601
+        },
+        {
+          "label": "neutral_1.280",
+          "r_HO_A": 1.28,
+          "r_NH_A": 1.1932,
+          "x_A": -0.79955,
+          "dE_kcal": 2.7322
+        },
+        {
+          "label": "down_1.230",
+          "r_HO_A": 1.23,
+          "r_NH_A": 1.2412,
+          "x_A": -0.72982,
+          "dE_kcal": 2.4791
+        },
+        {
+          "label": "down_1.180",
+          "r_HO_A": 1.18,
+          "r_NH_A": 1.3074,
+          "x_A": -0.66158,
+          "dE_kcal": 2.0777
+        },
+        {
+          "label": "down_1.130",
+          "r_HO_A": 1.13,
+          "r_NH_A": 1.4036,
+          "x_A": -0.57157,
+          "dE_kcal": 1.4304
+        },
+        {
+          "label": "down_1.080",
+          "r_HO_A": 1.08,
+          "r_NH_A": 1.5446,
+          "x_A": -0.4233,
+          "dE_kcal": 0.6849
+        },
+        {
+          "label": "neutral_1.030",
+          "r_HO_A": 1.03,
+          "r_NH_A": 1.7638,
+          "x_A": -0.13865,
+          "dE_kcal": 0.1005
+        },
+        {
+          "label": "neutral_0.980",
+          "r_HO_A": 0.98,
+          "r_NH_A": 1.9507,
+          "x_A": 0.0,
+          "dE_kcal": 0.0
+        },
+        {
+          "label": "neutral_0.940",
+          "r_HO_A": 0.94,
+          "r_NH_A": 2.0521,
+          "x_A": 0.07976,
+          "dE_kcal": 1.4264
+        },
+        {
+          "label": "neutral_0.900",
+          "r_HO_A": 0.9,
+          "r_NH_A": 2.1282,
+          "x_A": 0.13047,
+          "dE_kcal": 4.9209
+        }
+      ],
+      "m_eff_path_u": 103.84683136120131,
+      "m_eff_segments_u": [
+        51.063,
+        72.308,
+        138.84,
+        35.708,
+        33.848,
+        104.877,
+        98.096,
+        92.963,
+        11.853,
+        116.565,
+        174.85,
+        189.8,
+        60.957,
+        107.571,
+        122.312
+      ],
+      "sensitivity": [
+        {
+          "coord": "xH",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "pchip",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 314.1,
+          "fundamental_cm": 536.49,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": false,
+          "grid_convergence_cm": 0.03183620829119916,
+          "warnings": [],
+          "P_O_side_v0": 0.99551,
+          "P_outside_v0": 0.0044
+        },
+        {
+          "coord": "xH",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "box",
+          "skipped": null,
+          "ZPE_cm": 371.91,
+          "fundamental_cm": 558.76,
+          "second_minimum": {
+            "x_A": -1.1659,
+            "r_HO_A": 1.507,
+            "V_kcal": 3.4893,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 0.750813456426342,
+          "warnings": [
+            "the interpolant has 2 interior minima, the points themselves 1"
+          ],
+          "P_O_side_v0": 0.99399,
+          "P_outside_v0": 1e-05
+        },
+        {
+          "coord": "xH",
+          "mass": "reduced",
+          "mass_u": 0.9750662950627464,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 346.59,
+          "fundamental_cm": 542.44,
+          "second_minimum": {
+            "x_A": -1.1659,
+            "r_HO_A": 1.507,
+            "V_kcal": 3.4893,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 0.043845623413292005,
+          "warnings": [
+            "the interpolant has 2 interior minima, the points themselves 1"
+          ],
+          "P_O_side_v0": 0.99507,
+          "P_outside_v0": 0.00379
+        },
+        {
+          "coord": "half_delta",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 501.17,
+          "fundamental_cm": 737.23,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": false,
+          "grid_convergence_cm": 0.47406766241631415,
+          "warnings": [],
+          "P_O_side_v0": 0.97889,
+          "P_outside_v0": 0.0075
+        },
+        {
+          "coord": "rHO",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 889.42,
+          "fundamental_cm": 628.36,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": true,
+          "grid_convergence_cm": 1.0220326158566644,
+          "warnings": [
+            "1.8 % of the ground state lies outside the scanned range",
+            "DVR grid not converged (1.02 cm-1 between N and 2N-1 points)"
+          ],
+          "P_O_side_v0": 0.80109,
+          "P_outside_v0": 0.01834
+        },
+        {
+          "coord": "mwpath",
+          "mass": "unit (mass-weighted path)",
+          "mass_u": 1.0,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 48.35,
+          "fundamental_cm": 73.55,
+          "second_minimum": {
+            "x_A": -8.7809,
+            "r_HO_A": 1.2779,
+            "V_kcal": 2.7862,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 1.5424806498010374e-07,
+          "warnings": [
+            "the interpolant has 3 interior minima, the points themselves 1"
+          ],
+          "P_O_side_v0": 1.0,
+          "P_outside_v0": 0.0
+        }
+      ],
+      "figures": [
+        "dvr_m062x.png"
+      ],
+      "wall_s": 2.75,
+      "verdict": "M06-2X: ZPE 341 cm-1 (0.98 kcal/mol); double well: second minimum on the N side at r(H...O) 1.507 A, 3.49 kcal/mol above the global minimum, barrier 3.49 kcal/mol; it lies above the zero-point level; ground-state weight on the O side 99.6 % | WARNINGS: the interpolant has 2 interior minima, the points themselves 1; DVR grid not converged (1.30 cm-1 between N and 2N-1 points)",
+      "status": "done",
+      "at": "2026-11-22T13:59:05+05:30"
+    },
+    "pbe0": {
+      "coord": "xH",
+      "mass": "H",
+      "mass_u": 1.00782503207,
+      "interp": "cubic",
+      "walls": "extrapolate",
+      "npts": 801,
+      "dx_A": 0.0027573104405506045,
+      "grid_A": [
+        -1.7753795036482651,
+        0.4304688487922505
+      ],
+      "scan_range_A": [
+        -1.475379503648265,
+        0.1304688487922505
+      ],
+      "grid_convergence_cm": 1.249010637755182,
+      "ZPE_cm": 328.74,
+      "ZPE_kcal": 0.9399,
+      "fundamental_cm": 408.31,
+      "levels": [
+        {
+          "n": 0,
+          "E_cm": 328.74,
+          "E_kcal": 0.9399,
+          "P_O_side": 0.98783,
+          "P_outside_scan": 0.00359
+        },
+        {
+          "n": 1,
+          "E_cm": 737.06,
+          "E_kcal": 2.1074,
+          "P_O_side": 0.52839,
+          "P_outside_scan": 0.00655
+        },
+        {
+          "n": 2,
+          "E_cm": 970.1,
+          "E_kcal": 2.7736,
+          "P_O_side": 0.3949,
+          "P_outside_scan": 0.04085
+        },
+        {
+          "n": 3,
+          "E_cm": 1283.27,
+          "E_kcal": 3.6691,
+          "P_O_side": 0.32578,
+          "P_outside_scan": 0.13887
+        },
+        {
+          "n": 4,
+          "E_cm": 1664.28,
+          "E_kcal": 4.7584,
+          "P_O_side": 0.44262,
+          "P_outside_scan": 0.21618
+        },
+        {
+          "n": 5,
+          "E_cm": 2116.48,
+          "E_kcal": 6.0513,
+          "P_O_side": 0.40404,
+          "P_outside_scan": 0.23639
+        }
+      ],
+      "minima": [
+        {
+          "x_A": -0.8326,
+          "r_HO_A": 1.3023,
+          "V_kcal": 1.8459,
+          "side": "N"
+        },
+        {
+          "x_A": -0.0498,
+          "r_HO_A": 0.998,
+          "V_kcal": 0.0,
+          "side": "O"
+        }
+      ],
+      "maxima": [
+        {
+          "x_A": -0.8005,
+          "r_HO_A": 1.2807,
+          "V_kcal": 1.8462
+        }
+      ],
+      "boundary_minimum": [],
+      "transfer_point_x_A": -0.7378,
+      "V_transfer_point_kcal": 1.8287,
+      "ground_turning_points_A": [
+        -0.4711716652678103,
+        0.06650387063956562
+      ],
+      "barrier": {
+        "x_A": -0.8005,
+        "r_HO_A": 1.2807,
+        "V_kcal": 1.8462
+      },
+      "second_minimum": {
+        "x_A": -0.8326,
+        "r_HO_A": 1.3023,
+        "V_kcal": 1.8459,
+        "side": "N"
+      },
+      "second_minimum_below_ZPE": false,
+      "range_limited": false,
+      "data_minima": [
+        {
+          "index": 13,
+          "r_HO_A": 0.98,
+          "V_kcal": 0.0
+        }
+      ],
+      "spline_undershoot_kcal": 0.0805,
+      "warnings": [
+        "the interpolant has 2 interior minima, the points themselves 1",
+        "DVR grid not converged (1.25 cm-1 between N and 2N-1 points)"
+      ],
+      "method": "pbe0",
+      "source": "singlepoints sp_scan_pbe0",
+      "n_points": 16,
+      "points": [
+        {
+          "label": "up_1.700",
+          "r_HO_A": 1.7,
+          "r_NH_A": 1.0592,
+          "x_A": -1.47538,
+          "dE_kcal": 2.7559
+        },
+        {
+          "label": "up_1.600",
+          "r_HO_A": 1.6,
+          "r_NH_A": 1.0714,
+          "x_A": -1.32997,
+          "dE_kcal": 2.3675
+        },
+        {
+          "label": "up_1.520",
+          "r_HO_A": 1.52,
+          "r_NH_A": 1.0865,
+          "x_A": -1.19929,
+          "dE_kcal": 2.0911
+        },
+        {
+          "label": "up_1.460",
+          "r_HO_A": 1.46,
+          "r_NH_A": 1.1019,
+          "x_A": -1.04527,
+          "dE_kcal": 1.94
+        },
+        {
+          "label": "min",
+          "r_HO_A": 1.437,
+          "r_NH_A": 1.1093,
+          "x_A": -1.01909,
+          "dE_kcal": 1.8793
+        },
+        {
+          "label": "down_1.400",
+          "r_HO_A": 1.4,
+          "r_NH_A": 1.1235,
+          "x_A": -0.97226,
+          "dE_kcal": 1.8157
+        },
+        {
+          "label": "down_1.340",
+          "r_HO_A": 1.34,
+          "r_NH_A": 1.1523,
+          "x_A": -0.88875,
+          "dE_kcal": 1.7705
+        },
+        {
+          "label": "neutral_1.280",
+          "r_HO_A": 1.28,
+          "r_NH_A": 1.1932,
+          "x_A": -0.79955,
+          "dE_kcal": 1.7657
+        },
+        {
+          "label": "down_1.230",
+          "r_HO_A": 1.23,
+          "r_NH_A": 1.2412,
+          "x_A": -0.72982,
+          "dE_kcal": 1.7411
+        },
+        {
+          "label": "down_1.180",
+          "r_HO_A": 1.18,
+          "r_NH_A": 1.3074,
+          "x_A": -0.66158,
+          "dE_kcal": 1.6099
+        },
+        {
+          "label": "down_1.130",
+          "r_HO_A": 1.13,
+          "r_NH_A": 1.4036,
+          "x_A": -0.57157,
+          "dE_kcal": 1.2788
+        },
+        {
+          "label": "down_1.080",
+          "r_HO_A": 1.08,
+          "r_NH_A": 1.5446,
+          "x_A": -0.4233,
+          "dE_kcal": 0.6985
+        },
+        {
+          "label": "neutral_1.030",
+          "r_HO_A": 1.03,
+          "r_NH_A": 1.7638,
+          "x_A": -0.13865,
+          "dE_kcal": 0.0536
+        },
+        {
+          "label": "neutral_0.980",
+          "r_HO_A": 0.98,
+          "r_NH_A": 1.9507,
+          "x_A": 0.0,
+          "dE_kcal": 0.0
+        },
+        {
+          "label": "neutral_0.940",
+          "r_HO_A": 0.94,
+          "r_NH_A": 2.0521,
+          "x_A": 0.07976,
+          "dE_kcal": 1.3718
+        },
+        {
+          "label": "neutral_0.900",
+          "r_HO_A": 0.9,
+          "r_NH_A": 2.1282,
+          "x_A": 0.13047,
+          "dE_kcal": 4.7666
+        }
+      ],
+      "m_eff_path_u": 103.84683136120131,
+      "m_eff_segments_u": [
+        51.063,
+        72.308,
+        138.84,
+        35.708,
+        33.848,
+        104.877,
+        98.096,
+        92.963,
+        11.853,
+        116.565,
+        174.85,
+        189.8,
+        60.957,
+        107.571,
+        122.312
+      ],
+      "sensitivity": [
+        {
+          "coord": "xH",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "pchip",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 297.91,
+          "fundamental_cm": 411.06,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": false,
+          "grid_convergence_cm": 0.05190215238480654,
+          "warnings": [],
+          "P_O_side_v0": 0.98794,
+          "P_outside_v0": 0.0043
+        },
+        {
+          "coord": "xH",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "box",
+          "skipped": null,
+          "ZPE_cm": 357.98,
+          "fundamental_cm": 409.87,
+          "second_minimum": {
+            "x_A": -0.8326,
+            "r_HO_A": 1.3023,
+            "V_kcal": 1.8459,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 0.8189226568790207,
+          "warnings": [
+            "the interpolant has 2 interior minima, the points themselves 1"
+          ],
+          "P_O_side_v0": 0.9832,
+          "P_outside_v0": 1e-05
+        },
+        {
+          "coord": "xH",
+          "mass": "reduced",
+          "mass_u": 0.9750662950627464,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 333.7,
+          "fundamental_cm": 410.47,
+          "second_minimum": {
+            "x_A": -0.8326,
+            "r_HO_A": 1.3023,
+            "V_kcal": 1.8459,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 0.06686651907174603,
+          "warnings": [
+            "the interpolant has 2 interior minima, the points themselves 1"
+          ],
+          "P_O_side_v0": 0.98668,
+          "P_outside_v0": 0.00368
+        },
+        {
+          "coord": "half_delta",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 473.3,
+          "fundamental_cm": 529.9,
+          "second_minimum": {
+            "x_A": -0.5486,
+            "r_HO_A": 1.3035,
+            "V_kcal": 1.9207,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 0.3512544139107282,
+          "warnings": [
+            "the interpolant has 2 interior minima, the points themselves 1"
+          ],
+          "P_O_side_v0": 0.94893,
+          "P_outside_v0": 0.00771
+        },
+        {
+          "coord": "rHO",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 738.02,
+          "fundamental_cm": 455.02,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": true,
+          "grid_convergence_cm": 0.9027796694903372,
+          "warnings": [
+            "1.9 % of the ground state lies outside the scanned range"
+          ],
+          "P_O_side_v0": 0.59206,
+          "P_outside_v0": 0.01858
+        },
+        {
+          "coord": "mwpath",
+          "mass": "unit (mass-weighted path)",
+          "mass_u": 1.0,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 43.86,
+          "fundamental_cm": 68.77,
+          "second_minimum": {
+            "x_A": -9.1151,
+            "r_HO_A": 1.3008,
+            "V_kcal": 1.8157,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 1.3683208245136046e-07,
+          "warnings": [
+            "the interpolant has 3 interior minima, the points themselves 1"
+          ],
+          "P_O_side_v0": 1.0,
+          "P_outside_v0": 0.0
+        }
+      ],
+      "figures": [
+        "dvr_pbe0.png"
+      ],
+      "wall_s": 2.68,
+      "verdict": "PBE0: ZPE 329 cm-1 (0.94 kcal/mol); double well: second minimum on the N side at r(H...O) 1.302 A, 1.85 kcal/mol above the global minimum, barrier 1.85 kcal/mol; it lies above the zero-point level; ground-state weight on the O side 98.8 % | WARNINGS: the interpolant has 2 interior minima, the points themselves 1; DVR grid not converged (1.25 cm-1 between N and 2N-1 points)",
+      "status": "done",
+      "at": "2026-11-22T13:59:08+05:30"
+    },
+    "cam-b3lyp": {
+      "coord": "xH",
+      "mass": "H",
+      "mass_u": 1.00782503207,
+      "interp": "cubic",
+      "walls": "extrapolate",
+      "npts": 801,
+      "dx_A": 0.0027573104405506045,
+      "grid_A": [
+        -1.7753795036482651,
+        0.4304688487922505
+      ],
+      "scan_range_A": [
+        -1.475379503648265,
+        0.1304688487922505
+      ],
+      "grid_convergence_cm": 1.267282310412169,
+      "ZPE_cm": 350.52,
+      "ZPE_kcal": 1.0022,
+      "fundamental_cm": 465.38,
+      "levels": [
+        {
+          "n": 0,
+          "E_cm": 350.52,
+          "E_kcal": 1.0022,
+          "P_O_side": 0.99334,
+          "P_outside_scan": 0.00395
+        },
+        {
+          "n": 1,
+          "E_cm": 815.9,
+          "E_kcal": 2.3328,
+          "P_O_side": 0.51695,
+          "P_outside_scan": 0.00921
+        },
+        {
+          "n": 2,
+          "E_cm": 1006.67,
+          "E_kcal": 2.8782,
+          "P_O_side": 0.40309,
+          "P_outside_scan": 0.04841
+        },
+        {
+          "n": 3,
+          "E_cm": 1326.17,
+          "E_kcal": 3.7917,
+          "P_O_side": 0.30463,
+          "P_outside_scan": 0.15089
+        },
+        {
+          "n": 4,
+          "E_cm": 1706.24,
+          "E_kcal": 4.8784,
+          "P_O_side": 0.45603,
+          "P_outside_scan": 0.21316
+        },
+        {
+          "n": 5,
+          "E_cm": 2157.7,
+          "E_kcal": 6.1692,
+          "P_O_side": 0.40498,
+          "P_outside_scan": 0.23101
+        }
+      ],
+      "minima": [
+        {
+          "x_A": -0.9876,
+          "r_HO_A": 1.4121,
+          "V_kcal": 2.106,
+          "side": "N"
+        },
+        {
+          "x_A": -0.0506,
+          "r_HO_A": 0.9982,
+          "V_kcal": 0.0,
+          "side": "O"
+        }
+      ],
+      "maxima": [
+        {
+          "x_A": -0.7487,
+          "r_HO_A": 1.2436,
+          "V_kcal": 2.261
+        }
+      ],
+      "boundary_minimum": [],
+      "transfer_point_x_A": -0.7378,
+      "V_transfer_point_kcal": 2.2591,
+      "ground_turning_points_A": [
+        -0.44635587130285437,
+        0.06650387063956562
+      ],
+      "barrier": {
+        "x_A": -0.7487,
+        "r_HO_A": 1.2436,
+        "V_kcal": 2.261
+      },
+      "second_minimum": {
+        "x_A": -0.9876,
+        "r_HO_A": 1.4121,
+        "V_kcal": 2.106,
+        "side": "N"
+      },
+      "second_minimum_below_ZPE": false,
+      "range_limited": false,
+      "data_minima": [
+        {
+          "index": 5,
+          "r_HO_A": 1.4,
+          "V_kcal": 2.0199
+        },
+        {
+          "index": 13,
+          "r_HO_A": 0.98,
+          "V_kcal": 0.0
+        }
+      ],
+      "spline_undershoot_kcal": 0.0882,
+      "warnings": [
+        "DVR grid not converged (1.27 cm-1 between N and 2N-1 points)"
+      ],
+      "method": "cam-b3lyp",
+      "source": "singlepoints sp_scan_camb3lyp",
+      "n_points": 16,
+      "points": [
+        {
+          "label": "up_1.700",
+          "r_HO_A": 1.7,
+          "r_NH_A": 1.0592,
+          "x_A": -1.47538,
+          "dE_kcal": 2.7417
+        },
+        {
+          "label": "up_1.600",
+          "r_HO_A": 1.6,
+          "r_NH_A": 1.0714,
+          "x_A": -1.32997,
+          "dE_kcal": 2.3857
+        },
+        {
+          "label": "up_1.520",
+          "r_HO_A": 1.52,
+          "r_NH_A": 1.0865,
+          "x_A": -1.19929,
+          "dE_kcal": 2.1604
+        },
+        {
+          "label": "up_1.460",
+          "r_HO_A": 1.46,
+          "r_NH_A": 1.1019,
+          "x_A": -1.04527,
+          "dE_kcal": 2.0666
+        },
+        {
+          "label": "min",
+          "r_HO_A": 1.437,
+          "r_NH_A": 1.1093,
+          "x_A": -1.01909,
+          "dE_kcal": 2.032
+        },
+        {
+          "label": "down_1.400",
+          "r_HO_A": 1.4,
+          "r_NH_A": 1.1235,
+          "x_A": -0.97226,
+          "dE_kcal": 2.0199
+        },
+        {
+          "label": "down_1.340",
+          "r_HO_A": 1.34,
+          "r_NH_A": 1.1523,
+          "x_A": -0.88875,
+          "dE_kcal": 2.0673
+        },
+        {
+          "label": "neutral_1.280",
+          "r_HO_A": 1.28,
+          "r_NH_A": 1.1932,
+          "x_A": -0.79955,
+          "dE_kcal": 2.1455
+        },
+        {
+          "label": "down_1.230",
+          "r_HO_A": 1.23,
+          "r_NH_A": 1.2412,
+          "x_A": -0.72982,
+          "dE_kcal": 2.1668
+        },
+        {
+          "label": "down_1.180",
+          "r_HO_A": 1.18,
+          "r_NH_A": 1.3074,
+          "x_A": -0.66158,
+          "dE_kcal": 2.0222
+        },
+        {
+          "label": "down_1.130",
+          "r_HO_A": 1.13,
+          "r_NH_A": 1.4036,
+          "x_A": -0.57157,
+          "dE_kcal": 1.5744
+        },
+        {
+          "label": "down_1.080",
+          "r_HO_A": 1.08,
+          "r_NH_A": 1.5446,
+          "x_A": -0.4233,
+          "dE_kcal": 0.8136
+        },
+        {
+          "label": "neutral_1.030",
+          "r_HO_A": 1.03,
+          "r_NH_A": 1.7638,
+          "x_A": -0.13865,
+          "dE_kcal": 0.0535
+        },
+        {
+          "label": "neutral_0.980",
+          "r_HO_A": 0.98,
+          "r_NH_A": 1.9507,
+          "x_A": 0.0,
+          "dE_kcal": 0.0
+        },
+        {
+          "label": "neutral_0.940",
+          "r_HO_A": 0.94,
+          "r_NH_A": 2.0521,
+          "x_A": 0.07976,
+          "dE_kcal": 1.4152
+        },
+        {
+          "label": "neutral_0.900",
+          "r_HO_A": 0.9,
+          "r_NH_A": 2.1282,
+          "x_A": 0.13047,
+          "dE_kcal": 4.8594
+        }
+      ],
+      "m_eff_path_u": 103.84683136120131,
+      "m_eff_segments_u": [
+        51.063,
+        72.308,
+        138.84,
+        35.708,
+        33.848,
+        104.877,
+        98.096,
+        92.963,
+        11.853,
+        116.565,
+        174.85,
+        189.8,
+        60.957,
+        107.571,
+        122.312
+      ],
+      "sensitivity": [
+        {
+          "coord": "xH",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "pchip",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 317.69,
+          "fundamental_cm": 467.68,
+          "second_minimum": {
+            "x_A": -0.9723,
+            "r_HO_A": 1.4001,
+            "V_kcal": 2.0199,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 0.06607363147305313,
+          "warnings": [],
+          "P_O_side_v0": 0.99336,
+          "P_outside_v0": 0.00471
+        },
+        {
+          "coord": "xH",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "box",
+          "skipped": null,
+          "ZPE_cm": 383.25,
+          "fundamental_cm": 467.36,
+          "second_minimum": {
+            "x_A": -0.9876,
+            "r_HO_A": 1.4121,
+            "V_kcal": 2.106,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 0.8676292880858186,
+          "warnings": [],
+          "P_O_side_v0": 0.99068,
+          "P_outside_v0": 1e-05
+        },
+        {
+          "coord": "xH",
+          "mass": "reduced",
+          "mass_u": 0.9750662950627464,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 356.02,
+          "fundamental_cm": 466.67,
+          "second_minimum": {
+            "x_A": -0.9876,
+            "r_HO_A": 1.4121,
+            "V_kcal": 2.106,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 0.08177782677071017,
+          "warnings": [],
+          "P_O_side_v0": 0.99263,
+          "P_outside_v0": 0.00406
+        },
+        {
+          "coord": "half_delta",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 509.54,
+          "fundamental_cm": 561.23,
+          "second_minimum": {
+            "x_A": -0.6313,
+            "r_HO_A": 1.411,
+            "V_kcal": 2.1838,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 0.38163897563381416,
+          "warnings": [],
+          "P_O_side_v0": 0.96392,
+          "P_outside_v0": 0.00821
+        },
+        {
+          "coord": "rHO",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 816.28,
+          "fundamental_cm": 403.98,
+          "second_minimum": {
+            "x_A": -0.4304,
+            "r_HO_A": 1.4104,
+            "V_kcal": 2.1664,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": true,
+          "range_limited": true,
+          "grid_convergence_cm": 0.9657608898446092,
+          "warnings": [
+            "2.3 % of the ground state lies outside the scanned range"
+          ],
+          "P_O_side_v0": 0.59658,
+          "P_outside_v0": 0.02271
+        },
+        {
+          "coord": "mwpath",
+          "mass": "unit (mass-weighted path)",
+          "mass_u": 1.0,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 45.08,
+          "fundamental_cm": 71.78,
+          "second_minimum": {
+            "x_A": -10.6229,
+            "r_HO_A": 1.4111,
+            "V_kcal": 2.0871,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 1.3621450032510752e-07,
+          "warnings": [
+            "the interpolant has 3 interior minima, the points themselves 2"
+          ],
+          "P_O_side_v0": 1.0,
+          "P_outside_v0": 0.0
+        }
+      ],
+      "figures": [
+        "dvr_cam-b3lyp.png"
+      ],
+      "wall_s": 2.56,
+      "verdict": "CAM-B3LYP: ZPE 351 cm-1 (1.00 kcal/mol); double well: second minimum on the N side at r(H...O) 1.412 A, 2.11 kcal/mol above the global minimum, barrier 2.26 kcal/mol; it lies above the zero-point level; ground-state weight on the O side 99.3 % | WARNINGS: DVR grid not converged (1.27 cm-1 between N and 2N-1 points)",
+      "status": "done",
+      "at": "2026-11-22T13:59:10+05:30"
+    },
+    "dfmp2": {
+      "coord": "xH",
+      "mass": "H",
+      "mass_u": 1.00782503207,
+      "interp": "cubic",
+      "walls": "extrapolate",
+      "npts": 801,
+      "dx_A": 0.0027573104405506045,
+      "grid_A": [
+        -1.7753795036482651,
+        0.4304688487922505
+      ],
+      "scan_range_A": [
+        -1.475379503648265,
+        0.1304688487922505
+      ],
+      "grid_convergence_cm": 0.45813447977824073,
+      "ZPE_cm": 349.1,
+      "ZPE_kcal": 0.9981,
+      "fundamental_cm": 560.48,
+      "levels": [
+        {
+          "n": 0,
+          "E_cm": 349.1,
+          "E_kcal": 0.9981,
+          "P_O_side": 0.99729,
+          "P_outside_scan": 0.00402
+        },
+        {
+          "n": 1,
+          "E_cm": 909.58,
+          "E_kcal": 2.6006,
+          "P_O_side": 0.95538,
+          "P_outside_scan": 0.00991
+        },
+        {
+          "n": 2,
+          "E_cm": 1560.56,
+          "E_kcal": 4.4619,
+          "P_O_side": 0.64642,
+          "P_outside_scan": 0.01292
+        },
+        {
+          "n": 3,
+          "E_cm": 2045.64,
+          "E_kcal": 5.8488,
+          "P_O_side": 0.36159,
+          "P_outside_scan": 0.01814
+        },
+        {
+          "n": 4,
+          "E_cm": 2469.9,
+          "E_kcal": 7.0618,
+          "P_O_side": 0.32157,
+          "P_outside_scan": 0.07558
+        },
+        {
+          "n": 5,
+          "E_cm": 2911.47,
+          "E_kcal": 8.3243,
+          "P_O_side": 0.37067,
+          "P_outside_scan": 0.20506
+        }
+      ],
+      "minima": [
+        {
+          "x_A": -0.0257,
+          "r_HO_A": 0.9893,
+          "V_kcal": 0.0,
+          "side": "O"
+        }
+      ],
+      "maxima": [],
+      "boundary_minimum": [],
+      "transfer_point_x_A": -0.7378,
+      "V_transfer_point_kcal": 3.2408,
+      "ground_turning_points_A": [
+        -0.5015020801138672,
+        0.07201849152066683
+      ],
+      "barrier": null,
+      "second_minimum": null,
+      "second_minimum_below_ZPE": null,
+      "range_limited": false,
+      "data_minima": [
+        {
+          "index": 13,
+          "r_HO_A": 0.98,
+          "V_kcal": 0.0
+        }
+      ],
+      "spline_undershoot_kcal": 0.0295,
+      "warnings": [],
+      "method": "dfmp2",
+      "source": "singlepoints sp_scan_dfmp2",
+      "n_points": 16,
+      "points": [
+        {
+          "label": "up_1.700",
+          "r_HO_A": 1.7,
+          "r_NH_A": 1.0592,
+          "x_A": -1.47538,
+          "dE_kcal": 6.9639
+        },
+        {
+          "label": "up_1.600",
+          "r_HO_A": 1.6,
+          "r_NH_A": 1.0714,
+          "x_A": -1.32997,
+          "dE_kcal": 6.2223
+        },
+        {
+          "label": "up_1.520",
+          "r_HO_A": 1.52,
+          "r_NH_A": 1.0865,
+          "x_A": -1.19929,
+          "dE_kcal": 5.5877
+        },
+        {
+          "label": "up_1.460",
+          "r_HO_A": 1.46,
+          "r_NH_A": 1.1019,
+          "x_A": -1.04527,
+          "dE_kcal": 5.0366
+        },
+        {
+          "label": "min",
+          "r_HO_A": 1.437,
+          "r_NH_A": 1.1093,
+          "x_A": -1.01909,
+          "dE_kcal": 4.8682
+        },
+        {
+          "label": "down_1.400",
+          "r_HO_A": 1.4,
+          "r_NH_A": 1.1235,
+          "x_A": -0.97226,
+          "dE_kcal": 4.6344
+        },
+        {
+          "label": "down_1.340",
+          "r_HO_A": 1.34,
+          "r_NH_A": 1.1523,
+          "x_A": -0.88875,
+          "dE_kcal": 4.2347
+        },
+        {
+          "label": "neutral_1.280",
+          "r_HO_A": 1.28,
+          "r_NH_A": 1.1932,
+          "x_A": -0.79955,
+          "dE_kcal": 3.695
+        },
+        {
+          "label": "down_1.230",
+          "r_HO_A": 1.23,
+          "r_NH_A": 1.2412,
+          "x_A": -0.72982,
+          "dE_kcal": 3.1395
+        },
+        {
+          "label": "down_1.180",
+          "r_HO_A": 1.18,
+          "r_NH_A": 1.3074,
+          "x_A": -0.66158,
+          "dE_kcal": 2.4416
+        },
+        {
+          "label": "down_1.130",
+          "r_HO_A": 1.13,
+          "r_NH_A": 1.4036,
+          "x_A": -0.57157,
+          "dE_kcal": 1.4929
+        },
+        {
+          "label": "down_1.080",
+          "r_HO_A": 1.08,
+          "r_NH_A": 1.5446,
+          "x_A": -0.4233,
+          "dE_kcal": 0.6358
+        },
+        {
+          "label": "neutral_1.030",
+          "r_HO_A": 1.03,
+          "r_NH_A": 1.7638,
+          "x_A": -0.13865,
+          "dE_kcal": 0.2446
+        },
+        {
+          "label": "neutral_0.980",
+          "r_HO_A": 0.98,
+          "r_NH_A": 1.9507,
+          "x_A": 0.0,
+          "dE_kcal": 0.0
+        },
+        {
+          "label": "neutral_0.940",
+          "r_HO_A": 0.94,
+          "r_NH_A": 2.0521,
+          "x_A": 0.07976,
+          "dE_kcal": 1.326
+        },
+        {
+          "label": "neutral_0.900",
+          "r_HO_A": 0.9,
+          "r_NH_A": 2.1282,
+          "x_A": 0.13047,
+          "dE_kcal": 4.7103
+        }
+      ],
+      "m_eff_path_u": 103.84683136120131,
+      "m_eff_segments_u": [
+        51.063,
+        72.308,
+        138.84,
+        35.708,
+        33.848,
+        104.877,
+        98.096,
+        92.963,
+        11.853,
+        116.565,
+        174.85,
+        189.8,
+        60.957,
+        107.571,
+        122.312
+      ],
+      "sensitivity": [
+        {
+          "coord": "xH",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "pchip",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 337.7,
+          "fundamental_cm": 561.37,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": false,
+          "grid_convergence_cm": 0.0005599230432323807,
+          "warnings": [],
+          "P_O_side_v0": 0.99731,
+          "P_outside_v0": 0.0049
+        },
+        {
+          "coord": "xH",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "box",
+          "skipped": null,
+          "ZPE_cm": 381.37,
+          "fundamental_cm": 603.61,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": false,
+          "grid_convergence_cm": 1.053854111823012,
+          "warnings": [
+            "DVR grid not converged (1.05 cm-1 between N and 2N-1 points)"
+          ],
+          "P_O_side_v0": 0.9964,
+          "P_outside_v0": 1e-05
+        },
+        {
+          "coord": "xH",
+          "mass": "reduced",
+          "mass_u": 0.9750662950627464,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 354.54,
+          "fundamental_cm": 571.99,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": false,
+          "grid_convergence_cm": 9.0275168049167e-05,
+          "warnings": [],
+          "P_O_side_v0": 0.99704,
+          "P_outside_v0": 0.00414
+        },
+        {
+          "coord": "half_delta",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 504.85,
+          "fundamental_cm": 876.13,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": false,
+          "grid_convergence_cm": 0.008710797750772702,
+          "warnings": [],
+          "P_O_side_v0": 0.98853,
+          "P_outside_v0": 0.00837
+        },
+        {
+          "coord": "rHO",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 954.22,
+          "fundamental_cm": 1105.68,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": true,
+          "grid_convergence_cm": 0.1654637180206812,
+          "warnings": [
+            "2.4 % of the ground state lies outside the scanned range"
+          ],
+          "P_O_side_v0": 0.89759,
+          "P_outside_v0": 0.0235
+        },
+        {
+          "coord": "mwpath",
+          "mass": "unit (mass-weighted path)",
+          "mass_u": 1.0,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 56.98,
+          "fundamental_cm": 91.25,
+          "second_minimum": {
+            "x_A": -3.5483,
+            "r_HO_A": 1.0616,
+            "V_kcal": 0.4428,
+            "side": "O"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": false,
+          "grid_convergence_cm": 1.895420610639323e-07,
+          "warnings": [
+            "the interpolant has 2 interior minima, the points themselves 1"
+          ],
+          "P_O_side_v0": 1.0,
+          "P_outside_v0": 0.0
+        }
+      ],
+      "figures": [
+        "dvr_dfmp2.png"
+      ],
+      "wall_s": 2.57,
+      "verdict": "DF-MP2: ZPE 349 cm-1 (1.00 kcal/mol); single well: no second minimum along the proton coordinate; the transfer point (r(N-H) = r(H...O)) lies 3.24 kcal/mol above the minimum, 2.24 kcal/mol above the ground level; ground-state weight on the O side 99.7 %",
+      "status": "done",
+      "at": "2026-11-22T13:59:13+05:30"
+    },
+    "scs-mp2": {
+      "coord": "xH",
+      "mass": "H",
+      "mass_u": 1.00782503207,
+      "interp": "cubic",
+      "walls": "extrapolate",
+      "npts": 801,
+      "dx_A": 0.0027573104405506045,
+      "grid_A": [
+        -1.7753795036482651,
+        0.4304688487922505
+      ],
+      "scan_range_A": [
+        -1.475379503648265,
+        0.1304688487922505
+      ],
+      "grid_convergence_cm": 0.5089486081419913,
+      "ZPE_cm": 501.94,
+      "ZPE_kcal": 1.4351,
+      "fundamental_cm": 648.83,
+      "levels": [
+        {
+          "n": 0,
+          "E_cm": 501.94,
+          "E_kcal": 1.4351,
+          "P_O_side": 0.99937,
+          "P_outside_scan": 0.00818
+        },
+        {
+          "n": 1,
+          "E_cm": 1150.77,
+          "E_kcal": 3.2902,
+          "P_O_side": 0.97782,
+          "P_outside_scan": 0.0141
+        },
+        {
+          "n": 2,
+          "E_cm": 1858.72,
+          "E_kcal": 5.3144,
+          "P_O_side": 0.71156,
+          "P_outside_scan": 0.01749
+        },
+        {
+          "n": 3,
+          "E_cm": 2315.79,
+          "E_kcal": 6.6212,
+          "P_O_side": 0.30447,
+          "P_outside_scan": 0.02159
+        },
+        {
+          "n": 4,
+          "E_cm": 2714.61,
+          "E_kcal": 7.7614,
+          "P_O_side": 0.31773,
+          "P_outside_scan": 0.08981
+        },
+        {
+          "n": 5,
+          "E_cm": 3141.25,
+          "E_kcal": 8.9813,
+          "P_O_side": 0.37241,
+          "P_outside_scan": 0.21825
+        }
+      ],
+      "minima": [
+        {
+          "x_A": 0.0008,
+          "r_HO_A": 0.9796,
+          "V_kcal": 0.0,
+          "side": "O"
+        }
+      ],
+      "maxima": [],
+      "boundary_minimum": [],
+      "transfer_point_x_A": -0.7378,
+      "V_transfer_point_kcal": 4.5671,
+      "ground_turning_points_A": [
+        -0.3967242833729428,
+        0.0885623541639707
+      ],
+      "barrier": null,
+      "second_minimum": null,
+      "second_minimum_below_ZPE": null,
+      "range_limited": false,
+      "data_minima": [
+        {
+          "index": 13,
+          "r_HO_A": 0.98,
+          "V_kcal": 0.0
+        }
+      ],
+      "spline_undershoot_kcal": 0.0001,
+      "warnings": [],
+      "method": "scs-mp2",
+      "source": "singlepoints sp_scan_dfmp2",
+      "n_points": 16,
+      "points": [
+        {
+          "label": "up_1.700",
+          "r_HO_A": 1.7,
+          "r_NH_A": 1.0592,
+          "x_A": -1.47538,
+          "dE_kcal": 7.528
+        },
+        {
+          "label": "up_1.600",
+          "r_HO_A": 1.6,
+          "r_NH_A": 1.0714,
+          "x_A": -1.32997,
+          "dE_kcal": 6.8873
+        },
+        {
+          "label": "up_1.520",
+          "r_HO_A": 1.52,
+          "r_NH_A": 1.0865,
+          "x_A": -1.19929,
+          "dE_kcal": 6.3643
+        },
+        {
+          "label": "up_1.460",
+          "r_HO_A": 1.46,
+          "r_NH_A": 1.1019,
+          "x_A": -1.04527,
+          "dE_kcal": 5.9145
+        },
+        {
+          "label": "min",
+          "r_HO_A": 1.437,
+          "r_NH_A": 1.1093,
+          "x_A": -1.01909,
+          "dE_kcal": 5.797
+        },
+        {
+          "label": "down_1.400",
+          "r_HO_A": 1.4,
+          "r_NH_A": 1.1235,
+          "x_A": -0.97226,
+          "dE_kcal": 5.6428
+        },
+        {
+          "label": "down_1.340",
+          "r_HO_A": 1.34,
+          "r_NH_A": 1.1523,
+          "x_A": -0.88875,
+          "dE_kcal": 5.3743
+        },
+        {
+          "label": "neutral_1.280",
+          "r_HO_A": 1.28,
+          "r_NH_A": 1.1932,
+          "x_A": -0.79955,
+          "dE_kcal": 4.9752
+        },
+        {
+          "label": "down_1.230",
+          "r_HO_A": 1.23,
+          "r_NH_A": 1.2412,
+          "x_A": -0.72982,
+          "dE_kcal": 4.502
+        },
+        {
+          "label": "down_1.180",
+          "r_HO_A": 1.18,
+          "r_NH_A": 1.3074,
+          "x_A": -0.66158,
+          "dE_kcal": 3.818
+        },
+        {
+          "label": "down_1.130",
+          "r_HO_A": 1.13,
+          "r_NH_A": 1.4036,
+          "x_A": -0.57157,
+          "dE_kcal": 2.7501
+        },
+        {
+          "label": "down_1.080",
+          "r_HO_A": 1.08,
+          "r_NH_A": 1.5446,
+          "x_A": -0.4233,
+          "dE_kcal": 1.5642
+        },
+        {
+          "label": "neutral_1.030",
+          "r_HO_A": 1.03,
+          "r_NH_A": 1.7638,
+          "x_A": -0.13865,
+          "dE_kcal": 0.6007
+        },
+        {
+          "label": "neutral_0.980",
+          "r_HO_A": 0.98,
+          "r_NH_A": 1.9507,
+          "x_A": 0.0,
+          "dE_kcal": 0.0
+        },
+        {
+          "label": "neutral_0.940",
+          "r_HO_A": 0.94,
+          "r_NH_A": 2.0521,
+          "x_A": 0.07976,
+          "dE_kcal": 1.1252
+        },
+        {
+          "label": "neutral_0.900",
+          "r_HO_A": 0.9,
+          "r_NH_A": 2.1282,
+          "x_A": 0.13047,
+          "dE_kcal": 4.3554
+        }
+      ],
+      "m_eff_path_u": 103.84683136120131,
+      "m_eff_segments_u": [
+        51.063,
+        72.308,
+        138.84,
+        35.708,
+        33.848,
+        104.877,
+        98.096,
+        92.963,
+        11.853,
+        116.565,
+        174.85,
+        189.8,
+        60.957,
+        107.571,
+        122.312
+      ],
+      "sensitivity": [
+        {
+          "coord": "xH",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "pchip",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 496.25,
+          "fundamental_cm": 649.15,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": true,
+          "grid_convergence_cm": 0.0010488602879094328,
+          "warnings": [
+            "1.0 % of the ground state lies outside the scanned range"
+          ],
+          "P_O_side_v0": 0.99939,
+          "P_outside_v0": 0.01019
+        },
+        {
+          "coord": "xH",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "box",
+          "skipped": null,
+          "ZPE_cm": 563.22,
+          "fundamental_cm": 689.16,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": false,
+          "grid_convergence_cm": 1.3131488122397805,
+          "warnings": [
+            "DVR grid not converged (1.31 cm-1 between N and 2N-1 points)"
+          ],
+          "P_O_side_v0": 0.99897,
+          "P_outside_v0": 2e-05
+        },
+        {
+          "coord": "xH",
+          "mass": "reduced",
+          "mass_u": 0.9750662950627464,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 508.77,
+          "fundamental_cm": 660.28,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": false,
+          "grid_convergence_cm": 0.0001142512304578304,
+          "warnings": [],
+          "P_O_side_v0": 0.99929,
+          "P_outside_v0": 0.00834
+        },
+        {
+          "coord": "half_delta",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 639.07,
+          "fundamental_cm": 996.26,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": true,
+          "grid_convergence_cm": 0.009808047110703322,
+          "warnings": [
+            "1.4 % of the ground state lies outside the scanned range"
+          ],
+          "P_O_side_v0": 0.99578,
+          "P_outside_v0": 0.01447
+        },
+        {
+          "coord": "rHO",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 1171.44,
+          "fundamental_cm": 1166.81,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": true,
+          "grid_convergence_cm": 0.18435284364658544,
+          "warnings": [
+            "3.6 % of the ground state lies outside the scanned range"
+          ],
+          "P_O_side_v0": 0.93665,
+          "P_outside_v0": 0.03608
+        },
+        {
+          "coord": "mwpath",
+          "mass": "unit (mass-weighted path)",
+          "mass_u": 1.0,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 74.33,
+          "fundamental_cm": 137.2,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": false,
+          "grid_convergence_cm": 3.5452854518507273e-06,
+          "warnings": [],
+          "P_O_side_v0": 1.0,
+          "P_outside_v0": 0.0
+        }
+      ],
+      "figures": [
+        "dvr_scs-mp2.png"
+      ],
+      "wall_s": 2.64,
+      "verdict": "SCS-MP2: ZPE 502 cm-1 (1.44 kcal/mol); single well: no second minimum along the proton coordinate; the transfer point (r(N-H) = r(H...O)) lies 4.57 kcal/mol above the minimum, 3.13 kcal/mol above the ground level; ground-state weight on the O side 99.9 %",
+      "status": "done",
+      "at": "2026-11-22T13:59:15+05:30"
+    }
+  },
+  "timings": {},
+  "error": null,
+  "selftest": {
+    "harmonic": {
+      "E_cm": [
+        1500.0,
+        4500.0,
+        7500.0,
+        10500.0,
+        13500.0
+      ],
+      "exact_cm": [
+        1500.0,
+        4500.0,
+        7500.0,
+        10500.0,
+        13500.0
+      ],
+      "max_rel_err": 1.3340701951064737e-12,
+      "pass": true
+    },
+    "morse": {
+      "E_cm": [
+        1485.7615,
+        4371.8531,
+        7144.0363,
+        9802.3112,
+        12346.6776
+      ],
+      "exact_cm": [
+        1485.7615,
+        4371.8531,
+        7144.0363,
+        9802.3112,
+        12346.6776
+      ],
+      "max_rel_err": 4.125640422574136e-13,
+      "pass": true
+    },
+    "sampled_harmonic": {
+      "E_cm": [
+        1500.0,
+        4500.0,
+        7500.0
+      ],
+      "max_rel_err": 1.0032228172683103e-10,
+      "pass": true,
+      "P_outside_scan_v0": 2.8520692803416054e-05
+    },
+    "double_well": {
+      "barrier_kcal": 6.0,
+      "E_cm": [
+        959.637,
+        1015.612,
+        2327.374,
+        2994.435
+      ],
+      "splitting_cm": 55.975373129772,
+      "P_left_v0": 0.4999999999865956,
+      "pass": true
+    },
+    "sampled_double_well": {
+      "minima": [
+        {
+          "x_A": -0.3133,
+          "r_HO_A": 1.7533,
+          "V_kcal": 0.0,
+          "side": "N"
+        },
+        {
+          "x_A": 0.2846,
+          "r_HO_A": 1.1554,
+          "V_kcal": 5.9938,
+          "side": "O"
+        }
+      ],
+      "barrier": {
+        "x_A": 0.0278,
+        "r_HO_A": 1.4122,
+        "V_kcal": 11.2051
+      },
+      "ZPE_cm": 1447.33,
+      "ZPE_direct_cm": 1447.33,
+      "P_O_v0": 0.00199,
+      "P_O_v0_direct": 0.00188,
+      "second_minimum_below_ZPE": false,
+      "verdict": "test: ZPE 1447 cm-1 (4.14 kcal/mol); double well: second minimum on the O side at r(H...O) 1.155 A, 5.99 kcal/mol above the global minimum, barrier 11.21 kcal/mol; it lies above the zero-point level; ground-state weight on the O side 0.2 %",
+      "pass": true
+    }
+  },
+  "summary": {
+    "b3lyp": {
+      "verdict": "B3LYP: ZPE 391 cm-1 (1.12 kcal/mol); double well: second minimum on the N side at r(H...O) 1.434 A, 2.09 kcal/mol above the global minimum, barrier 2.41 kcal/mol; it lies above the zero-point level; ground-state weight on the O side 99.4 % | WARNINGS: DVR grid not converged (1.30 cm-1 between N and 2N-1 points)",
+      "ZPE_cm": 391.01,
+      "fundamental_cm": 446.45,
+      "second_minimum_below_ZPE": false,
+      "range_limited": false
+    },
+    "wb97x-d3bj": {
+      "verdict": "\u03c9B97X-D3(BJ): ZPE 418 cm-1 (1.20 kcal/mol); double well: second minimum on the N side at r(H...O) 1.410 A, 3.17 kcal/mol above the global minimum, barrier 3.31 kcal/mol; it lies above the zero-point level; ground-state weight on the O side 99.8 % | WARNINGS: DVR grid not converged (1.16 cm-1 between N and 2N-1 points)",
+      "ZPE_cm": 418.39,
+      "fundamental_cm": 614.26,
+      "second_minimum_below_ZPE": false,
+      "range_limited": false
+    },
+    "m062x": {
+      "verdict": "M06-2X: ZPE 341 cm-1 (0.98 kcal/mol); double well: second minimum on the N side at r(H...O) 1.507 A, 3.49 kcal/mol above the global minimum, barrier 3.49 kcal/mol; it lies above the zero-point level; ground-state weight on the O side 99.6 % | WARNINGS: the interpolant has 2 interior minima, the points themselves 1; DVR grid not converged (1.30 cm-1 between N and 2N-1 points)",
+      "ZPE_cm": 341.17,
+      "fundamental_cm": 534.02,
+      "second_minimum_below_ZPE": false,
+      "range_limited": false
+    },
+    "pbe0": {
+      "verdict": "PBE0: ZPE 329 cm-1 (0.94 kcal/mol); double well: second minimum on the N side at r(H...O) 1.302 A, 1.85 kcal/mol above the global minimum, barrier 1.85 kcal/mol; it lies above the zero-point level; ground-state weight on the O side 98.8 % | WARNINGS: the interpolant has 2 interior minima, the points themselves 1; DVR grid not converged (1.25 cm-1 between N and 2N-1 points)",
+      "ZPE_cm": 328.74,
+      "fundamental_cm": 408.31,
+      "second_minimum_below_ZPE": false,
+      "range_limited": false
+    },
+    "cam-b3lyp": {
+      "verdict": "CAM-B3LYP: ZPE 351 cm-1 (1.00 kcal/mol); double well: second minimum on the N side at r(H...O) 1.412 A, 2.11 kcal/mol above the global minimum, barrier 2.26 kcal/mol; it lies above the zero-point level; ground-state weight on the O side 99.3 % | WARNINGS: DVR grid not converged (1.27 cm-1 between N and 2N-1 points)",
+      "ZPE_cm": 350.52,
+      "fundamental_cm": 465.38,
+      "second_minimum_below_ZPE": false,
+      "range_limited": false
+    },
+    "dfmp2": {
+      "verdict": "DF-MP2: ZPE 349 cm-1 (1.00 kcal/mol); single well: no second minimum along the proton coordinate; the transfer point (r(N-H) = r(H...O)) lies 3.24 kcal/mol above the minimum, 2.24 kcal/mol above the ground level; ground-state weight on the O side 99.7 %",
+      "ZPE_cm": 349.1,
+      "fundamental_cm": 560.48,
+      "second_minimum_below_ZPE": null,
+      "range_limited": false
+    },
+    "scs-mp2": {
+      "verdict": "SCS-MP2: ZPE 502 cm-1 (1.44 kcal/mol); single well: no second minimum along the proton coordinate; the transfer point (r(N-H) = r(H...O)) lies 4.57 kcal/mol above the minimum, 3.13 kcal/mol above the ground level; ground-state weight on the O side 99.9 %",
+      "ZPE_cm": 501.94,
+      "fundamental_cm": 648.83,
+      "second_minimum_below_ZPE": null,
+      "range_limited": false
+    }
+  },
+  "figures": [
+    "dvr_b3lyp.png",
+    "dvr_cam-b3lyp.png",
+    "dvr_dfmp2.png",
+    "dvr_m062x.png",
+    "dvr_pbe0.png",
+    "dvr_scs-mp2.png",
+    "dvr_wb97x-d3bj.png",
+    "profiles.png"
+  ]
+}

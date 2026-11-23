@@ -1,0 +1,1196 @@
+{
+  "job": "deltascf_gasgeom",
+  "script": "dft/revision/deltascf.py",
+  "argv": [
+    "dft/revision/deltascf.py",
+    "--job",
+    "deltascf_gasgeom",
+    "--out",
+    "<run-dir>/queue/out/deltascf_gasgeom",
+    "--combos",
+    "gas/gas,gas/pcm",
+    "--plus",
+    "cation,anion",
+    "--minus",
+    "homo"
+  ],
+  "smoke": false,
+  "status": "done",
+  "started": "2026-11-21T19:17:05+05:30",
+  "restarts": 0,
+  "last_start": "2026-11-21T19:17:05+05:30",
+  "finished": "2026-11-21T22:23:35+05:30",
+  "host": {
+    "hostname": "<vm-1>",
+    "machine": "x86_64",
+    "cpu": "AMD EPYC 7B13",
+    "cpu_count": 32,
+    "ram_mb": 128799
+  },
+  "threads": 4,
+  "max_memory_mb": 8000,
+  "scratch": "<run-dir>/scratch/deltascf_gasgeom",
+  "software": {
+    "python": "3.11.16",
+    "pyscf": "2.14.0",
+    "numpy": "2.4.6",
+    "executable": "<run-dir>/env/bin/python",
+    "prefix": "<run-dir>/env",
+    "scipy": "1.17.1",
+    "h5py": "3.16.0",
+    "geometric": "1.1.1",
+    "libxc": "7.1.2",
+    "pyscf-dispersion": "1.5.0",
+    "conda_builds": {
+      "pyscf": "2.14.0 py311h990ede3_1302",
+      "pyscf-dispersion": "1.5.0 py311h5df2867_0",
+      "libxc-c": "7.1.2 cpu_hed2233d_2",
+      "libcint": "6.1.3 h64ba90f_2",
+      "libopenblas": "0.3.34 pthreads_hf13c14d_2",
+      "libblas": "3.11.0 12_h4a7cf45_openblas",
+      "numpy": "2.4.6 py311h2e04523_0",
+      "scipy": "1.17.1 py311hbe70eeb_1",
+      "geometric": "1.1.1 pyhd8ed1ab_0",
+      "python": "3.11.16 h5f976f7_2_cpython",
+      "_x86_64-microarch-level": "3 3_x86_64_v3"
+    }
+  },
+  "script_sha256": {
+    "deltascf.py": "9cf2446a001ff2d47d0db551e465b65839fc58d667b17ba7c713d008d0731f00",
+    "rev_common.py": "fba929added9222d92adeca239e64fcb87eaaeefe6511ad436c2624eba72515a"
+  },
+  "settings": {
+    "basis": "6-311++g(d,p)",
+    "grid_level": 4,
+    "lebedev_order": 29,
+    "conv_tol": 1e-10,
+    "xc": "b3lyp",
+    "conv_tol_doublet": 1e-09,
+    "combos": [
+      "gas/gas",
+      "gas/pcm"
+    ],
+    "plus_guesses": [
+      "cation",
+      "anion"
+    ],
+    "minus_guesses": [
+      "homo"
+    ],
+    "mom": false,
+    "pcm": "IEF-PCM water eps 78.3553, equilibrium solvation for each charge state",
+    "density_fit": true,
+    "auxbasis": "PySCF default",
+    "spin_convention": "mol.spin = 2S = 1 for both doublets"
+  },
+  "inputs": {
+    "geometry_gas": {
+      "path": "molecules/btpc/results/btpc_gas/opt.xyz",
+      "sha256": "3129d65de911de6f889286e346f85ee4c70ced9cac2f79a5ff4d75b793483a00"
+    }
+  },
+  "items": {
+    "gas/gas|N": {
+      "geometry": "gas",
+      "xyz": "<run-dir>/repo/molecules/btpc/results/btpc_gas/opt.xyz",
+      "model": "gas",
+      "charge": 0,
+      "spin": 0,
+      "settings": {
+        "method": "DFRKS",
+        "xc": "b3lyp",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit",
+          "H": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "E_Ha": -1317.2082309381726,
+      "scf_cycles": 4,
+      "scf_wall_s": 145.0,
+      "frontier": {
+        "n_occ": 89,
+        "n_mo": 602,
+        "orbitals": {
+          "HOMO-1": {
+            "index": 87,
+            "eV": -7.737530305084515,
+            "mulliken": {
+              "anion": 97.858,
+              "cation": 2.142
+            },
+            "lowdin": {
+              "anion": 97.466,
+              "cation": 2.534
+            },
+            "on": "anion"
+          },
+          "HOMO": {
+            "index": 88,
+            "eV": -6.8180612915888705,
+            "mulliken": {
+              "anion": 99.388,
+              "cation": 0.612
+            },
+            "lowdin": {
+              "anion": 99.13,
+              "cation": 0.87
+            },
+            "on": "anion"
+          },
+          "LUMO": {
+            "index": 89,
+            "eV": -3.342090881556291,
+            "mulliken": {
+              "anion": 0.384,
+              "cation": 99.616
+            },
+            "lowdin": {
+              "anion": 0.64,
+              "cation": 99.36
+            },
+            "on": "cation"
+          },
+          "LUMO+1": {
+            "index": 90,
+            "eV": -2.8956777925602233,
+            "mulliken": {
+              "anion": 99.598,
+              "cation": 0.402
+            },
+            "lowdin": {
+              "anion": 99.66,
+              "cation": 0.34
+            },
+            "on": "anion"
+          },
+          "LUMO+2": {
+            "index": 91,
+            "eV": -2.5530044104900886,
+            "mulliken": {
+              "anion": 99.669,
+              "cation": 0.331
+            },
+            "lowdin": {
+              "anion": 99.623,
+              "cation": 0.377
+            },
+            "on": "anion"
+          },
+          "LUMO+3": {
+            "index": 92,
+            "eV": -2.4292808438734177,
+            "mulliken": {
+              "anion": 99.249,
+              "cation": 0.751
+            },
+            "lowdin": {
+              "anion": 98.957,
+              "cation": 1.043
+            },
+            "on": "anion"
+          }
+        },
+        "HOMO_eV": -6.8180612915888705,
+        "LUMO_eV": -3.342090881556291,
+        "gap_eV": 3.4759704100325797,
+        "LUMO_on": "cation",
+        "HOMO_on": "anion",
+        "lowest_virtual_on": {
+          "cation": {
+            "index": 89,
+            "label": "LUMO",
+            "eV": -3.342090881556291,
+            "share_pct": 99.616
+          },
+          "anion": {
+            "index": 90,
+            "label": "LUMO+1",
+            "eV": -2.8956777925602233,
+            "share_pct": 99.598
+          }
+        },
+        "highest_occupied_on": {
+          "anion": {
+            "index": 88,
+            "label": "HOMO",
+            "eV": -6.8180612915888705,
+            "share_pct": 99.388
+          },
+          "cation": {
+            "index": 83,
+            "label": "HOMO-5",
+            "eV": -8.40095158387942,
+            "share_pct": 90.793
+          }
+        },
+        "delta_virt_cation_minus_anion_eV": -0.4464130889960676
+      },
+      "populations": {
+        "mulliken": {
+          "fragments": {
+            "anion": -0.8806073828274237,
+            "cation": 0.8806073828271881
+          }
+        },
+        "lowdin": {
+          "fragments": {
+            "anion": -0.722019478128621,
+            "cation": 0.7220194781282485
+          }
+        },
+        "hirshfeld": {
+          "fragments": {
+            "anion": -0.5858612416752749,
+            "cation": 0.5858613408297625
+          }
+        }
+      },
+      "status": "done",
+      "at": "2026-11-21T19:19:43+05:30"
+    },
+    "gas/gas|N+1|cation|aufbau": {
+      "geometry": "gas",
+      "model": "gas",
+      "state": "N+1",
+      "charge": -1,
+      "spin": 1,
+      "guess": "cation",
+      "guess_orbital_index": 89,
+      "guess_orbital_on": "cation",
+      "mode": "aufbau",
+      "settings": {
+        "method": "DFUKS",
+        "xc": "b3lyp",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 179,
+        "charge": -1,
+        "spin": 1,
+        "grid_level": 4,
+        "conv_tol": 1e-09,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit",
+          "H": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "E_Ha": -1317.274887175357,
+      "S2": 0.760402049943707,
+      "multiplicity": 2.010375139066047,
+      "scf_attempts": [
+        {
+          "level_shift": 0,
+          "cycles": 28
+        }
+      ],
+      "scf_wall_s": 1369.7,
+      "populations": {
+        "mulliken": {
+          "fragments": {
+            "anion": -1.301035796134884,
+            "cation": 0.3010357961346771
+          },
+          "spin_fragments": {
+            "anion": 0.3971977008879497,
+            "cation": 0.6028022991120502
+          }
+        },
+        "lowdin": {
+          "fragments": {
+            "anion": -1.1473672888576787,
+            "cation": 0.14736728885731976
+          },
+          "spin_fragments": {
+            "anion": 0.4011890112386572,
+            "cation": 0.5988109887613418
+          }
+        },
+        "hirshfeld": {
+          "fragments": {
+            "anion": -1.0103403257714074,
+            "cation": 0.01034020898938004
+          },
+          "spin_fragments": {
+            "anion": 0.40006137571449174,
+            "cation": 0.5999388161255954
+          }
+        }
+      },
+      "delta_charge_vs_N": {
+        "mulliken": {
+          "anion": -0.4204284133074603,
+          "cation": -0.579571586692511
+        },
+        "lowdin": {
+          "anion": -0.4253478107290577,
+          "cation": -0.5746521892709288
+        },
+        "hirshfeld": {
+          "anion": -0.42447908409613255,
+          "cation": -0.5755211318403824
+        }
+      },
+      "spin_on": "cation",
+      "stayed_on_guess_fragment": true,
+      "unpaired_orbital": "alpha HOMO",
+      "unpaired_orbital_eV": -0.4632415647427767,
+      "unpaired_orbital_shares_mulliken_pct": {
+        "anion": 40.02,
+        "cation": 59.98
+      },
+      "status": "done",
+      "at": "2026-11-21T19:42:50+05:30"
+    },
+    "gas/gas|N+1|anion|aufbau": {
+      "geometry": "gas",
+      "model": "gas",
+      "state": "N+1",
+      "charge": -1,
+      "spin": 1,
+      "guess": "anion",
+      "guess_orbital_index": 90,
+      "guess_orbital_on": "anion",
+      "mode": "aufbau",
+      "settings": {
+        "method": "DFUKS",
+        "xc": "b3lyp",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 179,
+        "charge": -1,
+        "spin": 1,
+        "grid_level": 4,
+        "conv_tol": 1e-09,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit",
+          "H": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "E_Ha": -1317.2748871808208,
+      "S2": 0.7604011542439224,
+      "multiplicity": 2.01037424798859,
+      "scf_attempts": [
+        {
+          "level_shift": 0,
+          "cycles": 25
+        }
+      ],
+      "scf_wall_s": 1233.8,
+      "populations": {
+        "mulliken": {
+          "fragments": {
+            "anion": -1.300755157580591,
+            "cation": 0.30075515758037386
+          },
+          "spin_fragments": {
+            "anion": 0.396922127465207,
+            "cation": 0.6030778725347915
+          }
+        },
+        "lowdin": {
+          "fragments": {
+            "anion": -1.1470867541706073,
+            "cation": 0.14708675417020745
+          },
+          "spin_fragments": {
+            "anion": 0.4009142093090077,
+            "cation": 0.5990857906909891
+          }
+        },
+        "hirshfeld": {
+          "fragments": {
+            "anion": -1.0100598629941444,
+            "cation": 0.010059746162373484
+          },
+          "spin_fragments": {
+            "anion": 0.3997877943949821,
+            "cation": 0.6002123973874527
+          }
+        }
+      },
+      "delta_charge_vs_N": {
+        "mulliken": {
+          "anion": -0.4201477747531672,
+          "cation": -0.5798522252468142
+        },
+        "lowdin": {
+          "anion": -0.42506727604198635,
+          "cation": -0.5749327239580411
+        },
+        "hirshfeld": {
+          "anion": -0.42419862131886954,
+          "cation": -0.575801594667389
+        }
+      },
+      "spin_on": "cation",
+      "stayed_on_guess_fragment": false,
+      "unpaired_orbital": "alpha HOMO",
+      "unpaired_orbital_eV": -0.46331452805421125,
+      "unpaired_orbital_shares_mulliken_pct": {
+        "anion": 39.99,
+        "cation": 60.01
+      },
+      "status": "done",
+      "at": "2026-11-21T20:03:41+05:30"
+    },
+    "gas/gas|N-1|homo|aufbau": {
+      "geometry": "gas",
+      "model": "gas",
+      "state": "N-1",
+      "charge": 1,
+      "spin": 1,
+      "guess": "homo",
+      "guess_orbital_index": 88,
+      "guess_orbital_on": "anion",
+      "mode": "aufbau",
+      "settings": {
+        "method": "DFUKS",
+        "xc": "b3lyp",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 177,
+        "charge": 1,
+        "spin": 1,
+        "grid_level": 4,
+        "conv_tol": 1e-09,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": null,
+        "auxbasis": null,
+        "auxbasis_default": {
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit",
+          "H": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "E_Ha": -1316.898117581421,
+      "S2": 0.7814681149232001,
+      "multiplicity": 2.031224374531972,
+      "scf_attempts": [
+        {
+          "level_shift": 0,
+          "cycles": 25
+        }
+      ],
+      "scf_wall_s": 1220.8,
+      "populations": {
+        "mulliken": {
+          "fragments": {
+            "anion": 0.052549593656772364,
+            "cation": 0.9474504063429695
+          },
+          "spin_fragments": {
+            "anion": 0.9955422622959457,
+            "cation": 0.004457737704064207
+          }
+        },
+        "lowdin": {
+          "fragments": {
+            "anion": 0.20902880540126356,
+            "cation": 0.7909711945983815
+          },
+          "spin_fragments": {
+            "anion": 0.9913680660338019,
+            "cation": 0.008631933966207248
+          }
+        },
+        "hirshfeld": {
+          "fragments": {
+            "anion": 0.3299312054135616,
+            "cation": 0.67006952846013
+          },
+          "spin_fragments": {
+            "anion": 0.9841339641924765,
+            "cation": 0.015865693547435642
+          }
+        }
+      },
+      "delta_charge_vs_N": {
+        "mulliken": {
+          "anion": 0.933156976484196,
+          "cation": 0.06684302351578142
+        },
+        "lowdin": {
+          "anion": 0.9310482835298846,
+          "cation": 0.06895171647013298
+        },
+        "hirshfeld": {
+          "anion": 0.9157924470888364,
+          "cation": 0.08420818763036753
+        }
+      },
+      "spin_on": "anion",
+      "stayed_on_guess_fragment": true,
+      "unpaired_orbital": "beta LUMO",
+      "unpaired_orbital_eV": -10.06761716403444,
+      "unpaired_orbital_shares_mulliken_pct": {
+        "anion": 98.94,
+        "cation": 1.06
+      },
+      "status": "done",
+      "at": "2026-11-21T20:24:19+05:30"
+    },
+    "gas/pcm|N": {
+      "geometry": "gas",
+      "xyz": "<run-dir>/repo/molecules/btpc/results/btpc_gas/opt.xyz",
+      "model": "pcm",
+      "charge": 0,
+      "spin": 0,
+      "settings": {
+        "method": "PCMDFRKS",
+        "xc": "b3lyp",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": {
+          "model": "IEF-PCM",
+          "eps": 78.3553,
+          "lebedev_order": 29,
+          "vdw_scale": 1.2,
+          "r_probe": 0.0,
+          "radii_table": null,
+          "surface_discretization_method": "SWIG",
+          "equilibrium_solvation": false
+        },
+        "auxbasis": null,
+        "auxbasis_default": {
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit",
+          "H": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "E_Ha": -1317.249093128457,
+      "scf_cycles": 17,
+      "scf_wall_s": 1053.3,
+      "frontier": {
+        "n_occ": 89,
+        "n_mo": 602,
+        "orbitals": {
+          "HOMO-1": {
+            "index": 87,
+            "eV": -7.436573093724499,
+            "mulliken": {
+              "anion": 0.646,
+              "cation": 99.354
+            },
+            "lowdin": {
+              "anion": 0.666,
+              "cation": 99.334
+            },
+            "on": "cation"
+          },
+          "HOMO": {
+            "index": 88,
+            "eV": -7.024416845338529,
+            "mulliken": {
+              "anion": 99.139,
+              "cation": 0.861
+            },
+            "lowdin": {
+              "anion": 98.889,
+              "cation": 1.111
+            },
+            "on": "anion"
+          },
+          "LUMO": {
+            "index": 89,
+            "eV": -3.2063877558514697,
+            "mulliken": {
+              "anion": 99.731,
+              "cation": 0.269
+            },
+            "lowdin": {
+              "anion": 99.725,
+              "cation": 0.275
+            },
+            "on": "anion"
+          },
+          "LUMO+1": {
+            "index": 90,
+            "eV": -3.016884829038853,
+            "mulliken": {
+              "anion": 99.862,
+              "cation": 0.138
+            },
+            "lowdin": {
+              "anion": 99.787,
+              "cation": 0.213
+            },
+            "on": "anion"
+          },
+          "LUMO+2": {
+            "index": 91,
+            "eV": -2.767808763070667,
+            "mulliken": {
+              "anion": 97.859,
+              "cation": 2.141
+            },
+            "lowdin": {
+              "anion": 97.532,
+              "cation": 2.468
+            },
+            "on": "anion"
+          },
+          "LUMO+3": {
+            "index": 92,
+            "eV": -2.4119393388532044,
+            "mulliken": {
+              "anion": 1.994,
+              "cation": 98.006
+            },
+            "lowdin": {
+              "anion": 2.202,
+              "cation": 97.798
+            },
+            "on": "cation"
+          }
+        },
+        "HOMO_eV": -7.024416845338529,
+        "LUMO_eV": -3.2063877558514697,
+        "gap_eV": 3.8180290894870597,
+        "LUMO_on": "anion",
+        "HOMO_on": "anion",
+        "lowest_virtual_on": {
+          "anion": {
+            "index": 89,
+            "label": "LUMO",
+            "eV": -3.2063877558514697,
+            "share_pct": 99.731
+          },
+          "cation": {
+            "index": 92,
+            "label": "LUMO+3",
+            "eV": -2.4119393388532044,
+            "share_pct": 98.006
+          }
+        },
+        "highest_occupied_on": {
+          "anion": {
+            "index": 88,
+            "label": "HOMO",
+            "eV": -7.024416845338529,
+            "share_pct": 99.139
+          },
+          "cation": {
+            "index": 87,
+            "label": "HOMO-1",
+            "eV": -7.436573093724499,
+            "share_pct": 99.354
+          }
+        },
+        "delta_virt_cation_minus_anion_eV": 0.7944484169982653
+      },
+      "populations": {
+        "mulliken": {
+          "fragments": {
+            "anion": -0.9289325891424021,
+            "cation": 0.9289325891421676
+          }
+        },
+        "lowdin": {
+          "fragments": {
+            "anion": -0.7488537232459392,
+            "cation": 0.7488537232455847
+          }
+        },
+        "hirshfeld": {
+          "fragments": {
+            "anion": -0.6131662109758375,
+            "cation": 0.6131664250146288
+          }
+        }
+      },
+      "status": "done",
+      "at": "2026-11-21T20:42:02+05:30"
+    },
+    "gas/pcm|N+1|cation|aufbau": {
+      "geometry": "gas",
+      "model": "pcm",
+      "state": "N+1",
+      "charge": -1,
+      "spin": 1,
+      "guess": "cation",
+      "guess_orbital_index": 92,
+      "guess_orbital_on": "cation",
+      "mode": "aufbau",
+      "settings": {
+        "method": "PCMDFUKS",
+        "xc": "b3lyp",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 179,
+        "charge": -1,
+        "spin": 1,
+        "grid_level": 4,
+        "conv_tol": 1e-09,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": {
+          "model": "IEF-PCM",
+          "eps": 78.3553,
+          "lebedev_order": 29,
+          "vdw_scale": 1.2,
+          "r_probe": 0.0,
+          "radii_table": null,
+          "surface_discretization_method": "SWIG",
+          "equilibrium_solvation": false
+        },
+        "auxbasis": null,
+        "auxbasis_default": {
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit",
+          "H": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "E_Ha": -1317.3724683024102,
+      "S2": 0.7629058743766279,
+      "multiplicity": 2.0128645005331363,
+      "scf_attempts": [
+        {
+          "level_shift": 0,
+          "cycles": 23
+        }
+      ],
+      "scf_wall_s": 1971.1,
+      "populations": {
+        "mulliken": {
+          "fragments": {
+            "anion": -1.9168599623377822,
+            "cation": 0.9168599623375777
+          },
+          "spin_fragments": {
+            "anion": 0.9966429788178702,
+            "cation": 0.0033570211821152282
+          }
+        },
+        "lowdin": {
+          "fragments": {
+            "anion": -1.7259565203839116,
+            "cation": 0.7259565203835637
+          },
+          "spin_fragments": {
+            "anion": 0.9979493593464098,
+            "cation": 0.0020506406535759562
+          }
+        },
+        "hirshfeld": {
+          "fragments": {
+            "anion": -1.5793624132415482,
+            "cation": 0.5793619740127604
+          },
+          "spin_fragments": {
+            "anion": 0.9960583268579785,
+            "cation": 0.003941990803835286
+          }
+        }
+      },
+      "delta_charge_vs_N": {
+        "mulliken": {
+          "anion": -0.9879273731953802,
+          "cation": -0.01207262680458987
+        },
+        "lowdin": {
+          "anion": -0.9771027971379723,
+          "cation": -0.022897202862021016
+        },
+        "hirshfeld": {
+          "anion": -0.9661962022657108,
+          "cation": -0.03380445100186846
+        }
+      },
+      "spin_on": "anion",
+      "stayed_on_guess_fragment": false,
+      "unpaired_orbital": "alpha HOMO",
+      "unpaired_orbital_eV": -3.5118650735409913,
+      "unpaired_orbital_shares_mulliken_pct": {
+        "anion": 99.69,
+        "cation": 0.31
+      },
+      "status": "done",
+      "at": "2026-11-21T21:15:11+05:30"
+    },
+    "gas/pcm|N+1|anion|aufbau": {
+      "geometry": "gas",
+      "model": "pcm",
+      "state": "N+1",
+      "charge": -1,
+      "spin": 1,
+      "guess": "anion",
+      "guess_orbital_index": 89,
+      "guess_orbital_on": "anion",
+      "mode": "aufbau",
+      "settings": {
+        "method": "PCMDFUKS",
+        "xc": "b3lyp",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 179,
+        "charge": -1,
+        "spin": 1,
+        "grid_level": 4,
+        "conv_tol": 1e-09,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": {
+          "model": "IEF-PCM",
+          "eps": 78.3553,
+          "lebedev_order": 29,
+          "vdw_scale": 1.2,
+          "r_probe": 0.0,
+          "radii_table": null,
+          "surface_discretization_method": "SWIG",
+          "equilibrium_solvation": false
+        },
+        "auxbasis": null,
+        "auxbasis_default": {
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit",
+          "H": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "E_Ha": -1317.372468303809,
+      "S2": 0.7629048711297912,
+      "multiplicity": 2.0128635036979445,
+      "scf_attempts": [
+        {
+          "level_shift": 0,
+          "cycles": 23
+        }
+      ],
+      "scf_wall_s": 1985.3,
+      "populations": {
+        "mulliken": {
+          "fragments": {
+            "anion": -1.9168600614905262,
+            "cation": 0.9168600614903211
+          },
+          "spin_fragments": {
+            "anion": 0.9966425352711443,
+            "cation": 0.0033574647288470744
+          }
+        },
+        "lowdin": {
+          "fragments": {
+            "anion": -1.725957062996485,
+            "cation": 0.7259570629961412
+          },
+          "spin_fragments": {
+            "anion": 0.997948610562482,
+            "cation": 0.0020513894375099513
+          }
+        },
+        "hirshfeld": {
+          "fragments": {
+            "anion": -1.5793643377935198,
+            "cation": 0.5793638985611139
+          },
+          "spin_fragments": {
+            "anion": 0.9960579975350842,
+            "cation": 0.003942320175001223
+          }
+        }
+      },
+      "delta_charge_vs_N": {
+        "mulliken": {
+          "anion": -0.9879274723481242,
+          "cation": -0.01207252765184652
+        },
+        "lowdin": {
+          "anion": -0.9771033397505459,
+          "cation": -0.02289666024944359
+        },
+        "hirshfeld": {
+          "anion": -0.9661981268176824,
+          "cation": -0.03380252645351489
+        }
+      },
+      "spin_on": "anion",
+      "stayed_on_guess_fragment": true,
+      "unpaired_orbital": "alpha HOMO",
+      "unpaired_orbital_eV": -3.5118582966317655,
+      "unpaired_orbital_shares_mulliken_pct": {
+        "anion": 99.69,
+        "cation": 0.31
+      },
+      "status": "done",
+      "at": "2026-11-21T21:48:33+05:30"
+    },
+    "gas/pcm|N-1|homo|aufbau": {
+      "geometry": "gas",
+      "model": "pcm",
+      "state": "N-1",
+      "charge": 1,
+      "spin": 1,
+      "guess": "homo",
+      "guess_orbital_index": 88,
+      "guess_orbital_on": "anion",
+      "mode": "aufbau",
+      "settings": {
+        "method": "PCMDFUKS",
+        "xc": "b3lyp",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 177,
+        "charge": 1,
+        "spin": 1,
+        "grid_level": 4,
+        "conv_tol": 1e-09,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": {
+          "model": "IEF-PCM",
+          "eps": 78.3553,
+          "lebedev_order": 29,
+          "vdw_scale": 1.2,
+          "r_probe": 0.0,
+          "radii_table": null,
+          "surface_discretization_method": "SWIG",
+          "equilibrium_solvation": false
+        },
+        "auxbasis": null,
+        "auxbasis_default": {
+          "O": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit",
+          "H": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "E_Ha": -1316.9975483808093,
+      "S2": 0.7840627815388217,
+      "multiplicity": 2.0337775508042384,
+      "scf_attempts": [
+        {
+          "level_shift": 0,
+          "cycles": 24
+        }
+      ],
+      "scf_wall_s": 2083.2,
+      "populations": {
+        "mulliken": {
+          "fragments": {
+            "anion": 0.03937297881803081,
+            "cation": 0.9606270211817542
+          },
+          "spin_fragments": {
+            "anion": 0.9965920938188605,
+            "cation": 0.0034079061811258054
+          }
+        },
+        "lowdin": {
+          "fragments": {
+            "anion": 0.20653052374378156,
+            "cation": 0.79346947625586
+          },
+          "spin_fragments": {
+            "anion": 0.9928449449318569,
+            "cation": 0.007155055068129361
+          }
+        },
+        "hirshfeld": {
+          "fragments": {
+            "anion": 0.32686904907875136,
+            "cation": 0.6731314170883865
+          },
+          "spin_fragments": {
+            "anion": 0.9856306246223887,
+            "cation": 0.01436905545104852
+          }
+        }
+      },
+      "delta_charge_vs_N": {
+        "mulliken": {
+          "anion": 0.9683055679604329,
+          "cation": 0.03169443203958666
+        },
+        "lowdin": {
+          "anion": 0.9553842469897208,
+          "cation": 0.044615753010275205
+        },
+        "hirshfeld": {
+          "anion": 0.9400352600545888,
+          "cation": 0.05996499207375772
+        }
+      },
+      "spin_on": "anion",
+      "stayed_on_guess_fragment": true,
+      "unpaired_orbital": "beta LUMO",
+      "unpaired_orbital_eV": -6.670925255235503,
+      "unpaired_orbital_shares_mulliken_pct": {
+        "anion": 99.04,
+        "cation": 0.96
+      },
+      "status": "done",
+      "at": "2026-11-21T22:23:35+05:30"
+    }
+  },
+  "timings": {
+    "gas/gas|N": 145.0,
+    "gas/gas|N+1|cation|aufbau": 1369.7,
+    "gas/gas|N+1|anion|aufbau": 1233.8,
+    "gas/gas|N-1|homo|aufbau": 1220.8,
+    "gas/pcm|N": 1053.3,
+    "gas/pcm|N+1|cation|aufbau": 1971.1,
+    "gas/pcm|N+1|anion|aufbau": 1985.3,
+    "gas/pcm|N-1|homo|aufbau": 2083.2
+  },
+  "error": null,
+  "summary": {
+    "gas/gas": {
+      "E_N_Ha": -1317.2082309381726,
+      "koopmans_IP_eV": 6.8180612915888705,
+      "koopmans_EA_eV": 3.342090881556291,
+      "LUMO_on": "cation",
+      "HOMO_on": "anion",
+      "N+1_states": [
+        {
+          "guess": "cation",
+          "mode": "aufbau",
+          "E_Ha": -1317.274887175357,
+          "spin_on": "cation",
+          "S2": 0.760402049943707,
+          "E_rel_eV": 1.4867728429887658e-07
+        },
+        {
+          "guess": "anion",
+          "mode": "aufbau",
+          "E_Ha": -1317.2748871808208,
+          "spin_on": "cation",
+          "S2": 0.7604011542439224,
+          "E_rel_eV": 0.0
+        }
+      ],
+      "N+1_lowest": {
+        "guess": "anion",
+        "mode": "aufbau",
+        "spin_on": "cation"
+      },
+      "deltaSCF_EA_eV": 1.8138087644051215,
+      "added_electron_on": "cation",
+      "N-1_states": [
+        {
+          "guess": "homo",
+          "mode": "aufbau",
+          "E_Ha": -1316.898117581421,
+          "spin_on": "anion",
+          "S2": 0.7814681149232001,
+          "E_rel_eV": 0.0
+        }
+      ],
+      "N-1_lowest": {
+        "guess": "homo",
+        "mode": "aufbau",
+        "spin_on": "anion"
+      },
+      "deltaSCF_IE_eV": 8.438614330606887,
+      "hole_on": "anion"
+    },
+    "gas/pcm": {
+      "E_N_Ha": -1317.249093128457,
+      "koopmans_IP_eV": 7.024416845338529,
+      "koopmans_EA_eV": 3.2063877558514697,
+      "LUMO_on": "anion",
+      "HOMO_on": "anion",
+      "N+1_states": [
+        {
+          "guess": "cation",
+          "mode": "aufbau",
+          "E_Ha": -1317.3724683024102,
+          "spin_on": "anion",
+          "S2": 0.7629058743766279,
+          "E_rel_eV": 3.8063364669441894e-08
+        },
+        {
+          "guess": "anion",
+          "mode": "aufbau",
+          "E_Ha": -1317.372468303809,
+          "spin_on": "anion",
+          "S2": 0.7629048711297912,
+          "E_rel_eV": 0.0
+        }
+      ],
+      "N+1_lowest": {
+        "guess": "anion",
+        "mode": "aufbau",
+        "spin_on": "anion"
+      },
+      "deltaSCF_EA_eV": 3.357209549671578,
+      "added_electron_on": "anion",
+      "N-1_states": [
+        {
+          "guess": "homo",
+          "mode": "aufbau",
+          "E_Ha": -1316.9975483808093,
+          "spin_on": "anion",
+          "S2": 0.7840627815388217,
+          "E_rel_eV": 0.0
+        }
+      ],
+      "N-1_lowest": {
+        "guess": "homo",
+        "mode": "aufbau",
+        "spin_on": "anion"
+      },
+      "deltaSCF_IE_eV": 6.844881286388033,
+      "hole_on": "anion"
+    }
+  },
+  "peak_rss_mb": 9745.7
+}

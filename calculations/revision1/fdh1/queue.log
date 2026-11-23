@@ -1,0 +1,31 @@
+
+===== queue: start fdh1 attempt 1 at 2026-11-22T09:43:24+05:30 =====
+$ <run-dir>/env/bin/python dft/revision/fd_helper.py --fd-dir <run-dir>/queue/out/c0_btpcz_pcm_fdhess/fd --case btpcz_pcm --tag fdh1 --chunk 3 --gap 3 --step 0.005
+[2026-11-22 09:43:25 AM IST] fdh1: case btpcz_pcm, 33 atoms, 33 chunks of 3 columns, step 0.005 Bohr, 4 threads, env {'MAX_MEMORY_MB': '8000', 'DFT_MAX_MEMORY_MB': '8000', 'GRID_LEVEL': '4', 'PCM_LEBEDEV_ORDER': '29', 'NO_AUTO_PCM': '1'}
+[2026-11-22 09:43:25 AM IST] fdh1: chunk cols_096_099 (index 32; main at 6) started
+[fd-worker 96-99] column 97/99 done
+[fd-worker 96-99] column 98/99 done
+[fd-worker 96-99] column 99/99 done
+[2026-11-22 10:57:22 AM IST] fdh1: chunk cols_096_099 done (6 gradients, 74.0 min)
+[2026-11-22 10:57:22 AM IST] fdh1: chunk cols_090_093 (index 30; main at 7) started
+[fd-worker 90-93] column 91/99 done
+[fd-worker 90-93] column 92/99 done
+[fd-worker 90-93] column 93/99 done
+[2026-11-22 12:18:04 PM IST] fdh1: chunk cols_090_093 done (6 gradients, 80.7 min)
+[2026-11-22 12:18:04 PM IST] fdh1: chunk cols_078_081 (index 26; main at 8) started
+[fd-worker 78-81] column 79/99 done
+[fd-worker 78-81] column 80/99 done
+[fd-worker 78-81] column 81/99 done
+[2026-11-22 01:27:07 PM IST] fdh1: chunk cols_078_081 done (6 gradients, 69.0 min)
+[2026-11-22 01:27:07 PM IST] fdh1: chunk cols_069_072 (index 23; main at 9) started
+[fd-worker 69-72] column 70/99 done
+[fd-worker 69-72] column 71/99 done
+[fd-worker 69-72] column 72/99 done
+[2026-11-22 02:40:54 PM IST] fdh1: chunk cols_069_072 done (6 gradients, 73.8 min)
+[2026-11-22 02:40:54 PM IST] fdh1: chunk cols_051_054 (index 17; main at 11) started
+[fd-worker 51-54] column 52/99 done
+[fd-worker 51-54] column 53/99 done
+[fd-worker 51-54] column 54/99 done
+[2026-11-22 03:55:46 PM IST] fdh1: chunk cols_051_054 done (6 gradients, 74.9 min)
+[2026-11-22 03:55:46 PM IST] fdh1: no chunk at least 3 ahead of chunk 12 (main); stopping
+[2026-11-22 03:55:46 PM IST] fdh1: finished, 5 chunk(s) computed

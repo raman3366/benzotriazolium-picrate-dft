@@ -1,0 +1,26 @@
+
+===== queue: start fdh4 attempt 1 at 2026-11-22T11:40:17+05:30 =====
+$ <run-dir>/env/bin/python dft/revision/fd_helper.py --fd-dir <run-dir>/queue/out/c0_btpcz_pcm_fdhess/fd --case btpcz_pcm --tag fdh4 --chunk 3 --gap 3 --step 0.005
+[2026-11-22 11:40:17 AM IST] fdh4: case btpcz_pcm, 33 atoms, 33 chunks of 3 columns, step 0.005 Bohr, 4 threads, env {'MAX_MEMORY_MB': '8000', 'DFT_MAX_MEMORY_MB': '8000', 'GRID_LEVEL': '4', 'PCM_LEBEDEV_ORDER': '29', 'NO_AUTO_PCM': '1'}
+[2026-11-22 11:40:17 AM IST] fdh4: chunk cols_084_087 (index 28; main at 8) started
+[fd-worker 84-87] column 85/99 done
+[fd-worker 84-87] column 86/99 done
+[fd-worker 84-87] column 87/99 done
+[2026-11-22 12:59:19 PM IST] fdh4: chunk cols_084_087 done (6 gradients, 79.0 min)
+[2026-11-22 12:59:19 PM IST] fdh4: chunk cols_072_075 (index 24; main at 9) started
+[fd-worker 72-75] column 73/99 done
+[fd-worker 72-75] column 74/99 done
+[fd-worker 72-75] column 75/99 done
+[2026-11-22 02:07:16 PM IST] fdh4: chunk cols_072_075 done (6 gradients, 68.0 min)
+[2026-11-22 02:07:16 PM IST] fdh4: chunk cols_057_060 (index 19; main at 10) started
+[fd-worker 57-60] column 58/99 done
+[fd-worker 57-60] column 59/99 done
+[fd-worker 57-60] column 60/99 done
+[2026-11-22 03:21:07 PM IST] fdh4: chunk cols_057_060 done (6 gradients, 73.9 min)
+[2026-11-22 03:21:07 PM IST] fdh4: chunk cols_042_045 (index 14; main at 11) started
+[fd-worker 42-45] column 43/99 done
+[fd-worker 42-45] column 44/99 done
+[fd-worker 42-45] column 45/99 done
+[2026-11-22 04:35:24 PM IST] fdh4: chunk cols_042_045 done (6 gradients, 74.3 min)
+[2026-11-22 04:35:24 PM IST] fdh4: no chunk at least 3 ahead of chunk 12 (main); stopping
+[2026-11-22 04:35:24 PM IST] fdh4: finished, 4 chunk(s) computed

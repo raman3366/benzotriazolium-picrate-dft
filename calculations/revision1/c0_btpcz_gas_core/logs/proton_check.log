@@ -1,0 +1,5 @@
+
+===== 2026-11-21T08:02:22  $ bash <run-dir>/repo/run_case.sh btpcz_gas 4 -- --stage proton_check
+[run_case] btpcz_gas  threads=4  mem=8000MB  fd=autox2  2026-11-21T08:02:22+00:00
+[pipeline] proton check: H-N 1.823 A, H-O 1.000 A -> PROTON TRANSFERRED to the acceptor; bonds broken ['N6-H6'], formed ['O1-H6']
+[pipeline] proton_check: done (0.0 min) proton transferred

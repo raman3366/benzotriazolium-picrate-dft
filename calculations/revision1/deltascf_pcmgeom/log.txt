@@ -1,0 +1,22 @@
+[2026-11-21 08:25:03 PM IST] job deltascf_pcmgeom (dft/revision/deltascf.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/deltascf_pcmgeom, smoke False, restart #0; PySCF 2.14.0
+[2026-11-21 08:25:03 PM IST] pcm/pcm|N: RKS (606 AO), guess <run-dir>/repo/data/r2/molecules/btpc/results/btpc_pcm/final.chk
+[2026-11-21 08:25:03 PM IST] initial density from <run-dir>/repo/data/r2/molecules/btpc/results/btpc_pcm/final.chk
+[2026-11-21 08:31:01 PM IST] pcm/pcm|N: E = -1317.2536885706 Ha (4 cycles, 344 s); LUMO on anion, HOMO on anion
+[2026-11-21 08:31:01 PM IST] pcm/pcm|N+1|cation|aufbau: UKS doublet, electron added to MO 92 (cation), aufbau
+[2026-11-21 09:06:06 PM IST] pcm/pcm|N+1|cation|aufbau: E = -1317.3757264945 Ha, <S2> 0.7639, spin on anion (anion +0.997, cation +0.003), 2090 s
+[2026-11-21 09:06:07 PM IST] pcm/pcm|N+1|anion|aufbau: UKS doublet, electron added to MO 89 (anion), aufbau
+[2026-11-21 09:40:34 PM IST] pcm/pcm|N+1|anion|aufbau: E = -1317.3757264948 Ha, <S2> 0.7639, spin on anion (anion +0.997, cation +0.003), 2052 s
+[2026-11-21 09:40:35 PM IST] pcm/pcm|N-1|homo|aufbau: UKS doublet, electron removed from MO 88 (anion), aufbau
+[2026-11-21 10:12:17 PM IST] pcm/pcm|N-1|homo|aufbau: E = -1317.0070741850 Ha, <S2> 0.7871, spin on anion (anion +0.996, cation +0.004), 1885 s
+[2026-11-21 10:12:17 PM IST] pcm/pcm: EA(dSCF) 3.321 eV (electron on anion), IE(dSCF) 6.711 eV (hole on anion); Koopmans EA 3.167, IP 6.903 eV; LUMO on anion
+[2026-11-21 10:12:17 PM IST] pcm/gas|N: RKS (606 AO), guess <run-dir>/repo/data/r2/molecules/btpc/results/btpc_gas/final.chk
+[2026-11-21 10:12:17 PM IST] initial density from <run-dir>/repo/data/r2/molecules/btpc/results/btpc_gas/final.chk
+[2026-11-21 10:28:25 PM IST] pcm/gas|N: E = -1317.2004180424 Ha (41 cycles, 957 s); LUMO on cation, HOMO on anion
+[2026-11-21 10:28:25 PM IST] pcm/gas|N+1|cation|aufbau: UKS doublet, electron added to MO 89 (cation), aufbau
+[2026-11-21 10:53:46 PM IST] pcm/gas|N+1|cation|aufbau: E = -1317.2775364732 Ha, <S2> 0.7619, spin on cation (anion +0.181, cation +0.819), 1504 s
+[2026-11-21 10:53:46 PM IST] pcm/gas|N+1|anion|aufbau: UKS doublet, electron added to MO 90 (anion), aufbau
+[2026-11-21 11:15:56 PM IST] pcm/gas|N+1|anion|aufbau: E = -1317.2775364765 Ha, <S2> 0.7619, spin on cation (anion +0.181, cation +0.819), 1314 s
+[2026-11-21 11:15:57 PM IST] pcm/gas|N-1|homo|aufbau: UKS doublet, electron removed from MO 88 (anion), aufbau
+[2026-11-21 11:38:51 PM IST] pcm/gas|N-1|homo|aufbau: E = -1316.9037788767 Ha, <S2> 0.7841, spin on anion (anion +0.996, cation +0.004), 1359 s
+[2026-11-21 11:38:51 PM IST] pcm/gas: EA(dSCF) 2.098 eV (electron on cation), IE(dSCF) 8.072 eV (hole on anion); Koopmans EA 3.852, IP 6.443 eV; LUMO on cation
+[2026-11-21 11:38:51 PM IST] job deltascf_pcmgeom finished (peak RSS 9826 MB)

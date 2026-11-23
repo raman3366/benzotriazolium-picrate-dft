@@ -1,0 +1,173 @@
+{
+  "job": "cc_neutral_631gd_f080",
+  "script": "dft/revision/cc_correction.py",
+  "argv": [
+    "dft/revision/cc_correction.py",
+    "--job",
+    "cc_neutral_631gd_f080",
+    "--out",
+    "<run-dir>/queue/out/cc_neutral_631gd_f080",
+    "--xyz",
+    "<run-dir>/queue/out/sp_neutral_pcm/geoms/neutral_pcm.xyz",
+    "--labels",
+    "neutral",
+    "--solvent",
+    "water",
+    "--basis",
+    "6-31g*",
+    "--fno-fracs",
+    "0.8"
+  ],
+  "smoke": false,
+  "status": "done",
+  "started": "2026-11-23T08:10:07+05:30",
+  "restarts": 0,
+  "last_start": "2026-11-23T08:10:07+05:30",
+  "finished": "2026-11-23T13:18:19+05:30",
+  "host": {
+    "hostname": "<vm-2>",
+    "machine": "x86_64",
+    "cpu": "AMD EPYC 7B13",
+    "cpu_count": 32,
+    "ram_mb": 128799
+  },
+  "threads": 16,
+  "max_memory_mb": 40000,
+  "scratch": "<run-dir>/scratch/cc_neutral_631gd_f080",
+  "software": {
+    "python": "3.11.16",
+    "pyscf": "2.14.0",
+    "numpy": "2.4.6",
+    "executable": "<run-dir>/env/bin/python",
+    "prefix": "<run-dir>/env",
+    "scipy": "1.17.1",
+    "h5py": "3.16.0",
+    "geometric": "1.1.1",
+    "libxc": "7.1.2",
+    "pyscf-dispersion": "1.5.0",
+    "conda_builds": {
+      "pyscf": "2.14.0 py311h990ede3_1302",
+      "pyscf-dispersion": "1.5.0 py311h5df2867_0",
+      "libxc-c": "7.1.2 cpu_hed2233d_2",
+      "libcint": "6.1.3 h64ba90f_2",
+      "libopenblas": "0.3.34 pthreads_hf13c14d_2",
+      "libblas": "3.11.0 12_h4a7cf45_openblas",
+      "numpy": "2.4.6 py311h2e04523_0",
+      "scipy": "1.17.1 py311hbe70eeb_1",
+      "geometric": "1.1.1 pyhd8ed1ab_0",
+      "python": "3.11.16 h5f976f7_2_cpython",
+      "_x86_64-microarch-level": "3 3_x86_64_v3"
+    }
+  },
+  "script_sha256": {
+    "cc_correction.py": "331882e1f1160eeaf7dc347dbc14697e781596c34c431e9e55d5ebf74fa492e2",
+    "rev_common.py": "fba929added9222d92adeca239e64fcb87eaaeefe6511ad436c2624eba72515a"
+  },
+  "settings": {
+    "basis": "6-31g*",
+    "solvent": "water",
+    "eps": 78.3553,
+    "pcm_method": "IEF-PCM",
+    "pcm_lebedev_order": 29,
+    "reference": "DF-RHF (PySCF default JK-fit), conv_tol 1e-10, IEF-PCM, reaction field frozen at HF (PTE)",
+    "correlation": "DF-CCSD(T) and MP2 in the FNO space; RI basis df.make_auxbasis(mp2fit=True); frozen core chemcore",
+    "cc_conv_tol": 1e-08,
+    "charge": 0,
+    "spin": 0,
+    "fno_fracs": [
+      0.8
+    ]
+  },
+  "inputs": {
+    "xyz_neutral": {
+      "path": "<run-dir>/queue/out/sp_neutral_pcm/geoms/neutral_pcm.xyz",
+      "sha256": "06d61e7b476813d4b526d9eae221bb1c49d98a0a06656666d8bed47e449420a7"
+    }
+  },
+  "items": {
+    "neutral|f0.800": {
+      "geometry": "neutral",
+      "xyz": "<run-dir>/queue/out/sp_neutral_pcm/geoms/neutral_pcm.xyz",
+      "frac": 0.8,
+      "E_HF_Ha": -1309.3852326465485,
+      "n_frozen_core": 25,
+      "nao": 366,
+      "nvir_total": 277,
+      "nvir_kept": 222,
+      "no_occ_kept_frac": 0.9901689767676424,
+      "no_occ_smallest_kept": 0.0009113023282161632,
+      "no_occ_sum": 2.5466743434011563,
+      "auxbasis": {
+        "scf_jk": "None",
+        "ri": {
+          "O": "cc-pvdz-ri",
+          "C": "cc-pvdz-ri",
+          "H": "cc-pvdz-ri",
+          "N": "cc-pvdz-ri"
+        }
+      },
+      "cc_class": "pyscf.cc.dfccsd.RCCSD",
+      "fock_offdiag_max": {
+        "oo": 3.9661429345318275e-07,
+        "vv": 1.61990736990969e-07,
+        "ov": 2.9330493766729915e-07
+      },
+      "naux_cc": 1512,
+      "n_active_occ": 64,
+      "n_active_vir": 222,
+      "E_corr_mp2_active_Ha": -3.661386283212609,
+      "E_corr_ccsd_Ha": -3.676010537713677,
+      "wall_ccsd_s": 10343.9,
+      "diagnostics": {
+        "T1": 0.01733155323015688,
+        "D1": 0.08207438550854046,
+        "D2": 0.20490462908190832,
+        "T_over_ccsd": 0.042401907541329976
+      },
+      "E_T_Ha": -0.15586985894109,
+      "wall_t_s": 7941.0,
+      "delta_ccsd_Ha": -0.014624254501067746,
+      "delta_T_Ha": -0.15586985894109,
+      "delta_Ha": -0.17049411344215776,
+      "E_corr_mp2_full_ri_Ha": -3.7740161690879326,
+      "dMP2_truncation_Ha": -0.11262988587532341,
+      "T_scaled_Ha": -0.1606646560660014,
+      "delta_T_scaled_Ha": -0.17528891056706913,
+      "wall_s": 18311.3,
+      "peak_rss_mb": 29186.2,
+      "status": "done",
+      "at": "2026-11-23T13:18:19+05:30"
+    }
+  },
+  "timings": {
+    "neutral|f0.800": 18311.3
+  },
+  "error": null,
+  "summary": {
+    "neutral|f0.800": {
+      "geometry": "neutral",
+      "frac": 0.8,
+      "nvir_kept": 222,
+      "nvir_total": 277,
+      "no_occ_kept_frac": 0.9901689767676424,
+      "delta_ccsd_Ha": -0.014624254501067746,
+      "delta_T_Ha": -0.15586985894109,
+      "delta_Ha": -0.17049411344215776,
+      "delta_T_scaled_Ha": -0.17528891056706913,
+      "dMP2_truncation_Ha": -0.11262988587532341,
+      "E_HF_Ha": -1309.3852326465485,
+      "E_corr_mp2_full_ri_Ha": -3.7740161690879326,
+      "E_corr_mp2_active_Ha": -3.661386283212609,
+      "E_corr_ccsd_Ha": -3.676010537713677,
+      "E_T_Ha": -0.15586985894109,
+      "diagnostics": {
+        "T1": 0.01733155323015688,
+        "D1": 0.08207438550854046,
+        "D2": 0.20490462908190832,
+        "T_over_ccsd": 0.042401907541329976
+      },
+      "wall_s": 18311.3
+    }
+  },
+  "peak_rss_mb": 29186.2
+}

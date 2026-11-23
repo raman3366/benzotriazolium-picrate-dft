@@ -1,0 +1,7 @@
+
+===== queue: start c0_prep attempt 1 at 2026-11-21T03:10:25+05:30 =====
+$ if [ ! -x tools/env/bin/python ]; then mkdir -p tools && ln -sfn "$(dirname "$(dirname <run-dir>/env/bin/python)")" tools/env; fi; if [ ! -x tools/multiwfn/Multiwfn_noGUI ] && [ -x "$HOME/r007/multiwfn/Multiwfn_noGUI" ]; then ln -sfn "$HOME/r007/multiwfn" tools/multiwfn; fi; tools/env/bin/python -c 'import pyscf, geometric; print("pyscf", pyscf.__version__, "geometric", geometric.__version__)'; ls -l tools/
+pyscf 2.14.0 geometric 1.1.1
+total 0
+lrwxrwxrwx 1 <user> <user> 19 Nov 20 21:40 env -> <run-dir>/env
+lrwxrwxrwx 1 <user> <user> 24 Nov 20 21:40 multiwfn -> <run-dir>/multiwfn

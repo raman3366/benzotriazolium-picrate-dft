@@ -1,0 +1,365 @@
+
+===== 2026-11-20T21:44:12  $ <run-dir>/env/bin/python <run-dir>/repo/dft/revision/opt_d3.py --job c0_btpcz_pcm_core_preopt --out <run-dir>/queue/out/c0_btpcz_pcm_core/preopt --case btpcz --model pcm --disp none --seed-hessian none --no-fmo --start xray --criteria loose --scf-tol 1e-8 --maxsteps 300 --negligible-stop 10 --basis 6-31g(d) --max-hours 6.0
+[2026-11-21 03:14:12 AM IST] job c0_btpcz_pcm_core_preopt (dft/revision/opt_d3.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/c0_btpcz_pcm_core/preopt, smoke False, restart #0; PySCF 2.14.0
+geometric-optimize called with the following command line:
+<run-dir>/repo/dft/revision/opt_d3.py --job c0_btpcz_pcm_core_preopt --out <run-dir>/queue/out/c0_btpcz_pcm_core/preopt --case btpcz --model pcm --disp none --seed-hessian none --no-fmo --start xray --criteria loose --scf-tol 1e-8 --maxsteps 300 --negligible-stop 10 --basis 6-31g(d) --max-hours 6.0
+
+                                        [91m())))))))))))))))/[0m                     
+                                    [91m())))))))))))))))))))))))),[0m                
+                                [91m*)))))))))))))))))))))))))))))))))[0m             
+                        [94m#,[0m    [91m()))))))))/[0m                [91m.)))))))))),[0m          
+                      [94m#%%%%,[0m  [91m())))))[0m                        [91m.))))))))*[0m        
+                      [94m*%%%%%%,[0m  [91m))[0m              [93m..[0m              [91m,))))))).[0m      
+                        [94m*%%%%%%,[0m         [93m***************/.[0m        [91m.)))))))[0m     
+                [94m#%%/[0m      [94m(%%%%%%,[0m    [93m/*********************.[0m       [91m)))))))[0m    
+              [94m.%%%%%%#[0m      [94m*%%%%%%,[0m  [93m*******/,[0m     [93m**********,[0m      [91m.))))))[0m   
+                [94m.%%%%%%/[0m      [94m*%%%%%%,[0m  [93m**[0m              [93m********[0m      [91m.))))))[0m  
+          [94m##[0m      [94m.%%%%%%/[0m      [94m(%%%%%%,[0m                  [93m,******[0m      [91m/)))))[0m  
+        [94m%%%%%%[0m      [94m.%%%%%%#[0m      [94m*%%%%%%,[0m    [92m,/////.[0m       [93m******[0m      [91m))))))[0m 
+      [94m#%[0m      [94m%%[0m      [94m.%%%%%%/[0m      [94m*%%%%%%,[0m  [92m////////,[0m      [93m*****/[0m     [91m,)))))[0m 
+    [94m#%%[0m  [94m%%%[0m  [94m%%%#[0m      [94m.%%%%%%/[0m      [94m(%%%%%%,[0m  [92m///////.[0m     [93m/*****[0m      [91m))))).[0m
+  [94m#%%%%.[0m      [94m%%%%%#[0m      [94m/%%%%%%*[0m      [94m#%%%%%%[0m   [92m/////)[0m     [93m******[0m      [91m))))),[0m
+    [94m#%%%%##%[0m  [94m%%%#[0m      [94m.%%%%%%/[0m      [94m(%%%%%%,[0m  [92m///////.[0m     [93m/*****[0m      [91m))))).[0m
+      [94m##[0m     [94m%%%[0m      [94m.%%%%%%/[0m      [94m*%%%%%%,[0m  [92m////////.[0m      [93m*****/[0m     [91m,)))))[0m 
+        [94m#%%%%#[0m      [94m/%%%%%%/[0m      [94m(%%%%%%[0m      [92m/)/)//[0m       [93m******[0m      [91m))))))[0m 
+          [94m##[0m      [94m.%%%%%%/[0m      [94m(%%%%%%,[0m                  [93m*******[0m      [91m))))))[0m  
+                [94m.%%%%%%/[0m      [94m*%%%%%%,[0m  [93m**.[0m             [93m/*******[0m      [91m.))))))[0m  
+              [94m*%%%%%%/[0m      [94m(%%%%%%[0m   [93m********/*..,*/*********[0m       [91m*))))))[0m   
+                [94m#%%/[0m      [94m(%%%%%%,[0m    [93m*********************/[0m        [91m)))))))[0m    
+                        [94m*%%%%%%,[0m         [93m,**************/[0m         [91m,))))))/[0m     
+                      [94m(%%%%%%[0m   [91m()[0m                              [91m))))))))[0m       
+                      [94m#%%%%,[0m  [91m())))))[0m                        [91m,)))))))),[0m        
+                        [94m#,[0m    [91m())))))))))[0m                [91m,)))))))))).[0m          
+                                 [91m()))))))))))))))))))))))))))))))/[0m             
+                                    [91m())))))))))))))))))))))))).[0m                
+                                         [91m())))))))))))))),[0m                     
+
+-=# [1;94m geomeTRIC started. Version: 1.1.1 [0m #=-
+Current date and time: 2026-11-20 21:44:13
+#========================================================#
+#| [92m    Arguments passed to driver run_optimizer():     [0m |#
+#========================================================#
+convergence_dmax          0.01 
+convergence_drms          0.0067 
+convergence_energy        1e-06 
+convergence_gmax          0.0025 
+convergence_grms          0.0017 
+customengine              <pyscf.geomopt.geometric_solver.PySCFEngine object at 0x7c904452ecd0> 
+input                     <run-dir>/scratch/c0_btpcz_pcm_core/preopt/tmpl9rzm6g9/818f3ecc-5ba6-4863-a84b-74a4a85747a7 
+logIni                    <run-dir>/env/lib/python3.11/site-packages/pyscf/geomopt/log.ini 
+maxiter                   300 
+----------------------------------------------------------
+Custom engine selected.
+Bonds will be generated from interatomic distances less than 1.20 times sum of covalent radii
+99 internal coordinates being used (instead of 99 Cartesians)
+Internal coordinate system (atoms numbered from 1):
+Distance 1-2
+Distance 1-8
+Distance 1-12
+Distance 2-3
+Distance 2-9
+Distance 3-4
+Distance 3-5
+Distance 5-6
+Distance 5-10
+Distance 6-7
+Distance 6-8
+Distance 8-11
+Distance 9-13
+Distance 9-14
+Distance 10-15
+Distance 10-16
+Distance 11-17
+Distance 11-18
+Distance 19-20
+Distance 19-28
+Distance 19-29
+Distance 20-21
+Distance 20-22
+Distance 22-23
+Distance 22-24
+Distance 24-25
+Distance 24-26
+Distance 26-27
+Distance 26-28
+Distance 28-32
+Distance 29-30
+Distance 29-31
+Distance 31-32
+Distance 32-33
+Angle 2-1-12
+Angle 8-1-12
+Angle 1-2-9
+Angle 3-2-9
+Angle 2-3-5
+Angle 4-3-5
+Angle 3-5-10
+Angle 6-5-10
+Angle 5-6-8
+Angle 7-6-8
+Angle 1-8-11
+Angle 6-8-11
+Angle 2-9-14
+Angle 13-9-14
+Angle 5-10-16
+Angle 15-10-16
+Angle 8-11-18
+Angle 17-11-18
+Angle 20-19-29
+Angle 28-19-29
+Angle 19-20-22
+Angle 21-20-22
+Angle 20-22-24
+Angle 23-22-24
+Angle 22-24-26
+Angle 25-24-26
+Angle 24-26-28
+Angle 27-26-28
+Angle 19-28-32
+Angle 26-28-32
+Angle 19-29-31
+Angle 30-29-31
+Angle 29-31-32
+Angle 28-32-33
+Angle 31-32-33
+Out-of-Plane 1-2-8-12
+Out-of-Plane 2-1-3-9
+Out-of-Plane 3-2-4-5
+Out-of-Plane 5-3-6-10
+Out-of-Plane 6-5-7-8
+Out-of-Plane 8-1-6-11
+Out-of-Plane 9-2-13-14
+Out-of-Plane 10-5-15-16
+Out-of-Plane 11-8-17-18
+Out-of-Plane 19-20-28-29
+Out-of-Plane 20-19-21-22
+Out-of-Plane 22-20-23-24
+Out-of-Plane 24-22-25-26
+Out-of-Plane 26-24-27-28
+Out-of-Plane 28-19-26-32
+Out-of-Plane 29-19-30-31
+Out-of-Plane 32-28-31-33
+Dihedral 8-1-2-3
+Dihedral 8-1-2-9
+Dihedral 12-1-2-3
+Dihedral 12-1-2-9
+Dihedral 2-1-8-6
+Dihedral 2-1-8-11
+Dihedral 12-1-8-6
+Dihedral 12-1-8-11
+Dihedral 1-2-3-4
+Dihedral 1-2-3-5
+Dihedral 9-2-3-4
+Dihedral 9-2-3-5
+Dihedral 1-2-9-13
+Dihedral 1-2-9-14
+Dihedral 3-2-9-13
+Dihedral 3-2-9-14
+Dihedral 2-3-5-6
+Dihedral 2-3-5-10
+Dihedral 4-3-5-6
+Dihedral 4-3-5-10
+Dihedral 3-5-6-7
+Dihedral 3-5-6-8
+Dihedral 10-5-6-7
+Dihedral 10-5-6-8
+Dihedral 3-5-10-15
+Dihedral 3-5-10-16
+Dihedral 6-5-10-15
+Dihedral 6-5-10-16
+Dihedral 5-6-8-1
+Dihedral 5-6-8-11
+Dihedral 7-6-8-1
+Dihedral 7-6-8-11
+Dihedral 1-8-11-17
+Dihedral 1-8-11-18
+Dihedral 6-8-11-17
+Dihedral 6-8-11-18
+Dihedral 28-19-20-21
+Dihedral 28-19-20-22
+Dihedral 29-19-20-21
+Dihedral 29-19-20-22
+Dihedral 20-19-28-26
+Dihedral 20-19-28-32
+Dihedral 29-19-28-26
+Dihedral 29-19-28-32
+Dihedral 20-19-29-30
+Dihedral 20-19-29-31
+Dihedral 28-19-29-30
+Dihedral 28-19-29-31
+Dihedral 19-20-22-23
+Dihedral 19-20-22-24
+Dihedral 21-20-22-23
+Dihedral 21-20-22-24
+Dihedral 20-22-24-25
+Dihedral 20-22-24-26
+Dihedral 23-22-24-25
+Dihedral 23-22-24-26
+Dihedral 22-24-26-27
+Dihedral 22-24-26-28
+Dihedral 25-24-26-27
+Dihedral 25-24-26-28
+Dihedral 24-26-28-19
+Dihedral 24-26-28-32
+Dihedral 27-26-28-19
+Dihedral 27-26-28-32
+Dihedral 19-28-32-31
+Dihedral 19-28-32-33
+Dihedral 26-28-32-31
+Dihedral 26-28-32-33
+Dihedral 19-29-31-32
+Dihedral 30-29-31-32
+Dihedral 29-31-32-28
+Dihedral 29-31-32-33
+Translation-X 1-18
+Translation-X 19-33
+Translation-Y 1-18
+Translation-Y 19-33
+Translation-Z 1-18
+Translation-Z 19-33
+Rotation-A 1-18
+Rotation-A 19-33
+Rotation-B 1-18
+Rotation-B 19-33
+Rotation-C 1-18
+Rotation-C 19-33
+<class 'geometric.internal.Distance'> : 34
+<class 'geometric.internal.Angle'> : 35
+<class 'geometric.internal.OutOfPlane'> : 17
+<class 'geometric.internal.Dihedral'> : 72
+<class 'geometric.internal.TranslationX'> : 2
+<class 'geometric.internal.TranslationY'> : 2
+<class 'geometric.internal.TranslationZ'> : 2
+<class 'geometric.internal.RotationA'> : 2
+<class 'geometric.internal.RotationB'> : 2
+<class 'geometric.internal.RotationC'> : 2
+> ===== Optimization Info: ====
+> Job type: Energy minimization
+> Maximum number of optimization cycles: 300
+> Initial / maximum trust radius (Angstrom): 0.100 / 0.300
+> Convergence Criteria:
+> Will converge when all 5 criteria are reached:
+>  |Delta-E| < 1.00e-06
+>  RMS-Grad  < 1.70e-03
+>  Max-Grad  < 2.50e-03
+>  RMS-Disp  < 6.70e-03
+>  Max-Disp  < 1.00e-02
+> === End Optimization Info ===
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 03:21:20 AM IST] opt step 0: E = -1316.6636297093 Ha  dE None  grad rms/max 1.19e-01/2.47e-01
+Step    0 : Gradient = 1.192e-01/2.474e-01 (rms/max) Energy = -1316.6636297093
+Hessian Eigenvalues: 2.30000e-02 2.30000e-02 2.30000e-02 ... 9.58898e-01 9.64437e-01 9.64648e-01
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 03:27:03 AM IST] opt step 1: E = -1316.8396120920 Ha  dE -1.76e-01  grad rms/max 9.23e-03/2.05e-02  step rms/max 9.25e-02/2.05e-01 A
+Step    1 : Displace = [0m9.244e-02[0m/[0m2.056e-01[0m (rms/max) Trust = 1.000e-01 (=) Grad = [0m9.232e-03[0m/[0m2.047e-02[0m (rms/max) E (change) = -1316.8396120920 ([0m-1.760e-01[0m) Quality = [0m0.903[0m
+Hessian Eigenvalues: 2.29400e-02 2.30000e-02 2.30000e-02 ... 9.58483e-01 9.63968e-01 9.64653e-01
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 03:32:24 AM IST] opt step 2: E = -1316.8394260231 Ha  dE +1.86e-04  grad rms/max 5.98e-03/1.57e-02  step rms/max 5.75e-02/1.37e-01 A
+Step    2 : Displace = [0m5.719e-02[0m/[0m1.372e-01[0m (rms/max) Trust = 1.414e-01 ([92m+[0m) Grad = [0m5.979e-03[0m/[0m1.570e-02[0m (rms/max) E (change) = -1316.8394260231 ([91m+1.861e-04[0m) Quality = [91m-0.041[0m
+Hessian Eigenvalues: 2.14824e-02 2.30000e-02 2.30000e-02 ... 9.56464e-01 9.63481e-01 9.64665e-01
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 03:37:47 AM IST] opt step 3: E = -1316.8421149626 Ha  dE -2.69e-03  grad rms/max 2.72e-03/7.38e-03  step rms/max 3.15e-02/1.07e-01 A
+Step    3 : Displace = [0m3.145e-02[0m/[0m1.067e-01[0m (rms/max) Trust = 2.859e-02 ([91m-[0m) Grad = [0m2.720e-03[0m/[0m7.384e-03[0m (rms/max) E (change) = -1316.8421149626 ([0m-2.689e-03[0m) Quality = [0m0.819[0m
+Hessian Eigenvalues: 2.08852e-02 2.28024e-02 2.30000e-02 ... 9.61979e-01 9.64605e-01 9.80868e-01
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 03:43:09 AM IST] opt step 4: E = -1316.8411951958 Ha  dE +9.20e-04  grad rms/max 4.51e-03/1.28e-02  step rms/max 3.78e-02/1.17e-01 A
+Step    4 : Displace = [0m3.780e-02[0m/[0m1.161e-01[0m (rms/max) Trust = 4.044e-02 ([92m+[0m) Grad = [0m4.514e-03[0m/[0m1.276e-02[0m (rms/max) E (change) = -1316.8411951958 ([91m+9.198e-04[0m) Quality = [91m-0.555[0m
+Hessian Eigenvalues: 1.95819e-02 2.29491e-02 2.30000e-02 ... 9.61914e-01 9.64638e-01 1.02773e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 03:48:11 AM IST] opt step 5: E = -1316.8427416916 Ha  dE -1.55e-03  grad rms/max 1.72e-03/5.48e-03  step rms/max 1.92e-02/5.95e-02 A
+Step    5 : Displace = [0m1.912e-02[0m/[0m5.962e-02[0m (rms/max) Trust = 1.890e-02 ([91m-[0m) Grad = [0m1.724e-03[0m/[0m5.481e-03[0m (rms/max) E (change) = -1316.8427416916 ([0m-1.546e-03[0m) Quality = [0m0.966[0m
+Hessian Eigenvalues: 1.95354e-02 2.29487e-02 2.29548e-02 ... 9.61965e-01 9.64622e-01 1.04132e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 03:53:11 AM IST] opt step 6: E = -1316.8424841626 Ha  dE +2.58e-04  grad rms/max 2.68e-03/7.10e-03  step rms/max 2.53e-02/5.94e-02 A
+Step    6 : Displace = [0m2.516e-02[0m/[0m5.942e-02[0m (rms/max) Trust = 2.673e-02 ([92m+[0m) Grad = [0m2.684e-03[0m/[0m7.096e-03[0m (rms/max) E (change) = -1316.8424841626 ([91m+2.575e-04[0m) Quality = [91m-0.430[0m
+Hessian Eigenvalues: 1.79131e-02 2.27289e-02 2.29554e-02 ... 9.64574e-01 9.66316e-01 1.04121e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 03:58:12 AM IST] opt step 7: E = -1316.8429530522 Ha  dE -4.69e-04  grad rms/max 1.18e-03/3.72e-03  step rms/max 1.25e-02/3.11e-02 A
+Step    7 : Displace = [0m1.251e-02[0m/[0m3.131e-02[0m (rms/max) Trust = 1.258e-02 ([91m-[0m) Grad = [92m1.184e-03[0m/[0m3.716e-03[0m (rms/max) E (change) = -1316.8429530522 ([0m-4.689e-04[0m) Quality = [0m0.875[0m
+Hessian Eigenvalues: 1.78819e-02 2.27297e-02 2.29561e-02 ... 9.64486e-01 9.97348e-01 1.04545e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 04:03:15 AM IST] opt step 8: E = -1316.8428087281 Ha  dE +1.44e-04  grad rms/max 2.06e-03/4.01e-03  step rms/max 1.58e-02/4.14e-02 A
+Step    8 : Displace = [0m1.571e-02[0m/[0m4.022e-02[0m (rms/max) Trust = 1.779e-02 ([92m+[0m) Grad = [0m2.062e-03[0m/[0m4.010e-03[0m (rms/max) E (change) = -1316.8428087281 ([91m+1.443e-04[0m) Quality = [91m-0.478[0m
+Hessian Eigenvalues: 1.62955e-02 2.26520e-02 2.29590e-02 ... 9.64744e-01 1.03378e+00 1.05008e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 04:07:58 AM IST] opt step 9: E = -1316.8430949751 Ha  dE -2.86e-04  grad rms/max 7.80e-04/1.98e-03  step rms/max 8.00e-03/2.34e-02 A
+Step    9 : Displace = [0m7.990e-03[0m/[0m2.346e-02[0m (rms/max) Trust = 7.854e-03 ([91m-[0m) Grad = [92m7.795e-04[0m/[92m1.976e-03[0m (rms/max) E (change) = -1316.8430949751 ([0m-2.862e-04[0m) Quality = [0m0.911[0m
+Hessian Eigenvalues: 1.61929e-02 2.26453e-02 2.29591e-02 ... 9.64606e-01 1.03599e+00 1.08117e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 04:13:00 AM IST] opt step 10: E = -1316.8430849604 Ha  dE +1.00e-05  grad rms/max 1.16e-03/4.35e-03  step rms/max 9.87e-03/2.63e-02 A
+Step   10 : Displace = [0m9.751e-03[0m/[0m2.821e-02[0m (rms/max) Trust = 1.111e-02 ([92m+[0m) Grad = [92m1.164e-03[0m/[0m4.353e-03[0m (rms/max) E (change) = -1316.8430849604 ([91m+1.001e-05[0m) Quality = [91m-0.095[0m
+Hessian Eigenvalues: 1.34042e-02 2.22988e-02 2.29594e-02 ... 9.64832e-01 1.03618e+00 1.07823e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 04:17:44 AM IST] opt step 11: E = -1316.8431730271 Ha  dE -8.81e-05  grad rms/max 3.26e-04/6.76e-04  step rms/max 4.55e-03/9.27e-03 A
+Step   11 : Displace = [92m4.513e-03[0m/[92m8.988e-03[0m (rms/max) Trust = 4.875e-03 ([91m-[0m) Grad = [92m3.265e-04[0m/[92m6.765e-04[0m (rms/max) E (change) = -1316.8431730271 ([0m-8.807e-05[0m) Quality = [0m1.052[0m
+Hessian Eigenvalues: 1.25504e-02 2.20560e-02 2.29599e-02 ... 9.64787e-01 1.03587e+00 1.07932e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 04:22:24 AM IST] opt step 12: E = -1316.8431851502 Ha  dE -1.21e-05  grad rms/max 4.47e-04/1.18e-03  step rms/max 7.25e-03/1.62e-02 A
+Step   12 : Displace = [0m7.141e-03[0m/[0m1.682e-02[0m (rms/max) Trust = 6.895e-03 ([92m+[0m) Grad = [92m4.473e-04[0m/[92m1.177e-03[0m (rms/max) E (change) = -1316.8431851502 ([0m-1.212e-05[0m) Quality = [0m0.489[0m
+Hessian Eigenvalues: 7.67721e-03 2.09286e-02 2.29577e-02 ... 9.91207e-01 1.03553e+00 1.07883e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 04:27:04 AM IST] opt step 13: E = -1316.8432095743 Ha  dE -2.44e-05  grad rms/max 2.48e-04/4.80e-04  step rms/max 7.57e-03/1.48e-02 A
+Step   13 : Displace = [0m7.454e-03[0m/[0m1.590e-02[0m (rms/max) Trust = 6.895e-03 (=) Grad = [92m2.479e-04[0m/[92m4.800e-04[0m (rms/max) E (change) = -1316.8432095743 ([0m-2.442e-05[0m) Quality = [0m0.978[0m
+Hessian Eigenvalues: 6.14058e-03 2.04002e-02 2.29562e-02 ... 1.03504e+00 1.06601e+00 1.18482e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 04:31:44 AM IST] opt step 14: E = -1316.8432262333 Ha  dE -1.67e-05  grad rms/max 3.49e-04/1.20e-03  step rms/max 1.03e-02/2.28e-02 A
+Step   14 : Displace = [0m1.006e-02[0m/[0m2.326e-02[0m (rms/max) Trust = 9.751e-03 ([92m+[0m) Grad = [92m3.494e-04[0m/[92m1.205e-03[0m (rms/max) E (change) = -1316.8432262333 ([0m-1.666e-05[0m) Quality = [0m0.859[0m
+Hessian Eigenvalues: 4.05541e-03 1.94559e-02 2.29567e-02 ... 1.03494e+00 1.06619e+00 1.12989e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 04:36:23 AM IST] opt step 15: E = -1316.8432444932 Ha  dE -1.83e-05  grad rms/max 1.88e-04/4.12e-04  step rms/max 1.42e-02/2.97e-02 A
+Step   15 : Displace = [0m1.396e-02[0m/[0m3.077e-02[0m (rms/max) Trust = 1.379e-02 ([92m+[0m) Grad = [92m1.883e-04[0m/[92m4.124e-04[0m (rms/max) E (change) = -1316.8432444932 ([0m-1.826e-05[0m) Quality = [0m1.173[0m
+Hessian Eigenvalues: 2.78084e-03 1.83855e-02 2.29581e-02 ... 1.03496e+00 1.05318e+00 1.10359e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 04:41:01 AM IST] opt step 16: E = -1316.8432492947 Ha  dE -4.80e-06  grad rms/max 2.18e-04/4.32e-04  step rms/max 1.78e-02/3.71e-02 A
+Step   16 : Displace = [0m1.745e-02[0m/[0m4.055e-02[0m (rms/max) Trust = 1.950e-02 ([92m+[0m) Grad = [92m2.176e-04[0m/[92m4.317e-04[0m (rms/max) E (change) = -1316.8432492947 ([0m-4.801e-06[0m) Quality = [0m0.431[0m
+Hessian Eigenvalues: 2.67296e-03 1.62956e-02 2.29494e-02 ... 1.03676e+00 1.06291e+00 1.11946e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 04:45:21 AM IST] opt step 17: E = -1316.8432553452 Ha  dE -6.05e-06  grad rms/max 1.26e-04/4.21e-04  step rms/max 2.90e-03/5.81e-03 A
+Step   17 : Displace = [92m2.835e-03[0m/[92m5.668e-03[0m (rms/max) Trust = 1.950e-02 (=) Grad = [92m1.261e-04[0m/[92m4.207e-04[0m (rms/max) E (change) = -1316.8432553452 ([0m-6.050e-06[0m) Quality = [0m1.073[0m
+Hessian Eigenvalues: 2.69032e-03 1.22496e-02 2.25506e-02 ... 1.03811e+00 1.05688e+00 1.10707e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 04:49:38 AM IST] opt step 18: E = -1316.8432576385 Ha  dE -2.29e-06  grad rms/max 9.65e-05/3.52e-04  step rms/max 2.53e-03/6.58e-03 A
+Step   18 : Displace = [92m2.477e-03[0m/[92m6.820e-03[0m (rms/max) Trust = 2.758e-02 ([92m+[0m) Grad = [92m9.649e-05[0m/[92m3.520e-04[0m (rms/max) E (change) = -1316.8432576385 ([0m-2.293e-06[0m) Quality = [0m1.114[0m
+Hessian Eigenvalues: 2.80431e-03 6.87674e-03 2.20220e-02 ... 1.03827e+00 1.06396e+00 1.11553e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 04:53:57 AM IST] opt step 19: E = -1316.8432592169 Ha  dE -1.58e-06  grad rms/max 5.10e-05/1.57e-04  step rms/max 4.08e-03/8.71e-03 A
+Step   19 : Displace = [92m3.924e-03[0m/[92m9.793e-03[0m (rms/max) Trust = 3.900e-02 ([92m+[0m) Grad = [92m5.096e-05[0m/[92m1.568e-04[0m (rms/max) E (change) = -1316.8432592169 ([0m-1.578e-06[0m) Quality = [0m1.215[0m
+Hessian Eigenvalues: 2.56740e-03 5.12081e-03 2.14125e-02 ... 1.03711e+00 1.06107e+00 1.11358e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-21 04:58:16 AM IST] opt step 20: E = -1316.8432596602 Ha  dE -4.43e-07  grad rms/max 7.66e-05/2.05e-04  step rms/max 4.64e-03/8.33e-03 A
+Step   20 : Displace = [92m4.419e-03[0m/[92m9.181e-03[0m (rms/max) Trust = 5.516e-02 ([92m+[0m) Grad = [92m7.660e-05[0m/[92m2.054e-04[0m (rms/max) E (change) = -1316.8432596602 ([92m-4.433e-07[0m) Quality = [0m0.542[0m
+Hessian Eigenvalues: 2.56740e-03 5.12081e-03 2.14125e-02 ... 1.03711e+00 1.06107e+00 1.11358e+00
+Converged! =D
+
+    #==========================================================================#
+    #| If this code has benefited your research, please support us by citing: |#
+    #|                                                                        |#
+    #| Wang, L.-P.; Song, C.C. (2016) "Geometry optimization made simple with |#
+    #| translation and rotation coordinates", J. Chem, Phys. 144, 214108.     |#
+    #| http://dx.doi.org/10.1063/1.4952956                                    |#
+    #==========================================================================#
+    Time elapsed since start of run_optimizer: 6243.912 seconds
+[2026-11-21 04:58:16 AM IST] optimisation CONVERGED after 21 evaluations, E(opt.xyz) = -1316.8432596602 Ha, RMSD vs start 0.179 A
+[2026-11-21 04:58:16 AM IST] job c0_btpcz_pcm_core_preopt finished (peak RSS 7087 MB)

@@ -1,0 +1,165 @@
+
+===== 2026-11-21T08:04:38  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 0 3 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_000_003.part.npz 0.005
+[fd-worker 0-3] column 1/99 done
+[fd-worker 0-3] column 2/99 done
+[fd-worker 0-3] column 3/99 done
+
+===== 2026-11-21T08:37:07  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 3 6 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_003_006.part.npz 0.005
+[fd-worker 3-6] column 4/99 done
+[fd-worker 3-6] column 5/99 done
+[fd-worker 3-6] column 6/99 done
+
+===== 2026-11-21T09:09:21  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 6 9 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_006_009.part.npz 0.005
+[fd-worker 6-9] column 7/99 done
+[fd-worker 6-9] column 8/99 done
+[fd-worker 6-9] column 9/99 done
+
+===== 2026-11-21T09:41:05  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 9 12 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_009_012.part.npz 0.005
+[fd-worker 9-12] column 10/99 done
+[fd-worker 9-12] column 11/99 done
+[fd-worker 9-12] column 12/99 done
+
+===== 2026-11-21T10:09:48  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 12 15 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_012_015.part.npz 0.005
+[fd-worker 12-15] column 13/99 done
+[fd-worker 12-15] column 14/99 done
+[fd-worker 12-15] column 15/99 done
+
+===== 2026-11-21T10:41:55  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 15 18 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_015_018.part.npz 0.005
+[fd-worker 15-18] column 16/99 done
+[fd-worker 15-18] column 17/99 done
+[fd-worker 15-18] column 18/99 done
+
+===== 2026-11-21T11:13:37  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 18 21 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_018_021.part.npz 0.005
+[fd-worker 18-21] column 19/99 done
+[fd-worker 18-21] column 20/99 done
+[fd-worker 18-21] column 21/99 done
+
+===== 2026-11-21T11:42:01  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 21 24 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_021_024.part.npz 0.005
+[fd-worker 21-24] column 22/99 done
+[fd-worker 21-24] column 23/99 done
+[fd-worker 21-24] column 24/99 done
+
+===== 2026-11-21T12:13:19  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 24 27 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_024_027.part.npz 0.005
+[fd-worker 24-27] column 25/99 done
+[fd-worker 24-27] column 26/99 done
+[fd-worker 24-27] column 27/99 done
+
+===== 2026-11-21T12:45:03  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 27 30 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_027_030.part.npz 0.005
+[fd-worker 27-30] column 28/99 done
+[fd-worker 27-30] column 29/99 done
+[fd-worker 27-30] column 30/99 done
+
+===== 2026-11-21T13:16:51  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 30 33 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_030_033.part.npz 0.005
+[fd-worker 30-33] column 31/99 done
+[fd-worker 30-33] column 32/99 done
+[fd-worker 30-33] column 33/99 done
+
+===== 2026-11-21T13:48:43  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 33 36 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_033_036.part.npz 0.005
+[fd-worker 33-36] column 34/99 done
+[fd-worker 33-36] column 35/99 done
+[fd-worker 33-36] column 36/99 done
+
+===== 2026-11-21T14:19:50  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 36 39 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_036_039.part.npz 0.005
+[fd-worker 36-39] column 37/99 done
+[fd-worker 36-39] column 38/99 done
+[fd-worker 36-39] column 39/99 done
+
+===== 2026-11-21T14:51:07  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 39 42 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_039_042.part.npz 0.005
+[fd-worker 39-42] column 40/99 done
+[fd-worker 39-42] column 41/99 done
+[fd-worker 39-42] column 42/99 done
+
+===== 2026-11-21T15:22:45  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 42 45 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_042_045.part.npz 0.005
+[fd-worker 42-45] column 43/99 done
+[fd-worker 42-45] column 44/99 done
+[fd-worker 42-45] column 45/99 done
+
+===== 2026-11-21T15:53:53  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 45 48 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_045_048.part.npz 0.005
+[fd-worker 45-48] column 46/99 done
+[fd-worker 45-48] column 47/99 done
+[fd-worker 45-48] column 48/99 done
+
+===== 2026-11-21T16:25:06  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 48 51 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_048_051.part.npz 0.005
+[fd-worker 48-51] column 49/99 done
+[fd-worker 48-51] column 50/99 done
+[fd-worker 48-51] column 51/99 done
+
+===== 2026-11-21T16:57:16  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 51 54 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_051_054.part.npz 0.005
+[fd-worker 51-54] column 52/99 done
+[fd-worker 51-54] column 53/99 done
+[fd-worker 51-54] column 54/99 done
+
+===== 2026-11-21T17:29:32  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 54 57 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_054_057.part.npz 0.005
+[fd-worker 54-57] column 55/99 done
+[fd-worker 54-57] column 56/99 done
+[fd-worker 54-57] column 57/99 done
+
+===== 2026-11-21T18:01:45  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 57 60 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_057_060.part.npz 0.005
+[fd-worker 57-60] column 58/99 done
+[fd-worker 57-60] column 59/99 done
+[fd-worker 57-60] column 60/99 done
+
+===== 2026-11-21T18:32:38  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 60 63 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_060_063.part.npz 0.005
+[fd-worker 60-63] column 61/99 done
+[fd-worker 60-63] column 62/99 done
+[fd-worker 60-63] column 63/99 done
+
+===== 2026-11-21T19:01:14  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 63 66 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_063_066.part.npz 0.005
+[fd-worker 63-66] column 64/99 done
+[fd-worker 63-66] column 65/99 done
+[fd-worker 63-66] column 66/99 done
+
+===== 2026-11-21T19:31:46  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 66 69 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_066_069.part.npz 0.005
+[fd-worker 66-69] column 67/99 done
+[fd-worker 66-69] column 68/99 done
+[fd-worker 66-69] column 69/99 done
+
+===== 2026-11-21T20:00:00  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 69 72 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_069_072.part.npz 0.005
+[fd-worker 69-72] column 70/99 done
+[fd-worker 69-72] column 71/99 done
+[fd-worker 69-72] column 72/99 done
+
+===== 2026-11-21T20:31:22  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 72 75 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_072_075.part.npz 0.005
+[fd-worker 72-75] column 73/99 done
+[fd-worker 72-75] column 74/99 done
+[fd-worker 72-75] column 75/99 done
+
+===== 2026-11-21T21:00:31  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 75 78 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_075_078.part.npz 0.005
+[fd-worker 75-78] column 76/99 done
+[fd-worker 75-78] column 77/99 done
+[fd-worker 75-78] column 78/99 done
+
+===== 2026-11-21T21:33:44  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 78 81 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_078_081.part.npz 0.005
+[fd-worker 78-81] column 79/99 done
+[fd-worker 78-81] column 80/99 done
+[fd-worker 78-81] column 81/99 done
+
+===== 2026-11-21T22:03:50  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 81 84 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_081_084.part.npz 0.005
+[fd-worker 81-84] column 82/99 done
+[fd-worker 81-84] column 83/99 done
+[fd-worker 81-84] column 84/99 done
+
+===== 2026-11-21T22:37:00  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 84 87 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_084_087.part.npz 0.005
+[fd-worker 84-87] column 85/99 done
+[fd-worker 84-87] column 86/99 done
+[fd-worker 84-87] column 87/99 done
+
+===== 2026-11-21T23:09:48  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 87 90 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_087_090.part.npz 0.005
+[fd-worker 87-90] column 88/99 done
+[fd-worker 87-90] column 89/99 done
+[fd-worker 87-90] column 90/99 done
+
+===== 2026-11-21T23:39:35  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 90 93 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_090_093.part.npz 0.005
+[fd-worker 90-93] column 91/99 done
+[fd-worker 90-93] column 92/99 done
+[fd-worker 90-93] column 93/99 done
+
+===== 2026-11-22T00:12:08  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 93 96 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_093_096.part.npz 0.005
+[fd-worker 93-96] column 94/99 done
+[fd-worker 93-96] column 95/99 done
+[fd-worker 93-96] column 96/99 done
+
+===== 2026-11-22T00:43:58  $ <run-dir>/env/bin/python <run-dir>/repo/dft/_fd_worker.py btpcz_gas 96 99 <run-dir>/queue/out/c0_btpcz_gas_core/fd/cols_096_099.part.npz 0.005
+[fd-worker 96-99] column 97/99 done
+[fd-worker 96-99] column 98/99 done
+[fd-worker 96-99] column 99/99 done

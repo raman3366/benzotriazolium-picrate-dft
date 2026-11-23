@@ -1,0 +1,63 @@
+[2026-11-22 01:06:16 AM IST] job sp_min_pcm (dft/revision/singlepoints.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/sp_min_pcm, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 01:06:16 AM IST] 1 geometries x 5 methods (wb97x-d3bj, m062x, pbe0, cam-b3lyp, dfmp2); IEF-PCM eps 78.3553; basis 6-311++g(d,p), grid 4
+[2026-11-22 01:22:45 AM IST] opt|wb97x-d3bj: E = -1317.6066951532 Ha (989 s, 16 cycles, LUMO on anion 99.8 %)
+[2026-11-22 01:41:06 AM IST] opt|m062x: E = -1316.7319215676 Ha (1101 s, 15 cycles, LUMO on anion 99.7 %)
+[2026-11-22 01:55:37 AM IST] opt|pbe0: E = -1315.8172110104 Ha (871 s, 15 cycles, LUMO on anion 99.9 %)
+[2026-11-22 02:11:50 AM IST] opt|cam-b3lyp: E = -1316.6994159927 Ha (973 s, 15 cycles, LUMO on anion 99.8 %)
+[2026-11-22 02:24:06 AM IST] ERROR MemoryError: 
+Traceback (most recent call last):
+  File "<run-dir>/repo/dft/revision/rev_common.py", line 620, in main_wrapper
+    ok = run(job, args)
+         ^^^^^^^^^^^^^^
+  File "<run-dir>/repo/dft/revision/singlepoints.py", line 321, in run
+    rec, prev_chk = mp2_point(job, g, case, L, args, prev_chk, key, logf)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<run-dir>/repo/dft/revision/singlepoints.py", line 204, in mp2_point
+    e_corr = pt.kernel()[0]
+             ^^^^^^^^^^^
+  File "<run-dir>/env/lib/python3.11/site-packages/pyscf/mp/mp2.py", line 639, in kernel
+    self.e_corr, self.t2 = self.init_amps(mo_energy, mo_coeff, eris, with_t2)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<run-dir>/env/lib/python3.11/site-packages/pyscf/mp/dfmp2.py", line 185, in init_amps
+    return kernel(self, mo_energy, mo_coeff, eris, with_t2)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<run-dir>/env/lib/python3.11/site-packages/pyscf/mp/dfmp2.py", line 61, in kernel
+    raise MemoryError
+MemoryError
+
+[2026-11-22 02:24:06 AM IST] job sp_min_pcm FAILED (peak RSS 9812 MB)
+[2026-11-22 04:53:22 AM IST] job sp_min_pcm (dft/revision/singlepoints.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/sp_min_pcm, smoke False, restart #1; PySCF 2.14.0
+[2026-11-22 04:53:22 AM IST] 1 geometries x 5 methods (wb97x-d3bj, m062x, pbe0, cam-b3lyp, dfmp2); IEF-PCM eps 78.3553; basis 6-311++g(d,p), grid 4
+[2026-11-22 04:53:22 AM IST] initial density from <run-dir>/queue/out/sp_min_pcm/chk/opt_dfmp2.chk
+[2026-11-22 04:55:54 AM IST] ERROR MemoryError: 
+Traceback (most recent call last):
+  File "<run-dir>/repo/dft/revision/rev_common.py", line 620, in main_wrapper
+    ok = run(job, args)
+         ^^^^^^^^^^^^^^
+  File "<run-dir>/repo/dft/revision/singlepoints.py", line 321, in run
+    rec, prev_chk = mp2_point(job, g, case, L, args, prev_chk, key, logf)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<run-dir>/repo/dft/revision/singlepoints.py", line 204, in mp2_point
+    e_corr = pt.kernel()[0]
+             ^^^^^^^^^^^
+  File "<run-dir>/env/lib/python3.11/site-packages/pyscf/mp/mp2.py", line 639, in kernel
+    self.e_corr, self.t2 = self.init_amps(mo_energy, mo_coeff, eris, with_t2)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<run-dir>/env/lib/python3.11/site-packages/pyscf/mp/dfmp2.py", line 185, in init_amps
+    return kernel(self, mo_energy, mo_coeff, eris, with_t2)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<run-dir>/env/lib/python3.11/site-packages/pyscf/mp/dfmp2.py", line 61, in kernel
+    raise MemoryError
+MemoryError
+
+[2026-11-22 04:55:54 AM IST] job sp_min_pcm FAILED (peak RSS 9887 MB)
+[2026-11-22 06:38:36 AM IST] job sp_min_pcm (dft/revision/singlepoints.py) on <vm-1>: threads 4, max_memory 16000 MB, scratch <run-dir>/scratch/sp_min_pcm, smoke False, restart #2; PySCF 2.14.0
+[2026-11-22 06:38:37 AM IST] 1 geometries x 5 methods (wb97x-d3bj, m062x, pbe0, cam-b3lyp, dfmp2); IEF-PCM eps 78.3553; basis 6-311++g(d,p), grid 4
+[2026-11-22 06:38:37 AM IST] initial density from <run-dir>/queue/out/sp_min_pcm/chk/opt_dfmp2.chk
+[2026-11-22 06:41:48 AM IST] opt|dfmp2: E = -1313.8700477187 Ha (191 s, E_HF -1309.74288739, E_corr -4.12716032)
+[2026-11-22 06:41:48 AM IST]   Relative energies (kcal/mol) per method; zero = the lowest geometry.
+[2026-11-22 06:41:48 AM IST]   
+[2026-11-22 06:41:48 AM IST]   | geometry | r(H...O) A | r(N-H) A | wb97x-d3bj | m062x | pbe0 | cam-b3lyp | dfmp2 | scs-mp2 |
+[2026-11-22 06:41:48 AM IST]   |---|---|---|---|---|---|---|---|---|
+[2026-11-22 06:41:48 AM IST]   | opt | 1.635 | 1.053 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 |
+[2026-11-22 06:41:48 AM IST] job sp_min_pcm finished (peak RSS 15641 MB)

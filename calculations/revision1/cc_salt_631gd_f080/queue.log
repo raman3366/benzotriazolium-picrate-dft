@@ -1,0 +1,16 @@
+
+===== queue: start cc_salt_631gd_f080 attempt 1 at 2026-11-23T08:10:07+05:30 =====
+$ export MAX_MEMORY_MB=40000; <run-dir>/env/bin/python dft/revision/cc_correction.py --job cc_salt_631gd_f080 --out <run-dir>/queue/out/cc_salt_631gd_f080 --xyz <run-dir>/repo/molecules/btpc/results/btpc_pcm/opt.xyz --labels salt --solvent water --basis '6-31g*' --fno-fracs 0.8
+[2026-11-23 08:10:07 AM IST] job cc_salt_631gd_f080 (dft/revision/cc_correction.py) on <vm-2>: threads 16, max_memory 40000 MB, scratch <run-dir>/scratch/cc_salt_631gd_f080, smoke False, restart #0; PySCF 2.14.0
+[2026-11-23 08:10:07 AM IST] 1 geometries (salt); basis 6-31g*; IEF-PCM eps 78.3553; FNO fractions of the virtual space 0.8
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-23 08:12:06 AM IST] salt: E_HF = -1309.3932681790 Ha (15 cycles), nao 366; RI basis {'H': 'cc-pvdz-ri', 'N': 'cc-pvdz-ri', 'O': 'cc-pvdz-ri', 'C': 'cc-pvdz-ri'}; full-space MP2 for the NOs
+[2026-11-23 08:13:06 AM IST] salt: MP2 full space (RI) -3.76591787 Ha (60 s), 64 occ x 277 vir; NO sets [222]
+[2026-11-23 08:13:06 AM IST] salt|f0.800: FNO-CCSD(T) with 222 of 277 virtual NOs (99.02 % of the NO occupation, smallest kept 8.98e-04)
+[2026-11-23 08:13:33 AM IST]   DF-CCSD space: 64 occ x 222 vir, naux 1512; MP2 (same space, RI) -3.65449820 Ha; |F_offdiag| max oo/vv/ov 1.6e-07/1.1e-07/2.7e-07
+[2026-11-23 10:47:53 AM IST]   CCSD -3.67104125 Ha (9263 s); T1 0.0177, D1 0.0832, D2 0.2029
+[2026-11-23 01:14:15 PM IST]   (T) -0.15495874 Ha (8781 s); delta = CCSD(T) - MP2 = -0.17150180 Ha
+[2026-11-23 01:14:15 PM IST] salt|f0.800: delta_CCSD -0.01654305, delta_T -0.15495874, delta -0.17150180 Ha (with scaled (T) -0.17622623); MP2 truncation -0.111420 Ha (5.02 h)
+[2026-11-23 01:14:15 PM IST] salt: all fractions done (5.07 h)
+[2026-11-23 01:14:15 PM IST] job cc_salt_631gd_f080 finished (peak RSS 29096 MB)

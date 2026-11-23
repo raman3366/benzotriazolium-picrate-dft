@@ -1,0 +1,15 @@
+
+===== queue: start td_pair_b3lyp attempt 1 at 2026-11-21T22:00:33+05:30 =====
+$ MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/tddft.py --job td_pair_b3lyp --out <run-dir>/queue/out/td_pair_b3lyp --systems pair-gas,pair-pcm --xc b3lyp --nstates 20 --tda
+[2026-11-21 10:00:34 PM IST] job td_pair_b3lyp (dft/revision/tddft.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/td_pair_b3lyp, smoke False, restart #0; PySCF 2.14.0
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 02:23:53 AM IST] pair-gas/b3lyp: 20 states in 15329 s (TDA); S1 2.941 eV (422 nm, f 0.0071, CT 0.98); lowest bright S2 3.368 eV (368 nm, f 0.134)
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+[2026-11-22 06:09:28 AM IST] pair-pcm/b3lyp: 20 states in 12532 s (PCMTDA); S1 3.169 eV (391 nm, f 0.2056, CT 0.01); lowest bright S1 3.169 eV (391 nm, f 0.206)
+[2026-11-22 06:09:28 AM IST] job td_pair_b3lyp finished (peak RSS 12168 MB)

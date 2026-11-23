@@ -1,0 +1,646 @@
+
+===== 2026-11-20T23:28:17  $ <run-dir>/env/bin/python <run-dir>/repo/dft/revision/opt_d3.py --job c0_btpcz_pcm_core_opt --out <run-dir>/queue/out/c0_btpcz_pcm_core/opt --case btpcz --model pcm --disp none --seed-hessian none --no-fmo --start <run-dir>/repo/molecules/btpcz/results/btpcz_pcm/preopt.xyz --maxsteps 100 --negligible-stop 10 --max-hours 30.0
+[2026-11-21 04:58:17 AM IST] job c0_btpcz_pcm_core_opt (dft/revision/opt_d3.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/c0_btpcz_pcm_core/opt, smoke False, restart #0; PySCF 2.14.0
+geometric-optimize called with the following command line:
+<run-dir>/repo/dft/revision/opt_d3.py --job c0_btpcz_pcm_core_opt --out <run-dir>/queue/out/c0_btpcz_pcm_core/opt --case btpcz --model pcm --disp none --seed-hessian none --no-fmo --start <run-dir>/repo/molecules/btpcz/results/btpcz_pcm/preopt.xyz --maxsteps 100 --negligible-stop 10 --max-hours 30.0
+
+                                        [91m())))))))))))))))/[0m                     
+                                    [91m())))))))))))))))))))))))),[0m                
+                                [91m*)))))))))))))))))))))))))))))))))[0m             
+                        [94m#,[0m    [91m()))))))))/[0m                [91m.)))))))))),[0m          
+                      [94m#%%%%,[0m  [91m())))))[0m                        [91m.))))))))*[0m        
+                      [94m*%%%%%%,[0m  [91m))[0m              [93m..[0m              [91m,))))))).[0m      
+                        [94m*%%%%%%,[0m         [93m***************/.[0m        [91m.)))))))[0m     
+                [94m#%%/[0m      [94m(%%%%%%,[0m    [93m/*********************.[0m       [91m)))))))[0m    
+              [94m.%%%%%%#[0m      [94m*%%%%%%,[0m  [93m*******/,[0m     [93m**********,[0m      [91m.))))))[0m   
+                [94m.%%%%%%/[0m      [94m*%%%%%%,[0m  [93m**[0m              [93m********[0m      [91m.))))))[0m  
+          [94m##[0m      [94m.%%%%%%/[0m      [94m(%%%%%%,[0m                  [93m,******[0m      [91m/)))))[0m  
+        [94m%%%%%%[0m      [94m.%%%%%%#[0m      [94m*%%%%%%,[0m    [92m,/////.[0m       [93m******[0m      [91m))))))[0m 
+      [94m#%[0m      [94m%%[0m      [94m.%%%%%%/[0m      [94m*%%%%%%,[0m  [92m////////,[0m      [93m*****/[0m     [91m,)))))[0m 
+    [94m#%%[0m  [94m%%%[0m  [94m%%%#[0m      [94m.%%%%%%/[0m      [94m(%%%%%%,[0m  [92m///////.[0m     [93m/*****[0m      [91m))))).[0m
+  [94m#%%%%.[0m      [94m%%%%%#[0m      [94m/%%%%%%*[0m      [94m#%%%%%%[0m   [92m/////)[0m     [93m******[0m      [91m))))),[0m
+    [94m#%%%%##%[0m  [94m%%%#[0m      [94m.%%%%%%/[0m      [94m(%%%%%%,[0m  [92m///////.[0m     [93m/*****[0m      [91m))))).[0m
+      [94m##[0m     [94m%%%[0m      [94m.%%%%%%/[0m      [94m*%%%%%%,[0m  [92m////////.[0m      [93m*****/[0m     [91m,)))))[0m 
+        [94m#%%%%#[0m      [94m/%%%%%%/[0m      [94m(%%%%%%[0m      [92m/)/)//[0m       [93m******[0m      [91m))))))[0m 
+          [94m##[0m      [94m.%%%%%%/[0m      [94m(%%%%%%,[0m                  [93m*******[0m      [91m))))))[0m  
+                [94m.%%%%%%/[0m      [94m*%%%%%%,[0m  [93m**.[0m             [93m/*******[0m      [91m.))))))[0m  
+              [94m*%%%%%%/[0m      [94m(%%%%%%[0m   [93m********/*..,*/*********[0m       [91m*))))))[0m   
+                [94m#%%/[0m      [94m(%%%%%%,[0m    [93m*********************/[0m        [91m)))))))[0m    
+                        [94m*%%%%%%,[0m         [93m,**************/[0m         [91m,))))))/[0m     
+                      [94m(%%%%%%[0m   [91m()[0m                              [91m))))))))[0m       
+                      [94m#%%%%,[0m  [91m())))))[0m                        [91m,)))))))),[0m        
+                        [94m#,[0m    [91m())))))))))[0m                [91m,)))))))))).[0m          
+                                 [91m()))))))))))))))))))))))))))))))/[0m             
+                                    [91m())))))))))))))))))))))))).[0m                
+                                         [91m())))))))))))))),[0m                     
+
+-=# [1;94m geomeTRIC started. Version: 1.1.1 [0m #=-
+Current date and time: 2026-11-20 23:28:17
+#========================================================#
+#| [92m    Arguments passed to driver run_optimizer():     [0m |#
+#========================================================#
+convergence_dmax          0.0018 
+convergence_drms          0.0012 
+convergence_energy        1e-06 
+convergence_gmax          0.00045 
+convergence_grms          0.0003 
+customengine              <pyscf.geomopt.geometric_solver.PySCFEngine object at 0x79dcce7f6610> 
+input                     <run-dir>/scratch/c0_btpcz_pcm_core/opt/tmp2phccuxv/7364edec-bd55-4001-ab15-d11031be362b 
+logIni                    <run-dir>/env/lib/python3.11/site-packages/pyscf/geomopt/log.ini 
+maxiter                   100 
+----------------------------------------------------------
+Custom engine selected.
+Bonds will be generated from interatomic distances less than 1.20 times sum of covalent radii
+99 internal coordinates being used (instead of 99 Cartesians)
+Internal coordinate system (atoms numbered from 1):
+Distance 1-2
+Distance 1-8
+Distance 1-12
+Distance 2-3
+Distance 2-9
+Distance 3-4
+Distance 3-5
+Distance 5-6
+Distance 5-10
+Distance 6-7
+Distance 6-8
+Distance 8-11
+Distance 9-13
+Distance 9-14
+Distance 10-15
+Distance 10-16
+Distance 11-17
+Distance 11-18
+Distance 19-20
+Distance 19-28
+Distance 19-29
+Distance 20-21
+Distance 20-22
+Distance 22-23
+Distance 22-24
+Distance 24-25
+Distance 24-26
+Distance 26-27
+Distance 26-28
+Distance 28-32
+Distance 29-30
+Distance 29-31
+Distance 31-32
+Distance 32-33
+Angle 2-1-12
+Angle 8-1-12
+Angle 1-2-9
+Angle 3-2-9
+Angle 2-3-5
+Angle 4-3-5
+Angle 3-5-10
+Angle 6-5-10
+Angle 5-6-8
+Angle 7-6-8
+Angle 1-8-11
+Angle 6-8-11
+Angle 2-9-14
+Angle 13-9-14
+Angle 5-10-16
+Angle 15-10-16
+Angle 8-11-18
+Angle 17-11-18
+Angle 20-19-29
+Angle 28-19-29
+Angle 19-20-22
+Angle 21-20-22
+Angle 20-22-24
+Angle 23-22-24
+Angle 22-24-26
+Angle 25-24-26
+Angle 24-26-28
+Angle 27-26-28
+Angle 19-28-32
+Angle 26-28-32
+Angle 19-29-31
+Angle 30-29-31
+Angle 29-31-32
+Angle 28-32-33
+Angle 31-32-33
+Out-of-Plane 1-2-8-12
+Out-of-Plane 2-1-3-9
+Out-of-Plane 3-2-4-5
+Out-of-Plane 5-3-6-10
+Out-of-Plane 6-5-7-8
+Out-of-Plane 8-1-6-11
+Out-of-Plane 9-2-13-14
+Out-of-Plane 10-5-15-16
+Out-of-Plane 11-8-17-18
+Out-of-Plane 19-20-28-29
+Out-of-Plane 20-19-21-22
+Out-of-Plane 22-20-23-24
+Out-of-Plane 24-22-25-26
+Out-of-Plane 26-24-27-28
+Out-of-Plane 28-19-26-32
+Out-of-Plane 29-19-30-31
+Out-of-Plane 32-28-31-33
+Dihedral 8-1-2-3
+Dihedral 8-1-2-9
+Dihedral 12-1-2-3
+Dihedral 12-1-2-9
+Dihedral 2-1-8-6
+Dihedral 2-1-8-11
+Dihedral 12-1-8-6
+Dihedral 12-1-8-11
+Dihedral 1-2-3-4
+Dihedral 1-2-3-5
+Dihedral 9-2-3-4
+Dihedral 9-2-3-5
+Dihedral 1-2-9-13
+Dihedral 1-2-9-14
+Dihedral 3-2-9-13
+Dihedral 3-2-9-14
+Dihedral 2-3-5-6
+Dihedral 2-3-5-10
+Dihedral 4-3-5-6
+Dihedral 4-3-5-10
+Dihedral 3-5-6-7
+Dihedral 3-5-6-8
+Dihedral 10-5-6-7
+Dihedral 10-5-6-8
+Dihedral 3-5-10-15
+Dihedral 3-5-10-16
+Dihedral 6-5-10-15
+Dihedral 6-5-10-16
+Dihedral 5-6-8-1
+Dihedral 5-6-8-11
+Dihedral 7-6-8-1
+Dihedral 7-6-8-11
+Dihedral 1-8-11-17
+Dihedral 1-8-11-18
+Dihedral 6-8-11-17
+Dihedral 6-8-11-18
+Dihedral 28-19-20-21
+Dihedral 28-19-20-22
+Dihedral 29-19-20-21
+Dihedral 29-19-20-22
+Dihedral 20-19-28-26
+Dihedral 20-19-28-32
+Dihedral 29-19-28-26
+Dihedral 29-19-28-32
+Dihedral 20-19-29-30
+Dihedral 20-19-29-31
+Dihedral 28-19-29-30
+Dihedral 28-19-29-31
+Dihedral 19-20-22-23
+Dihedral 19-20-22-24
+Dihedral 21-20-22-23
+Dihedral 21-20-22-24
+Dihedral 20-22-24-25
+Dihedral 20-22-24-26
+Dihedral 23-22-24-25
+Dihedral 23-22-24-26
+Dihedral 22-24-26-27
+Dihedral 22-24-26-28
+Dihedral 25-24-26-27
+Dihedral 25-24-26-28
+Dihedral 24-26-28-19
+Dihedral 24-26-28-32
+Dihedral 27-26-28-19
+Dihedral 27-26-28-32
+Dihedral 19-28-32-31
+Dihedral 19-28-32-33
+Dihedral 26-28-32-31
+Dihedral 26-28-32-33
+Dihedral 19-29-31-32
+Dihedral 30-29-31-32
+Dihedral 29-31-32-28
+Dihedral 29-31-32-33
+Translation-X 1-18
+Translation-X 19-33
+Translation-Y 1-18
+Translation-Y 19-33
+Translation-Z 1-18
+Translation-Z 19-33
+Rotation-A 1-18
+Rotation-A 19-33
+Rotation-B 1-18
+Rotation-B 19-33
+Rotation-C 1-18
+Rotation-C 19-33
+<class 'geometric.internal.Distance'> : 34
+<class 'geometric.internal.Angle'> : 35
+<class 'geometric.internal.OutOfPlane'> : 17
+<class 'geometric.internal.Dihedral'> : 72
+<class 'geometric.internal.TranslationX'> : 2
+<class 'geometric.internal.TranslationY'> : 2
+<class 'geometric.internal.TranslationZ'> : 2
+<class 'geometric.internal.RotationA'> : 2
+<class 'geometric.internal.RotationB'> : 2
+<class 'geometric.internal.RotationC'> : 2
+> ===== Optimization Info: ====
+> Job type: Energy minimization
+> Maximum number of optimization cycles: 100
+> Initial / maximum trust radius (Angstrom): 0.100 / 0.300
+> Convergence Criteria:
+> Will converge when all 5 criteria are reached:
+>  |Delta-E| < 1.00e-06
+>  RMS-Grad  < 3.00e-04
+>  Max-Grad  < 4.50e-04
+>  RMS-Disp  < 1.20e-03
+>  Max-Disp  < 1.80e-03
+> === End Optimization Info ===
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 05:17:09 AM IST] opt step 0: E = -1317.2514316523 Ha  dE None  grad rms/max 4.05e-03/8.52e-03
+Step    0 : Gradient = 4.050e-03/8.523e-03 (rms/max) Energy = -1317.2514316523
+Hessian Eigenvalues: 2.30000e-02 2.30000e-02 2.30000e-02 ... 8.78726e-01 8.83884e-01 9.03290e-01
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 05:31:38 AM IST] opt step 1: E = -1317.2520533063 Ha  dE -6.22e-04  grad rms/max 2.21e-03/6.27e-03  step rms/max 3.92e-02/1.06e-01 A
+Step    1 : Displace = [0m3.899e-02[0m/[0m1.031e-01[0m (rms/max) Trust = 1.000e-01 (=) Grad = [0m2.208e-03[0m/[0m6.272e-03[0m (rms/max) E (change) = -1317.2520533063 ([0m-6.217e-04[0m) Quality = [0m0.820[0m
+Hessian Eigenvalues: 1.92926e-02 2.30000e-02 2.30000e-02 ... 8.81448e-01 8.95245e-01 9.02801e-01
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 05:45:53 AM IST] opt step 2: E = -1317.2520681819 Ha  dE -1.49e-05  grad rms/max 2.30e-03/5.58e-03  step rms/max 3.26e-02/8.34e-02 A
+Step    2 : Displace = [0m3.237e-02[0m/[0m7.898e-02[0m (rms/max) Trust = 1.414e-01 ([92m+[0m) Grad = [0m2.302e-03[0m/[0m5.576e-03[0m (rms/max) E (change) = -1317.2520681819 ([0m-1.488e-05[0m) Quality = [0m0.034[0m
+Hessian Eigenvalues: 1.70756e-02 2.30000e-02 2.30000e-02 ... 8.84965e-01 9.00046e-01 9.96146e-01
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 05:59:15 AM IST] opt step 3: E = -1317.2524009330 Ha  dE -3.33e-04  grad rms/max 1.05e-03/3.28e-03  step rms/max 1.40e-02/2.85e-02 A
+Step    3 : Displace = [0m1.392e-02[0m/[0m2.877e-02[0m (rms/max) Trust = 1.618e-02 ([91m-[0m) Grad = [0m1.053e-03[0m/[0m3.280e-03[0m (rms/max) E (change) = -1317.2524009330 ([0m-3.328e-04[0m) Quality = [0m0.891[0m
+Hessian Eigenvalues: 1.65371e-02 2.24322e-02 2.30000e-02 ... 8.83224e-01 8.99727e-01 1.07363e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 06:12:43 AM IST] opt step 4: E = -1317.2524098398 Ha  dE -8.91e-06  grad rms/max 1.27e-03/3.48e-03  step rms/max 1.20e-02/3.19e-02 A
+Step    4 : Displace = [0m1.190e-02[0m/[0m3.271e-02[0m (rms/max) Trust = 2.289e-02 ([92m+[0m) Grad = [0m1.273e-03[0m/[0m3.476e-03[0m (rms/max) E (change) = -1317.2524098398 ([0m-8.907e-06[0m) Quality = [0m0.058[0m
+Hessian Eigenvalues: 1.43895e-02 2.17641e-02 2.30000e-02 ... 8.83272e-01 9.03203e-01 1.04757e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 06:25:21 AM IST] opt step 5: E = -1317.2525152045 Ha  dE -1.05e-04  grad rms/max 4.56e-04/1.12e-03  step rms/max 6.58e-03/2.24e-02 A
+Step    5 : Displace = [0m6.542e-03[0m/[0m2.174e-02[0m (rms/max) Trust = 5.951e-03 ([91m-[0m) Grad = [0m4.565e-04[0m/[0m1.123e-03[0m (rms/max) E (change) = -1317.2525152045 ([0m-1.054e-04[0m) Quality = [0m0.951[0m
+Hessian Eigenvalues: 1.37581e-02 2.17428e-02 2.29782e-02 ... 8.98007e-01 9.26161e-01 1.05965e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 06:37:56 AM IST] opt step 6: E = -1317.2525245592 Ha  dE -9.35e-06  grad rms/max 7.38e-04/1.47e-03  step rms/max 8.97e-03/2.37e-02 A
+Step    6 : Displace = [0m8.896e-03[0m/[0m2.503e-02[0m (rms/max) Trust = 8.416e-03 ([92m+[0m) Grad = [0m7.385e-04[0m/[0m1.474e-03[0m (rms/max) E (change) = -1317.2525245592 ([0m-9.355e-06[0m) Quality = [0m0.182[0m
+Hessian Eigenvalues: 1.11367e-02 2.13103e-02 2.28322e-02 ... 9.00048e-01 9.75437e-01 1.07096e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 06:50:46 AM IST] opt step 7: E = -1317.2525628875 Ha  dE -3.83e-05  grad rms/max 2.51e-04/6.57e-04  step rms/max 4.30e-03/1.33e-02 A
+Step    7 : Displace = [0m4.265e-03[0m/[0m1.362e-02[0m (rms/max) Trust = 4.208e-03 ([91m-[0m) Grad = [92m2.506e-04[0m/[0m6.571e-04[0m (rms/max) E (change) = -1317.2525628875 ([0m-3.833e-05[0m) Quality = [0m1.030[0m
+Hessian Eigenvalues: 1.01934e-02 2.10483e-02 2.28527e-02 ... 9.01541e-01 9.99810e-01 1.09676e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 07:03:39 AM IST] opt step 8: E = -1317.2525814445 Ha  dE -1.86e-05  grad rms/max 2.36e-04/6.17e-04  step rms/max 6.19e-03/1.64e-02 A
+Step    8 : Displace = [0m6.122e-03[0m/[0m1.713e-02[0m (rms/max) Trust = 5.951e-03 ([92m+[0m) Grad = [92m2.358e-04[0m/[0m6.169e-04[0m (rms/max) E (change) = -1317.2525814445 ([0m-1.856e-05[0m) Quality = [0m0.873[0m
+Hessian Eigenvalues: 6.14311e-03 1.99714e-02 2.28443e-02 ... 9.01310e-01 1.00252e+00 1.09389e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 07:16:28 AM IST] opt step 9: E = -1317.2526054146 Ha  dE -2.40e-05  grad rms/max 1.48e-04/3.21e-04  step rms/max 8.76e-03/2.64e-02 A
+Step    9 : Displace = [0m8.672e-03[0m/[0m2.757e-02[0m (rms/max) Trust = 8.416e-03 ([92m+[0m) Grad = [92m1.475e-04[0m/[92m3.211e-04[0m (rms/max) E (change) = -1317.2526054146 ([0m-2.397e-05[0m) Quality = [0m1.130[0m
+Hessian Eigenvalues: 3.23746e-03 1.93318e-02 2.28416e-02 ... 9.02846e-01 9.92520e-01 1.09028e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 07:30:06 AM IST] opt step 10: E = -1317.2526291875 Ha  dE -2.38e-05  grad rms/max 1.86e-04/4.94e-04  step rms/max 1.23e-02/3.44e-02 A
+Step   10 : Displace = [0m1.212e-02[0m/[0m3.607e-02[0m (rms/max) Trust = 1.190e-02 ([92m+[0m) Grad = [92m1.864e-04[0m/[0m4.941e-04[0m (rms/max) E (change) = -1317.2526291875 ([0m-2.377e-05[0m) Quality = [0m0.897[0m
+Hessian Eigenvalues: 2.83781e-03 1.88425e-02 2.28400e-02 ... 9.03974e-01 9.89159e-01 1.09028e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 07:43:35 AM IST] opt step 11: E = -1317.2526530964 Ha  dE -2.39e-05  grad rms/max 2.11e-04/4.96e-04  step rms/max 1.71e-02/4.68e-02 A
+Step   11 : Displace = [0m1.691e-02[0m/[0m4.888e-02[0m (rms/max) Trust = 1.683e-02 ([92m+[0m) Grad = [92m2.107e-04[0m/[0m4.957e-04[0m (rms/max) E (change) = -1317.2526530964 ([0m-2.391e-05[0m) Quality = [0m0.882[0m
+Hessian Eigenvalues: 2.57928e-03 1.84472e-02 2.28450e-02 ... 9.17864e-01 9.90325e-01 1.08982e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 07:57:04 AM IST] opt step 12: E = -1317.2526619349 Ha  dE -8.84e-06  grad rms/max 4.10e-04/1.35e-03  step rms/max 2.41e-02/6.14e-02 A
+Step   12 : Displace = [0m2.384e-02[0m/[0m6.407e-02[0m (rms/max) Trust = 2.380e-02 ([92m+[0m) Grad = [0m4.100e-04[0m/[0m1.349e-03[0m (rms/max) E (change) = -1317.2526619349 ([0m-8.839e-06[0m) Quality = [0m0.454[0m
+Hessian Eigenvalues: 2.14565e-03 1.80858e-02 2.28321e-02 ... 9.73075e-01 9.91444e-01 1.08941e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 08:10:39 AM IST] opt step 13: E = -1317.2526734176 Ha  dE -1.15e-05  grad rms/max 2.03e-04/4.82e-04  step rms/max 1.03e-02/1.88e-02 A
+Step   13 : Displace = [0m1.018e-02[0m/[0m1.970e-02[0m (rms/max) Trust = 2.380e-02 (=) Grad = [92m2.031e-04[0m/[0m4.823e-04[0m (rms/max) E (change) = -1317.2526734176 ([0m-1.148e-05[0m) Quality = [0m0.819[0m
+Hessian Eigenvalues: 2.36839e-03 1.58242e-02 2.15313e-02 ... 9.88035e-01 1.07908e+00 1.09769e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 08:23:15 AM IST] opt step 14: E = -1317.2526835844 Ha  dE -1.02e-05  grad rms/max 2.02e-04/5.40e-04  step rms/max 5.74e-03/1.57e-02 A
+Step   14 : Displace = [0m5.697e-03[0m/[0m1.605e-02[0m (rms/max) Trust = 3.366e-02 ([92m+[0m) Grad = [92m2.016e-04[0m/[0m5.399e-04[0m (rms/max) E (change) = -1317.2526835844 ([0m-1.017e-05[0m) Quality = [0m1.165[0m
+Hessian Eigenvalues: 2.43427e-03 7.36877e-03 2.01066e-02 ... 9.87388e-01 1.02706e+00 1.09041e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 08:35:55 AM IST] opt step 15: E = -1317.2527016865 Ha  dE -1.81e-05  grad rms/max 1.80e-04/3.93e-04  step rms/max 1.24e-02/3.27e-02 A
+Step   15 : Displace = [0m1.221e-02[0m/[0m3.245e-02[0m (rms/max) Trust = 4.761e-02 ([92m+[0m) Grad = [92m1.799e-04[0m/[92m3.931e-04[0m (rms/max) E (change) = -1317.2527016865 ([0m-1.810e-05[0m) Quality = [0m1.573[0m
+Hessian Eigenvalues: 1.37284e-03 4.33173e-03 1.98371e-02 ... 9.86655e-01 1.00664e+00 1.09065e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 08:50:28 AM IST] opt step 16: E = -1317.2527305967 Ha  dE -2.89e-05  grad rms/max 3.00e-04/6.58e-04  step rms/max 5.08e-02/1.19e-01 A
+Step   16 : Displace = [0m5.014e-02[0m/[0m1.165e-01[0m (rms/max) Trust = 6.733e-02 ([92m+[0m) Grad = [92m2.997e-04[0m/[0m6.585e-04[0m (rms/max) E (change) = -1317.2527305967 ([0m-2.891e-05[0m) Quality = [0m0.955[0m
+Hessian Eigenvalues: 9.65916e-04 5.12109e-03 1.97874e-02 ... 9.89153e-01 1.01579e+00 1.09183e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 09:04:08 AM IST] opt step 17: E = -1317.2527462286 Ha  dE -1.56e-05  grad rms/max 2.74e-04/8.42e-04  step rms/max 2.44e-02/4.74e-02 A
+Step   17 : Displace = [0m2.419e-02[0m/[0m4.521e-02[0m (rms/max) Trust = 9.521e-02 ([92m+[0m) Grad = [92m2.736e-04[0m/[0m8.423e-04[0m (rms/max) E (change) = -1317.2527462286 ([0m-1.563e-05[0m) Quality = [0m1.119[0m
+Hessian Eigenvalues: 7.66165e-04 4.93148e-03 1.70674e-02 ... 9.86781e-01 1.01547e+00 1.09224e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 09:18:48 AM IST] opt step 18: E = -1317.2527692828 Ha  dE -2.31e-05  grad rms/max 2.37e-04/6.69e-04  step rms/max 3.05e-02/5.35e-02 A
+Step   18 : Displace = [0m3.029e-02[0m/[0m5.318e-02[0m (rms/max) Trust = 1.347e-01 ([92m+[0m) Grad = [92m2.370e-04[0m/[0m6.694e-04[0m (rms/max) E (change) = -1317.2527692828 ([0m-2.305e-05[0m) Quality = [0m1.371[0m
+Hessian Eigenvalues: 5.32587e-04 5.87267e-03 9.97808e-03 ... 9.87698e-01 1.00778e+00 1.09334e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 09:33:25 AM IST] opt step 19: E = -1317.2528000659 Ha  dE -3.08e-05  grad rms/max 3.53e-04/7.76e-04  step rms/max 5.42e-02/9.28e-02 A
+Step   19 : Displace = [0m5.387e-02[0m/[0m9.103e-02[0m (rms/max) Trust = 1.904e-01 ([92m+[0m) Grad = [0m3.525e-04[0m/[0m7.764e-04[0m (rms/max) E (change) = -1317.2528000659 ([0m-3.078e-05[0m) Quality = [0m1.244[0m
+Hessian Eigenvalues: 3.99390e-04 5.03497e-03 7.18237e-03 ... 9.88098e-01 1.01515e+00 1.09274e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 09:48:01 AM IST] opt step 20: E = -1317.2528359906 Ha  dE -3.59e-05  grad rms/max 4.97e-04/1.08e-03  step rms/max 6.33e-02/1.09e-01 A
+Step   20 : Displace = [0m6.301e-02[0m/[0m1.083e-01[0m (rms/max) Trust = 2.693e-01 ([92m+[0m) Grad = [0m4.971e-04[0m/[0m1.079e-03[0m (rms/max) E (change) = -1317.2528359906 ([0m-3.592e-05[0m) Quality = [0m1.181[0m
+Hessian Eigenvalues: 3.46123e-04 3.32887e-03 6.72761e-03 ... 9.89892e-01 1.02018e+00 1.09209e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 10:02:31 AM IST] opt step 21: E = -1317.2528875443 Ha  dE -5.16e-05  grad rms/max 5.25e-04/1.09e-03  step rms/max 6.38e-02/1.23e-01 A
+Step   21 : Displace = [0m6.351e-02[0m/[0m1.188e-01[0m (rms/max) Trust = 3.000e-01 ([92m+[0m) Grad = [0m5.253e-04[0m/[0m1.088e-03[0m (rms/max) E (change) = -1317.2528875443 ([0m-5.155e-05[0m) Quality = [0m1.269[0m
+Hessian Eigenvalues: 3.26152e-04 2.58835e-03 6.57947e-03 ... 9.94329e-01 1.01169e+00 1.09292e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 10:17:08 AM IST] opt step 22: E = -1317.2529403202 Ha  dE -5.28e-05  grad rms/max 3.84e-04/7.84e-04  step rms/max 5.02e-02/1.07e-01 A
+Step   22 : Displace = [0m4.992e-02[0m/[0m1.008e-01[0m (rms/max) Trust = 3.000e-01 (=) Grad = [0m3.835e-04[0m/[0m7.843e-04[0m (rms/max) E (change) = -1317.2529403202 ([0m-5.278e-05[0m) Quality = [0m1.288[0m
+Hessian Eigenvalues: 2.89107e-04 2.45914e-03 6.45002e-03 ... 9.94278e-01 1.00773e+00 1.09277e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 10:31:26 AM IST] opt step 23: E = -1317.2529916858 Ha  dE -5.14e-05  grad rms/max 4.34e-04/1.04e-03  step rms/max 5.76e-02/1.10e-01 A
+Step   23 : Displace = [0m5.732e-02[0m/[0m1.059e-01[0m (rms/max) Trust = 3.000e-01 (=) Grad = [0m4.340e-04[0m/[0m1.036e-03[0m (rms/max) E (change) = -1317.2529916858 ([0m-5.137e-05[0m) Quality = [0m1.191[0m
+Hessian Eigenvalues: 3.16443e-04 2.33822e-03 5.69521e-03 ... 9.95696e-01 1.01626e+00 1.09276e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 10:44:47 AM IST] opt step 24: E = -1317.2530221483 Ha  dE -3.05e-05  grad rms/max 4.79e-04/1.18e-03  step rms/max 2.08e-02/5.15e-02 A
+Step   24 : Displace = [0m2.066e-02[0m/[0m5.372e-02[0m (rms/max) Trust = 3.000e-01 (=) Grad = [0m4.793e-04[0m/[0m1.176e-03[0m (rms/max) E (change) = -1317.2530221483 ([0m-3.046e-05[0m) Quality = [0m0.976[0m
+Hessian Eigenvalues: 2.81343e-04 2.78970e-03 4.29272e-03 ... 9.95411e-01 1.01140e+00 1.09308e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 10:59:01 AM IST] opt step 25: E = -1317.2531233009 Ha  dE -1.01e-04  grad rms/max 4.88e-04/1.19e-03  step rms/max 8.15e-02/1.60e-01 A
+Step   25 : Displace = [0m8.114e-02[0m/[0m1.584e-01[0m (rms/max) Trust = 3.000e-01 (=) Grad = [0m4.880e-04[0m/[0m1.186e-03[0m (rms/max) E (change) = -1317.2531233009 ([0m-1.012e-04[0m) Quality = [0m2.955[0m
+Hessian Eigenvalues: 4.08495e-04 3.03787e-03 3.48609e-03 ... 1.00138e+00 1.01012e+00 1.09305e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 11:13:12 AM IST] opt step 26: E = -1317.2531458842 Ha  dE -2.26e-05  grad rms/max 4.38e-04/1.46e-03  step rms/max 2.22e-02/4.34e-02 A
+Step   26 : Displace = [0m2.200e-02[0m/[0m4.268e-02[0m (rms/max) Trust = 3.000e-01 (=) Grad = [0m4.382e-04[0m/[0m1.463e-03[0m (rms/max) E (change) = -1317.2531458842 ([0m-2.258e-05[0m) Quality = [0m0.747[0m
+Hessian Eigenvalues: 4.23883e-04 3.03498e-03 4.15197e-03 ... 9.97703e-01 1.01118e+00 1.09424e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 11:26:17 AM IST] opt step 27: E = -1317.2531666103 Ha  dE -2.07e-05  grad rms/max 3.38e-04/8.45e-04  step rms/max 1.26e-02/3.03e-02 A
+Step   27 : Displace = [0m1.254e-02[0m/[0m2.949e-02[0m (rms/max) Trust = 3.000e-01 (=) Grad = [0m3.383e-04[0m/[0m8.454e-04[0m (rms/max) E (change) = -1317.2531666103 ([0m-2.073e-05[0m) Quality = [0m0.913[0m
+Hessian Eigenvalues: 3.93407e-04 3.01268e-03 4.14963e-03 ... 9.98498e-01 1.01262e+00 1.09287e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 11:40:34 AM IST] opt step 28: E = -1317.2531833545 Ha  dE -1.67e-05  grad rms/max 2.11e-04/4.88e-04  step rms/max 3.11e-02/5.76e-02 A
+Step   28 : Displace = [0m3.091e-02[0m/[0m5.738e-02[0m (rms/max) Trust = 3.000e-01 (=) Grad = [92m2.114e-04[0m/[0m4.880e-04[0m (rms/max) E (change) = -1317.2531833545 ([0m-1.674e-05[0m) Quality = [0m1.125[0m
+Hessian Eigenvalues: 2.72136e-04 3.06253e-03 4.16738e-03 ... 9.97885e-01 1.01203e+00 1.09376e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 11:54:55 AM IST] opt step 29: E = -1317.2531941106 Ha  dE -1.08e-05  grad rms/max 1.65e-04/4.61e-04  step rms/max 4.74e-02/9.05e-02 A
+Step   29 : Displace = [0m4.721e-02[0m/[0m8.708e-02[0m (rms/max) Trust = 3.000e-01 (=) Grad = [92m1.645e-04[0m/[0m4.610e-04[0m (rms/max) E (change) = -1317.2531941106 ([0m-1.076e-05[0m) Quality = [0m1.159[0m
+Hessian Eigenvalues: 2.49998e-04 3.08282e-03 4.10522e-03 ... 1.00664e+00 1.01046e+00 1.09416e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 12:08:13 PM IST] opt step 30: E = -1317.2532049587 Ha  dE -1.08e-05  grad rms/max 1.46e-04/3.03e-04  step rms/max 2.79e-02/5.15e-02 A
+Step   30 : Displace = [0m2.770e-02[0m/[0m4.978e-02[0m (rms/max) Trust = 3.000e-01 (=) Grad = [92m1.464e-04[0m/[92m3.034e-04[0m (rms/max) E (change) = -1317.2532049587 ([0m-1.085e-05[0m) Quality = [0m1.446[0m
+Hessian Eigenvalues: 1.81181e-04 3.07229e-03 4.39253e-03 ... 1.00067e+00 1.01193e+00 1.09304e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 12:22:29 PM IST] opt step 31: E = -1317.2532218713 Ha  dE -1.69e-05  grad rms/max 1.86e-04/4.25e-04  step rms/max 5.57e-02/1.04e-01 A
+Step   31 : Displace = [0m5.533e-02[0m/[0m1.033e-01[0m (rms/max) Trust = 3.000e-01 (=) Grad = [92m1.865e-04[0m/[92m4.253e-04[0m (rms/max) E (change) = -1317.2532218713 ([0m-1.691e-05[0m) Quality = [0m1.450[0m
+Hessian Eigenvalues: 1.15775e-04 3.07658e-03 4.26053e-03 ... 9.99324e-01 1.01301e+00 1.09261e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 12:37:39 PM IST] opt step 32: E = -1317.2532442202 Ha  dE -2.23e-05  grad rms/max 2.70e-04/5.85e-04  step rms/max 1.01e-01/1.92e-01 A
+Step   32 : Displace = [0m1.008e-01[0m/[0m1.890e-01[0m (rms/max) Trust = 3.000e-01 (=) Grad = [92m2.701e-04[0m/[0m5.850e-04[0m (rms/max) E (change) = -1317.2532442202 ([0m-2.235e-05[0m) Quality = [0m1.232[0m
+Hessian Eigenvalues: 1.68120e-04 3.04934e-03 3.67055e-03 ... 1.00002e+00 1.01595e+00 1.09257e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 12:51:56 PM IST] opt step 33: E = -1317.2532567118 Ha  dE -1.25e-05  grad rms/max 3.92e-04/1.23e-03  step rms/max 4.12e-02/7.57e-02 A
+Step   33 : Displace = [0m4.080e-02[0m/[0m8.572e-02[0m (rms/max) Trust = 3.000e-01 (=) Grad = [0m3.921e-04[0m/[0m1.229e-03[0m (rms/max) E (change) = -1317.2532567118 ([0m-1.249e-05[0m) Quality = [0m0.576[0m
+Hessian Eigenvalues: 1.52820e-04 2.97721e-03 4.05620e-03 ... 1.00879e+00 1.04365e+00 1.09645e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 01:06:23 PM IST] opt step 34: E = -1317.2532742142 Ha  dE -1.75e-05  grad rms/max 1.89e-04/4.64e-04  step rms/max 2.90e-02/5.25e-02 A
+Step   34 : Displace = [0m2.879e-02[0m/[0m5.551e-02[0m (rms/max) Trust = 3.000e-01 (=) Grad = [92m1.894e-04[0m/[0m4.638e-04[0m (rms/max) E (change) = -1317.2532742142 ([0m-1.750e-05[0m) Quality = [0m1.266[0m
+Hessian Eigenvalues: 2.15762e-04 2.82669e-03 4.15598e-03 ... 1.00391e+00 1.01820e+00 1.09297e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 01:20:46 PM IST] opt step 35: E = -1317.2532960817 Ha  dE -2.19e-05  grad rms/max 1.71e-04/5.22e-04  step rms/max 4.14e-02/7.91e-02 A
+Step   35 : Displace = [0m4.125e-02[0m/[0m7.726e-02[0m (rms/max) Trust = 3.000e-01 (=) Grad = [92m1.712e-04[0m/[0m5.215e-04[0m (rms/max) E (change) = -1317.2532960817 ([0m-2.187e-05[0m) Quality = [0m1.234[0m
+Hessian Eigenvalues: 3.13676e-04 2.28425e-03 3.67667e-03 ... 1.00253e+00 1.01647e+00 1.09295e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 01:34:05 PM IST] opt step 36: E = -1317.2533219854 Ha  dE -2.59e-05  grad rms/max 3.00e-04/8.68e-04  step rms/max 3.32e-02/6.77e-02 A
+Step   36 : Displace = [0m3.292e-02[0m/[0m6.866e-02[0m (rms/max) Trust = 3.000e-01 (=) Grad = [0m3.004e-04[0m/[0m8.678e-04[0m (rms/max) E (change) = -1317.2533219854 ([0m-2.590e-05[0m) Quality = [0m1.530[0m
+Hessian Eigenvalues: 3.02868e-04 1.01080e-03 3.14799e-03 ... 1.00315e+00 1.01596e+00 1.09223e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 01:48:29 PM IST] opt step 37: E = -1317.2533736345 Ha  dE -5.16e-05  grad rms/max 4.45e-04/1.03e-03  step rms/max 7.29e-02/1.59e-01 A
+Step   37 : Displace = [0m7.227e-02[0m/[0m1.441e-01[0m (rms/max) Trust = 3.000e-01 (=) Grad = [0m4.454e-04[0m/[0m1.035e-03[0m (rms/max) E (change) = -1317.2533736345 ([0m-5.165e-05[0m) Quality = [0m1.495[0m
+Hessian Eigenvalues: 1.92906e-04 6.29420e-04 3.06425e-03 ... 1.00287e+00 1.02315e+00 1.09422e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 02:03:46 PM IST] opt step 38: E = -1317.2534599429 Ha  dE -8.63e-05  grad rms/max 5.78e-04/1.27e-03  step rms/max 1.85e-01/3.53e-01 A
+Step   38 : Displace = [0m1.830e-01[0m/[0m3.731e-01[0m (rms/max) Trust = 3.000e-01 (=) Grad = [0m5.781e-04[0m/[0m1.266e-03[0m (rms/max) E (change) = -1317.2534599429 ([0m-8.631e-05[0m) Quality = [0m1.218[0m
+Hessian Eigenvalues: 1.63366e-04 6.09836e-04 3.10124e-03 ... 1.00161e+00 1.02076e+00 1.09437e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 02:19:13 PM IST] opt step 39: E = -1317.2535385001 Ha  dE -7.86e-05  grad rms/max 4.70e-04/1.05e-03  step rms/max 1.01e-01/1.89e-01 A
+Step   39 : Displace = [0m1.002e-01[0m/[0m2.021e-01[0m (rms/max) Trust = 3.000e-01 (=) Grad = [0m4.704e-04[0m/[0m1.048e-03[0m (rms/max) E (change) = -1317.2535385001 ([0m-7.856e-05[0m) Quality = [0m1.595[0m
+Hessian Eigenvalues: 1.00759e-04 5.42352e-04 3.14541e-03 ... 9.97910e-01 1.01538e+00 1.09306e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 02:35:33 PM IST] opt step 40: E = -1317.2536151476 Ha  dE -7.66e-05  grad rms/max 3.98e-04/1.00e-03  step rms/max 3.23e-01/6.02e-01 A
+Step   40 : Displace = [0m3.202e-01[0m/[0m6.343e-01[0m (rms/max) Trust = 3.000e-01 (=) Grad = [0m3.981e-04[0m/[0m1.000e-03[0m (rms/max) E (change) = -1317.2536151476 ([0m-7.665e-05[0m) Quality = [0m0.534[0m
+Hessian Eigenvalues: 1.51569e-04 4.85969e-04 3.13626e-03 ... 9.97363e-01 1.01628e+00 1.09272e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 02:50:38 PM IST] opt step 41: E = -1317.2536574620 Ha  dE -4.23e-05  grad rms/max 4.07e-04/1.35e-03  step rms/max 1.11e-01/2.09e-01 A
+Step   41 : Displace = [0m1.098e-01[0m/[0m2.286e-01[0m (rms/max) Trust = 3.000e-01 (=) Grad = [0m4.066e-04[0m/[0m1.346e-03[0m (rms/max) E (change) = -1317.2536574620 ([0m-4.231e-05[0m) Quality = [0m0.698[0m
+Hessian Eigenvalues: 1.13534e-04 9.10557e-04 3.13838e-03 ... 9.98235e-01 1.01626e+00 1.09172e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 03:05:52 PM IST] opt step 42: E = -1317.2536458630 Ha  dE +1.16e-05  grad rms/max 3.99e-04/1.22e-03  step rms/max 1.50e-01/2.76e-01 A
+Step   42 : Displace = [0m1.489e-01[0m/[0m2.857e-01[0m (rms/max) Trust = 3.000e-01 (=) Grad = [0m3.990e-04[0m/[0m1.221e-03[0m (rms/max) E (change) = -1317.2536458630 ([91m+1.160e-05[0m) Quality = [91m-0.170[0m
+Hessian Eigenvalues: 1.81616e-04 9.46558e-04 3.13920e-03 ... 9.98469e-01 1.01623e+00 1.09218e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 03:21:11 PM IST] opt step 43: E = -1317.2537079007 Ha  dE -6.20e-05  grad rms/max 1.39e-04/4.15e-04  step rms/max 7.51e-02/1.47e-01 A
+Step   43 : Displace = [0m7.443e-02[0m/[0m1.478e-01[0m (rms/max) Trust = 7.447e-02 ([91m-[0m) Grad = [92m1.391e-04[0m/[92m4.154e-04[0m (rms/max) E (change) = -1317.2537079007 ([0m-6.204e-05[0m) Quality = [0m1.139[0m
+Hessian Eigenvalues: 1.72094e-04 9.07184e-04 3.13622e-03 ... 9.98515e-01 1.01738e+00 1.09176e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 03:36:20 PM IST] opt step 44: E = -1317.2537115061 Ha  dE -3.61e-06  grad rms/max 1.11e-04/2.05e-04  step rms/max 8.42e-02/1.54e-01 A
+Step   44 : Displace = [0m8.343e-02[0m/[0m1.670e-01[0m (rms/max) Trust = 1.053e-01 ([92m+[0m) Grad = [92m1.111e-04[0m/[92m2.049e-04[0m (rms/max) E (change) = -1317.2537115061 ([0m-3.605e-06[0m) Quality = [0m0.265[0m
+Hessian Eigenvalues: 2.97431e-04 8.02523e-04 3.13970e-03 ... 9.98515e-01 1.01678e+00 1.09188e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 03:49:44 PM IST] opt step 45: E = -1317.2537200684 Ha  dE -8.56e-06  grad rms/max 7.94e-05/1.75e-04  step rms/max 3.02e-02/5.95e-02 A
+Step   45 : Displace = [0m2.999e-02[0m/[0m6.374e-02[0m (rms/max) Trust = 1.053e-01 (=) Grad = [92m7.941e-05[0m/[92m1.753e-04[0m (rms/max) E (change) = -1317.2537200684 ([0m-8.562e-06[0m) Quality = [0m1.257[0m
+Hessian Eigenvalues: 2.38211e-04 8.16780e-04 3.15030e-03 ... 9.99595e-01 1.01727e+00 1.09185e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 04:03:16 PM IST] opt step 46: E = -1317.2537255141 Ha  dE -5.45e-06  grad rms/max 7.67e-05/1.69e-04  step rms/max 2.92e-02/5.49e-02 A
+Step   46 : Displace = [0m2.898e-02[0m/[0m6.027e-02[0m (rms/max) Trust = 1.489e-01 ([92m+[0m) Grad = [92m7.672e-05[0m/[92m1.691e-04[0m (rms/max) E (change) = -1317.2537255141 ([0m-5.446e-06[0m) Quality = [0m1.187[0m
+Hessian Eigenvalues: 3.12192e-04 7.85738e-04 3.13866e-03 ... 9.99934e-01 1.01648e+00 1.09201e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 04:15:38 PM IST] opt step 47: E = -1317.2537273112 Ha  dE -1.80e-06  grad rms/max 4.09e-05/9.41e-05  step rms/max 9.21e-03/1.68e-02 A
+Step   47 : Displace = [0m9.105e-03[0m/[0m1.734e-02[0m (rms/max) Trust = 2.106e-01 ([92m+[0m) Grad = [92m4.094e-05[0m/[92m9.411e-05[0m (rms/max) E (change) = -1317.2537273112 ([0m-1.797e-06[0m) Quality = [0m1.466[0m
+Hessian Eigenvalues: 2.92200e-04 6.99862e-04 2.90056e-03 ... 1.00009e+00 1.01613e+00 1.09198e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 04:28:54 PM IST] opt step 48: E = -1317.2537285374 Ha  dE -1.23e-06  grad rms/max 3.78e-05/8.32e-05  step rms/max 1.19e-02/2.08e-02 A
+Step   48 : Displace = [0m1.171e-02[0m/[0m2.068e-02[0m (rms/max) Trust = 2.979e-01 ([92m+[0m) Grad = [92m3.775e-05[0m/[92m8.323e-05[0m (rms/max) E (change) = -1317.2537285374 ([0m-1.226e-06[0m) Quality = [0m1.253[0m
+Hessian Eigenvalues: 2.28436e-04 6.32486e-04 2.60140e-03 ... 1.00008e+00 1.01630e+00 1.09215e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 04:42:23 PM IST] opt step 49: E = -1317.2537294173 Ha  dE -8.80e-07  grad rms/max 3.89e-05/6.84e-05  step rms/max 1.42e-02/2.54e-02 A
+Step   49 : Displace = [0m1.395e-02[0m/[0m2.395e-02[0m (rms/max) Trust = 3.000e-01 ([92m+[0m) Grad = [92m3.894e-05[0m/[92m6.838e-05[0m (rms/max) E (change) = -1317.2537294173 ([92m-8.800e-07[0m) Quality = [0m1.397[0m
+Hessian Eigenvalues: 1.13125e-04 5.68599e-04 2.30699e-03 ... 1.00161e+00 1.01662e+00 1.09222e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 04:56:36 PM IST] opt step 50: E = -1317.2537322519 Ha  dE -2.83e-06  grad rms/max 8.14e-05/1.97e-04  step rms/max 3.72e-02/7.02e-02 A
+Step   50 : Displace = [0m3.654e-02[0m/[0m6.560e-02[0m (rms/max) Trust = 3.000e-01 (=) Grad = [92m8.142e-05[0m/[92m1.973e-04[0m (rms/max) E (change) = -1317.2537322519 ([0m-2.835e-06[0m) Quality = [0m2.030[0m
+Eigenvalues below 1.0000e-05 (-1.9832e-04) - returning guess
+Hessian Eigenvalues: 2.30000e-02 2.30000e-02 2.30000e-02 ... 9.01913e-01 9.10917e-01 9.28428e-01
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 05:07:15 PM IST] opt step 51: E = -1317.2537328547 Ha  dE -6.03e-07  grad rms/max 4.57e-05/1.15e-04  step rms/max 8.52e-04/1.80e-03 A
+Step   51 : Displace = [92m7.698e-04[0m/[0m1.888e-03[0m (rms/max) Trust = 3.000e-01 (=) Grad = [92m4.570e-05[0m/[92m1.151e-04[0m (rms/max) E (change) = -1317.2537328547 ([92m-6.029e-07[0m) Quality = [0m1.302[0m
+Hessian Eigenvalues: 1.15117e-02 2.30000e-02 2.30000e-02 ... 8.99939e-01 9.08060e-01 9.30557e-01
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 05:18:38 PM IST] opt step 52: E = -1317.2537332408 Ha  dE -3.86e-07  grad rms/max 7.34e-05/2.16e-04  step rms/max 1.80e-03/3.47e-03 A
+Step   52 : Displace = [0m1.560e-03[0m/[0m3.549e-03[0m (rms/max) Trust = 3.000e-01 (=) Grad = [92m7.336e-05[0m/[92m2.163e-04[0m (rms/max) E (change) = -1317.2537332408 ([92m-3.861e-07[0m) Quality = [0m0.658[0m
+Hessian Eigenvalues: 6.29667e-03 2.30000e-02 2.30000e-02 ... 9.07860e-01 9.28489e-01 9.34015e-01
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 05:30:03 PM IST] opt step 53: E = -1317.2537334290 Ha  dE -1.88e-07  grad rms/max 9.69e-05/1.94e-04  step rms/max 2.09e-03/4.49e-03 A
+Step   53 : Displace = [0m1.789e-03[0m/[0m4.580e-03[0m (rms/max) Trust = 3.000e-01 (=) Grad = [92m9.686e-05[0m/[92m1.944e-04[0m (rms/max) E (change) = -1317.2537334290 ([92m-1.882e-07[0m) Quality = [0m0.313[0m
+Hessian Eigenvalues: 6.19489e-03 2.29967e-02 2.30000e-02 ... 9.07174e-01 9.30517e-01 1.06432e+00
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 05:40:33 PM IST] opt step 54: E = -1317.2537338885 Ha  dE -4.60e-07  grad rms/max 6.13e-05/1.50e-04  step rms/max 8.81e-04/1.81e-03 A
+Step   54 : Displace = [92m7.585e-04[0m/[92m1.568e-03[0m (rms/max) Trust = 3.000e-01 (=) Grad = [92m6.126e-05[0m/[92m1.497e-04[0m (rms/max) E (change) = -1317.2537338885 ([92m-4.595e-07[0m) Quality = [0m1.020[0m
+Hessian Eigenvalues: 6.19489e-03 2.29967e-02 2.30000e-02 ... 9.07174e-01 9.30517e-01 1.06432e+00
+Converged! =D
+
+    #==========================================================================#
+    #| If this code has benefited your research, please support us by citing: |#
+    #|                                                                        |#
+    #| Wang, L.-P.; Song, C.C. (2016) "Geometry optimization made simple with |#
+    #| translation and rotation coordinates", J. Chem, Phys. 144, 214108.     |#
+    #| http://dx.doi.org/10.1063/1.4952956                                    |#
+    #==========================================================================#
+    Time elapsed since start of run_optimizer: 45735.207 seconds
+[2026-11-21 05:40:33 PM IST] optimisation CONVERGED after 55 evaluations, E(opt.xyz) = -1317.2537338885 Ha, RMSD vs start 1.099 A
+[2026-11-21 05:40:33 PM IST] job c0_btpcz_pcm_core_opt finished (peak RSS 9827 MB)

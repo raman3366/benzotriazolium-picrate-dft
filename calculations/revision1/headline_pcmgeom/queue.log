@@ -1,0 +1,54 @@
+
+===== queue: start headline_pcmgeom attempt 1 at 2026-11-21T19:11:09+05:30 =====
+$ MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/headline.py --job headline_pcmgeom --out <run-dir>/queue/out/headline_pcmgeom --geom pcm --refine 1
+[2026-11-21 07:11:10 PM IST] job headline_pcmgeom (dft/revision/headline.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/headline_pcmgeom, smoke False, restart #0; PySCF 2.14.0
+[2026-11-21 07:11:10 PM IST] pcm|eps=1: SCF (606 AO, gas), guess <run-dir>/repo/data/r2/molecules/btpc/results/btpc_pcm/final.chk
+[2026-11-21 07:11:10 PM IST] initial density from <run-dir>/repo/data/r2/molecules/btpc/results/btpc_pcm/final.chk
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 07:17:15 PM IST] pcm|eps=1: E = -1317.2004180423 Ha (14 cycles, 364 s); HOMO -6.4428 (anion), LUMO -3.8521 (cation, cation 99.9 %), gap 2.5907 eV; Delta(cat-an) -1.1985 eV
+[2026-11-21 07:17:15 PM IST] pcm|eps=2: SCF (606 AO, IEF-PCM eps=2), guess <run-dir>/queue/out/headline_pcmgeom/chk/pcm_eps1.chk
+[2026-11-21 07:17:15 PM IST] initial density from <run-dir>/queue/out/headline_pcmgeom/chk/pcm_eps1.chk
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 07:30:26 PM IST] pcm|eps=2: E = -1317.2228924320 Ha (12 cycles, 790 s); HOMO -6.6677 (anion), LUMO -3.2361 (cation, cation 99.8 %), gap 3.4316 eV; Delta(cat-an) -0.3430 eV
+[2026-11-21 07:30:26 PM IST] pcm|eps=4: SCF (606 AO, IEF-PCM eps=4), guess <run-dir>/queue/out/headline_pcmgeom/chk/pcm_eps2.chk
+[2026-11-21 07:30:26 PM IST] initial density from <run-dir>/queue/out/headline_pcmgeom/chk/pcm_eps2.chk
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 07:42:42 PM IST] pcm|eps=4: E = -1317.2370917102 Ha (11 cycles, 736 s); HOMO -6.7876 (anion), LUMO -3.0289 (anion, cation 0.4 %), gap 3.7587 eV; Delta(cat-an) +0.1258 eV
+[2026-11-21 07:42:42 PM IST] pcm|eps=8: SCF (606 AO, IEF-PCM eps=8), guess <run-dir>/queue/out/headline_pcmgeom/chk/pcm_eps4.chk
+[2026-11-21 07:42:42 PM IST] initial density from <run-dir>/queue/out/headline_pcmgeom/chk/pcm_eps4.chk
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 07:53:51 PM IST] pcm|eps=8: E = -1317.2453529349 Ha (10 cycles, 668 s); HOMO -6.8483 (anion), LUMO -3.1004 (anion, cation 0.2 %), gap 3.7480 eV; Delta(cat-an) +0.3671 eV
+[2026-11-21 07:53:51 PM IST] pcm|eps=20: SCF (606 AO, IEF-PCM eps=20), guess <run-dir>/queue/out/headline_pcmgeom/chk/pcm_eps8.chk
+[2026-11-21 07:53:51 PM IST] initial density from <run-dir>/queue/out/headline_pcmgeom/chk/pcm_eps8.chk
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 08:04:13 PM IST] pcm|eps=20: E = -1317.2508107645 Ha (9 cycles, 622 s); HOMO -6.8847 (anion), LUMO -3.1448 (anion, cation 0.1 %), gap 3.7399 eV; Delta(cat-an) +0.5331 eV
+[2026-11-21 08:04:13 PM IST] pcm|eps=78.3553: SCF (606 AO, IEF-PCM eps=78.3553), guess <run-dir>/queue/out/headline_pcmgeom/chk/pcm_eps20.chk
+[2026-11-21 08:04:13 PM IST] initial density from <run-dir>/queue/out/headline_pcmgeom/chk/pcm_eps20.chk
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 08:14:34 PM IST] pcm|eps=78.3553: E = -1317.2536885706 Ha (9 cycles, 620 s); HOMO -6.9027 (anion), LUMO -3.1672 (anion, cation 0.1 %), gap 3.7354 eV; Delta(cat-an) +0.5963 eV
+[2026-11-21 08:14:34 PM IST] pcm eps 78.3553: dE vs stored btpc_pcm = -1.06e-08 Ha -> PASS
+[2026-11-21 08:14:34 PM IST] pcm|eps=3.153: SCF (606 AO, IEF-PCM eps=3.153), guess <run-dir>/queue/out/headline_pcmgeom/chk/pcm_eps4.chk
+[2026-11-21 08:14:34 PM IST] initial density from <run-dir>/queue/out/headline_pcmgeom/chk/pcm_eps4.chk
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-21 08:24:59 PM IST] pcm|eps=3.153: E = -1317.2330091285 Ha (9 cycles, 625 s); HOMO -6.7551 (anion), LUMO -2.9991 (cation, cation 59.9 %), gap 3.7560 eV; Delta(cat-an) -0.0132 eV
+[2026-11-21 08:24:59 PM IST] pcm: LUMO switches cation->anion at eps ~ 3.218 (f-interpolation; ln-eps 3.225), bracket [3.153, 4.0]
+[2026-11-21 08:24:59 PM IST] job headline_pcmgeom finished (peak RSS 9828 MB)

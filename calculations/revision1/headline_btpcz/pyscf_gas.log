@@ -1,0 +1,3425 @@
+#INFO: **** input file is <run-dir>/repo/dft/revision/headline.py ****
+"""
+Headline tests for the BTPC revision (plan section 5, item 3): where does the LUMO live, and is it the geometry or the
+dielectric field that moves it?
+
+  (i)  cross single points: the gas-phase minimum in IEF-PCM water and the IEF-PCM minimum in the gas phase;
+  (ii) a permittivity series eps = 1, 2, 4, 8, 20, 78.3553 at both minima (eps = 1 is the gas-phase calculation,
+       eps = 78.3553 is water), which contains the cross points and the two stored calculations.
+For every point: total energy, HOMO-1, HOMO, LUMO, LUMO+1..LUMO+3 energies and their cation/picrate shares (Mulliken
+share as dft/fmo.py defines it, plus Loewdin), the gap, dipole, and fragment charges.  For each geometry the eps at
+which the LUMO switches from the cation to the picrate is found from the sign change of
+    Delta(eps) = E(lowest cation-localised virtual) - E(lowest picrate-localised virtual)      ("localised": share > 50 %)
+by linear interpolation in the Pekar-type factor f = (eps - 1)/eps (also given: interpolation in ln eps), and refined
+with --refine extra single points at the interpolated eps.
+
+Level of theory (rev_common.py): B3LYP/6-311++G(d,p), density fitting, grid level 4, IEF-PCM Lebedev order 29,
+conv_tol 1e-10.  The (gas geometry, eps 1) and (PCM geometry, eps 78.3553) points must reproduce the stored energies
+to 1e-6 Ha (B3LYP, btpc only); otherwise the job exits non-zero after finishing all points.
+
+Usage:
+  python dft/revision/headline.py --job headline_gas --out <dir> [--geom gas,pcm] [--eps 1,2,4,8,20,78.3553]
+         [--xc b3lyp] [--disp d3bj] [--case btpc] [--refine 1] [--guess auto|minao] [--smoke]
+  --geom entries: 'gas' / 'pcm' (the case's stored minimum, molecules/<case>/results/<case>_<model>/opt.xyz) or
+         'label=path/to/geometry.xyz' (path relative to the repository or absolute; a directory means <dir>/opt.xyz).
+  --xc pbe0 / camb3lyp with --eps 1,78.3553 gives the functional check of plan item 8 with the same analysis.
+--smoke: STO-3G, grid 2, Lebedev 17, conv_tol 1e-7, eps 1,4,78.3553 -- exercises every code path in minutes.
+
+This module also holds helpers shared by the other builder-2 scripts (frontier-orbital analysis, fmo.py descriptors,
+geometry metrics); they are plain functions and run nothing on import.
+"""
+import sys, pathlib, argparse, json, math, time
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import rev_common as rc          # first: pins the thread pools
+import numpy as np
+
+STORED_TOL_HA = 1e-6
+WATER = rc.SOLVENT_EPS['water']
+DEBYE = 2.541746473              # a.u. of dipole -> Debye
+
+
+# ============================================================================ shared helpers (used by other scripts)
+def level(smoke, grid=None):
+    """Basis, grid, Lebedev order and SCF tolerance: production values, or the reduced --smoke set."""
+    if smoke:
+        return {'basis': 'sto-3g', 'grid_level': grid or 2, 'lebedev_order': 17, 'conv_tol': 1e-7}
+    return {'basis': rc.BASIS, 'grid_level': rc.GRID_LEVEL, 'lebedev_order': rc.PCM_LEBEDEV_ORDER,
+            'conv_tol': rc.CONV_TOL_SP}
+
+
+def resolve_geom(spec, case_prefix='btpc'):
+    """'gas' | 'pcm' | 'label=path' | path  ->  (label, absolute path, model of the stored minimum or None)."""
+    if spec in ('gas', 'pcm'):
+        name = f'{case_prefix}_{spec}'
+        if name in rc.STORED:
+            return spec, rc.ROOT / rc.STORED[name]['xyz'], spec
+        mol_dir = case_prefix
+        return spec, rc.ROOT / 'molecules' / mol_dir / 'results' / name / 'opt.xyz', spec
+    label, _, path = spec.partition('=') if '=' in spec else (pathlib.Path(spec).stem, '', spec)
+    p = pathlib.Path(path)
+    if not p.is_absolute():
+        p = rc.ROOT / p
+    if p.is_dir():
+        p = p / 'opt.xyz'
+    return label, p, None
+
+
+def stored_dir(case_name):
+    """data/r2/molecules/<id>/results/<case>/ (raw outputs: final.chk, hessian.npy, final.molden) or None."""
+    for d in sorted((rc.ROOT / 'data' / 'r2' / 'molecules').glob(f'*/results/{case_name}')):
+        return d
+    return None
+
+
+def labels_of(case, natm):
+    lab = case.get('cif_labels')
+    if lab:
+        return [l.split('#')[0] for l in lab]
+    return [f'X{i + 1}' for i in range(natm)]
+
+
+def frag_of_share(shares, thresh=0.5):
+    """Fragment holding more than `thresh` of an orbital ({'anion': x, 'cation': y} in percent), else 'mixed'."""
+    best = max(shares, key=shares.get)
+    return best if shares[best] > 100 * thresh else 'mixed'
+
+
+def frontier(mf, frags, n_occ=2, n_virt=4, scan=12):
+    """Frontier-orbital energies (eV) and fragment shares (percent; Mulliken as dft/fmo.py, and Loewdin) of an RKS
+    solution: HOMO-(n_occ-1)..HOMO, LUMO..LUMO+(n_virt-1).  Also the lowest virtual and highest occupied orbital
+    localised (> 50 % Mulliken) on each fragment, searched over `scan` orbitals."""
+    mol = mf.mol
+    S = mol.intor_symmetric('int1e_ovlp'); S_half = rc.lowdin_half(S)
+    e = np.asarray(mf.mo_energy) * rc.HARTREE_EV
+    C = np.asarray(mf.mo_coeff)
+    nocc = int((np.asarray(mf.mo_occ) > 0.5).sum())
+    nmo = C.shape[1]
+
+    def shares(k):
+        return {m: {f: round(100 * rc.mo_fragment_share(mol, C[:, k], atoms, m, S, S_half), 3)
+                    for f, atoms in frags.items()} for m in ('mulliken', 'lowdin')}
+
+    out = {'n_occ': nocc, 'n_mo': nmo, 'orbitals': {}}
+    labels = [(f'HOMO-{i}' if i else 'HOMO', nocc - 1 - i) for i in range(n_occ - 1, -1, -1)]
+    labels += [(f'LUMO+{i}' if i else 'LUMO', nocc + i) for i in range(n_virt)]
+    for lab, k in labels:
+        if 0 <= k < nmo:
+            sh = shares(k)
+            out['orbitals'][lab] = {'index': int(k), 'eV': float(e[k]), **sh,
+                                    'on': frag_of_share(sh['mulliken'])}
+    out['HOMO_eV'] = float(e[nocc - 1]); out['LUMO_eV'] = float(e[nocc]); out['gap_eV'] = float(e[nocc] - e[nocc - 1])
+    out['LUMO_on'] = out['orbitals']['LUMO']['on']; out['HOMO_on'] = out['orbitals']['HOMO']['on']
+    lowest_virt, highest_occ = {}, {}
+    for k in range(nocc, min(nmo, nocc + scan)):
+        sh = shares(k)['mulliken']; f = frag_of_share(sh)
+        if f in frags and f not in lowest_virt:
+            lowest_virt[f] = {'index': int(k), 'label': 'LUMO' + (f'+{k - nocc}' if k > nocc else ''),
+                              'eV': float(e[k]), 'share_pct': sh[f]}
+    for k in range(nocc - 1, max(-1, nocc - 1 - scan), -1):
+        sh = shares(k)['mulliken']; f = frag_of_share(sh)
+        if f in frags and f not in highest_occ:
+            highest_occ[f] = {'index': int(k), 'label': 'HOMO' + (f'-{nocc - 1 - k}' if k < nocc - 1 else ''),
+                              'eV': float(e[k]), 'share_pct': sh[f]}
+    out['lowest_virtual_on'] = lowest_virt
+    out['highest_occupied_on'] = highest_occ
+    if 'cation' in lowest_virt and 'anion' in lowest_virt:
+        out['delta_virt_cation_minus_anion_eV'] = lowest_virt['cation']['eV'] - lowest_virt['anion']['eV']
+    return out
+
+
+def fmo_descriptors(H, L):
+    """Koopmans-type descriptors exactly as dft/fmo.py computes them (eV)."""
+    IP, EA = -H, -L
+    chi = (IP + EA) / 2; mu = -chi; eta = (IP - EA) / 2; S = 1 / (2 * eta); omega = mu ** 2 / (2 * eta)
+    return {'HOMO_eV': H, 'LUMO_eV': L, 'gap_eV': L - H, 'IP_eV': IP, 'EA_eV': EA, 'electronegativity_chi_eV': chi,
+            'chemical_potential_mu_eV': mu, 'hardness_eta_eV': eta, 'softness_S_eV-1': S,
+            'electrophilicity_omega_eV': omega}
+
+
+def populations(mol, dm, frags):
+    """Mulliken and Loewdin charges per atom and per fragment (and spin for a UKS density pair)."""
+    S = mol.intor_symmetric('int1e_ovlp'); S_half = rc.lowdin_half(S)
+    dm = np.asarray(dm)
+    uks = dm.ndim == 3
+    tot = dm[0] + dm[1] if uks else dm
+    Z = mol.atom_charges()
+    sl = mol.aoslice_by_atom()
+    res = {}
+    for name in ('mulliken', 'lowdin'):
+        if name == 'mulliken':
+            p = np.einsum('ij,ji->i', tot, S); s = np.einsum('ij,ji->i', dm[0] - dm[1], S) if uks else None
+        else:
+            p = np.einsum('ij,jk,ki->i', S_half, tot, S_half); s = (np.einsum('ij,jk,ki->i', S_half, dm[0] - dm[1], S_half)
+                                                                   if uks else None)
+        q_at = np.array([Z[a] - p[sl[a][2]:sl[a][3]].sum() for a in range(mol.natm)])
+        r = {'atoms': q_at.tolist(), 'fragments': {f: float(q_at[atoms].sum()) for f, atoms in frags.items()}}
+        if uks:
+            s_at = np.array([s[sl[a][2]:sl[a][3]].sum() for a in range(mol.natm)])
+            r['spin_atoms'] = s_at.tolist()
+            r['spin_fragments'] = {f: float(s_at[atoms].sum()) for f, atoms in frags.items()}
+        res[name] = r
+    return res
+
+
+def dipole_debye(mf):
+    v = mf.dip_moment(unit='Debye', verbose=0)
+    return {'total': float(np.linalg.norm(v)), 'vector': [float(x) for x in v]}
+
+
+def _dihedral(X, a, b, c, d):
+    b0 = X[a] - X[b]; b1 = X[c] - X[b]; b2 = X[d] - X[c]
+    b1n = b1 / np.linalg.norm(b1)
+    v = b0 - np.dot(b0, b1n) * b1n; w = b2 - np.dot(b2, b1n) * b1n
+    return float(np.degrees(np.arctan2(np.dot(np.cross(b1n, v), w), np.dot(v, w))))
+
+
+def _plane_normal(P):
+    c = P.mean(0)
+    return np.linalg.svd(P - c)[2][-1]
+
+
+def nearest(X, syms, i, element, among):
+    """Index of the nearest atom of `element` to atom i, among the indices `among`."""
+    cand = [j for j in among if syms[j] == element and j != i]
+    return min(cand, key=lambda j: np.linalg.norm(X[j] - X[i])) if cand else None
+
+
+def hbond_torsion_atoms(case, syms, X):
+    """C(acceptor)-O(acceptor)...N(donor)-C(donor ring): for btpc C1-O1...N4-C12 (indices 4, 0, 18, 21), the
+    inter-ion torsion of revision/round1/audit/evidence/dft/dihedrals.py."""
+    p = case.get('proton')
+    if not p:
+        return None
+    fr = rc.fragments(case)
+    O, N = p['acceptor_O'], p['donor_N']
+    cO = nearest(X, syms, O, 'C', fr.get('anion', range(len(syms))))
+    cN = nearest(X, syms, N, 'C', fr.get('cation', range(len(syms))))
+    return (cO, O, N, cN) if None not in (cO, cN) else None
+
+
+def geometry_metrics(case, syms, X):
+    """Inter-ion geometry: H-bond distances and angle, proton position, the inter-ion torsion and the angle between
+    the picrate ring (anion carbons) and the benzotriazolium ring system (cation heavy atoms)."""
+    X = np.asarray(X, float)
+    lab = labels_of(case, len(syms))
+    out = {}
+    p = case.get('proton')
+    if p:
+        H, N, O = p['H'], p['donor_N'], p['acceptor_O']
+        dHN = float(np.linalg.norm(X[H] - X[N])); dHO = float(np.linalg.norm(X[H] - X[O]))
+        v1, v2 = X[N] - X[H], X[O] - X[H]
+        out.update({'d_N...O_A': float(np.linalg.norm(X[N] - X[O])), 'd_H-N_A': dHN, 'd_H...O_A': dHO,
+                    'angle_N-H...O_deg': float(np.degrees(np.arccos(np.dot(v1, v2) / np.linalg.norm(v1) /
+                                                                     np.linalg.norm(v2)))),
+                    'proton_transferred': dHO < dHN,
+                    'hbond_labels': f'{lab[N]}-{lab[H]}...{lab[O]}'})
+    t = hbond_torsion_atoms(case, syms, X)
+    if t:
+        out['torsion_atoms'] = [int(i) for i in t]
+        out['torsion_labels'] = '-'.join(lab[i] for i in t)
+        out['torsion_deg'] = _dihedral(X, *t)
+    fr = rc.fragments(case)
+    if 'anion' in fr and 'cation' in fr:
+        ring_a = [i for i in fr['anion'] if syms[i] == 'C']
+        ring_c = [i for i in fr['cation'] if syms[i] != 'H']
+        n1, n2 = _plane_normal(X[ring_a]), _plane_normal(X[ring_c])
+        out['inter_ring_angle_deg'] = float(np.degrees(np.arccos(min(1.0, abs(float(np.dot(n1, n2)))))))
+    return out
+
+
+def dihedral(X, idx):
+    return _dihedral(np.asarray(X, float), *idx)
+
+
+def mol_geometry(mol):
+    syms = [mol.atom_pure_symbol(i) for i in range(mol.natm)]
+    return syms, mol.atom_coords() * rc.BOHR_A
+
+
+def solvent_label(eps):
+    return 'gas' if eps is None else f'IEF-PCM eps={eps:g}'
+
+
+def solvation_energy(mf):
+    ws = getattr(mf, 'with_solvent', None)
+    return None if ws is None or getattr(ws, 'e', None) is None else float(ws.e)
+
+
+# ============================================================================ this script
+def parser():
+    p = rc.add_common_args(argparse.ArgumentParser(description=__doc__.split('\n')[1]))
+    p.add_argument('--geom', default='gas,pcm', help="comma list: gas, pcm, label=path.xyz")
+    p.add_argument('--eps', default=None, help='comma list of permittivities (1 = gas phase); default 1,2,4,8,20,78.3553')
+    p.add_argument('--xc', default=rc.XC, help='functional (default b3lyp; item 8: pbe0, camb3lyp)')
+    p.add_argument('--disp', default=None, help="dispersion correction: none (default) or d3bj")
+    p.add_argument('--case', default='btpc', help='molecule prefix: btpc (default) or btpcz')
+    p.add_argument('--refine', type=int, default=1, help='extra single points at the interpolated switch eps (default 1)')
+    p.add_argument('--guess', choices=('auto', 'minao'), default='auto',
+                   help='auto: stored final.chk of the same model for the first point, then the previous eps')
+    p.add_argument('--test-delta-offset', type=float, default=0.0,
+                   help='TEST HOOK, --smoke only: add this many eV to Delta so that the switch/refine path runs')
+    return p
+
+
+def switch_from(points):
+    """points: [(eps, delta_eV)] sorted by eps.  Returns the bracket and interpolated eps of the first sign change."""
+    pts = [(e, d) for e, d in points if d is not None]
+    pts.sort()
+    for (e0, d0), (e1, d1) in zip(pts, pts[1:]):
+        if d0 == 0:
+            return {'eps_switch_f': e0, 'eps_switch_ln': e0, 'bracket': [e0, e0]}
+        if d0 * d1 < 0:
+            f = lambda e: (e - 1) / e
+            x = f(e0) + (0 - d0) * (f(e1) - f(e0)) / (d1 - d0)
+            l = math.log(e0) + (0 - d0) * (math.log(e1) - math.log(e0)) / (d1 - d0)
+            return {'eps_switch_f': 1 / (1 - x), 'eps_switch_ln': math.exp(l), 'bracket': [e0, e1],
+                    'delta_at_bracket_eV': [d0, d1],
+                    'direction': 'cation->anion' if d0 < 0 else 'anion->cation'}
+    return None
+
+
+def run(job, args):
+    lv = level(args.smoke)
+    if args.test_delta_offset and not args.smoke:
+        raise SystemExit('--test-delta-offset is a test hook for --smoke runs only')
+    disp = None if (args.disp in (None, '', 'none')) else args.disp
+    eps_list = ([float(x) for x in args.eps.split(',')] if args.eps else
+                ([1.0, 4.0, WATER] if args.smoke else [1.0, 2.0, 4.0, 8.0, 20.0, WATER]))
+    eps_list = sorted(set(eps_list))
+    case = rc.load_case(f'{args.case}_gas')
+    frags = rc.fragments(case)
+    job.r['settings'] = {**lv, 'xc': args.xc, 'disp': disp, 'pcm_method': rc.PCM_METHOD, 'eps_list': eps_list,
+                         'density_fit': True, 'auxbasis': 'PySCF default', 'max_cycle': rc.MAX_CYCLE,
+                         'eps_1_means': 'gas-phase calculation (no PCM)', 'fragment_share': 'Mulliken (as dft/fmo.py) '
+                         'and Loewdin; an orbital is localised on a fragment when its Mulliken share > 50 %',
+                         'switch_interpolation': 'linear in f=(eps-1)/eps (also ln eps)', 'refine': args.refine,
+                         'case': case['name'], 'fragments': frags}
+    job.input_file('case', rc.find_case_file(case['name']))
+    job.save()
+    check_stored = (not args.smoke and args.xc.lower() == 'b3lyp' and disp is None and args.case == 'btpc')
+    ok = True
+
+    def point(glabel, gpath, model, eps, guess_chk):
+        key = f'{glabel}|eps={eps:g}'
+        chk = job.chk_dir / f'{glabel}_eps{eps:g}.chk'
+        if job.done(key):
+            return job.get(key), chk
+        mol = rc.mol_for_case(case, gpath, basis=lv['basis'], verbose=3 if args.smoke else 4,
+                              output=job.out / f'pyscf_{glabel}.log')
+        solvent = None if eps == 1.0 else eps
+        mf = rc.make_mf(mol, xc=args.xc, disp=disp, solvent=solvent, conv_tol=lv['conv_tol'],
+                        grid_level=lv['grid_level'], lebedev_order=lv['lebedev_order'], chkfile=chk)
+        rec = {'geometry': glabel, 'xyz': str(gpath), 'eps': eps, 'model': solvent_label(solvent),
+               'settings': rc.settings_of(mf)}
+        job.put(key, rec, status='running')
+        g = chk if chk.exists() else guess_chk
+        job.log(f'{key}: SCF ({mol.nao} AO, {rec["model"]}), guess {g if g and pathlib.Path(g).exists() else "minao"}')
+        wall = rc.run_scf(mf, chk_guess=g, log=job.log)
+        fr = frontier(mf, frags)
+        if args.test_delta_offset and 'delta_virt_cation_minus_anion_eV' in fr:
+            fr['delta_virt_cation_minus_anion_eV'] += args.test_delta_offset
+            fr['TEST_delta_offset_eV'] = args.test_delta_offset
+        rec.update({'E_Ha': float(mf.e_tot), 'E_solvation_Ha': solvation_energy(mf), 'scf_cycles': mf._cycles,
+                    'scf_wall_s': round(wall, 1), **rc.runtime_sizes(mf), 'frontier': fr,
+                    'dipole_debye': dipole_debye(mf),
+                    'charges': {k: v['fragments'] for k, v in populations(mol, mf.make_rdm1(), frags).items()}})
+        if disp:
+            rec['E_dispersion_Ha'] = float(np.asarray(mf.scf_summary.get('dispersion', np.nan)))
+        job.r['timings'][key] = round(wall, 1)
+        orb = fr['orbitals']
+        job.log(f"{key}: E = {mf.e_tot:.10f} Ha ({mf._cycles} cycles, {wall:.0f} s); HOMO {fr['HOMO_eV']:.4f} "
+                f"({fr['HOMO_on']}), LUMO {fr['LUMO_eV']:.4f} ({fr['LUMO_on']}, cation "
+                f"{orb['LUMO']['mulliken'].get('cation', float('nan')):.1f} %), gap {fr['gap_eV']:.4f} eV; "
+                f"Delta(cat-an) {fr.get('delta_virt_cation_minus_anion_eV', float('nan')):+.4f} eV")
+        job.put(key, rec)
+        mol.stdout.close()
+        return rec, chk
+
+    for spec in [s.strip() for s in args.geom.split(',') if s.strip()]:
+        glabel, gpath, model = resolve_geom(spec, args.case)
+        if not gpath.exists():
+            raise FileNotFoundError(f'geometry {gpath} for --geom {spec}')
+        job.input_file(f'geometry_{glabel}', gpath)
+        stored_chk = None
+        if args.guess == 'auto' and not args.smoke and model:
+            d = stored_dir(f'{args.case}_{model}')
+            if d and (d / 'final.chk').exists():
+                stored_chk = d / 'final.chk'
+        prev = stored_chk
+        series = []
+        for eps in eps_list:
+            rec, chk = point(glabel, gpath, model, eps, prev)
+            prev = chk
+            series.append(rec)
+            ref_key = (f'{args.case}_gas' if (model == 'gas' and eps == 1.0) else
+                       f'{args.case}_pcm' if (model == 'pcm' and abs(eps - WATER) < 1e-9) else None)
+            if check_stored and ref_key in rc.STORED:
+                dE = rec['E_Ha'] - rc.STORED[ref_key]['E_Ha']
+                rec['dE_vs_stored_Ha'] = dE
+                rec['reproduces_stored'] = abs(dE) <= STORED_TOL_HA
+                job.put(f'{glabel}|eps={eps:g}', rec)
+                job.log(f"{glabel} eps {eps:g}: dE vs stored {ref_key} = {dE:+.2e} Ha -> "
+                        f"{'PASS' if rec['reproduces_stored'] else 'FAIL'}")
+                ok &= rec['reproduces_stored']
+        # LUMO switch and refinement
+        pts = [(r['eps'], r['frontier'].get('delta_virt_cation_minus_anion_eV')) for r in series]
+        sw = switch_from(pts)
+        for it in range(args.refine if sw else 0):
+            e_new = float(f"{sw['eps_switch_f']:.4g}")
+            if any(abs(e_new - e) < 1e-6 for e, _ in pts):
+                break
+            # guess: the converged density of the nearest eps in the series
+            near = min(series, key=lambda r: abs(r['eps'] - e_new))
+            rec, _ = point(glabel, gpath, model, e_new, job.chk_dir / f"{glabel}_eps{near['eps']:g}.chk")
+            rec['refinement'] = it + 1
+            job.put(f'{glabel}|eps={e_new:g}', rec)
+            pts.append((e_new, rec['frontier'].get('delta_virt_cation_minus_anion_eV')))
+            sw = switch_from(pts) or sw
+        lumo_on = {f"{e:g}": job.get(f'{glabel}|eps={e:g}')['frontier']['LUMO_on'] for e, _ in sorted(pts)}
+        job.r.setdefault('switch', {})[glabel] = sw or {'eps_switch_f': None, 'note': 'no sign change of Delta in the '
+                                                         f'eps range {min(eps_list):g}-{max(eps_list):g}',
+                                                         'LUMO_on': lumo_on}
+        if sw:
+            sw['LUMO_on'] = lumo_on
+            job.log(f"{glabel}: LUMO switches {sw['direction']} at eps ~ {sw['eps_switch_f']:.3f} (f-interpolation; "
+                    f"ln-eps {sw['eps_switch_ln']:.3f}), bracket {sw['bracket']}")
+        else:
+            job.log(f'{glabel}: no LUMO switch in the eps range; LUMO on {lumo_on}')
+        job.save()
+
+    # summary tables
+    summ = {}
+    for key, it in sorted(job.r['items'].items(), key=lambda kv: (kv[1].get('geometry', ''), kv[1].get('eps', 0))):
+        if it.get('status') != 'done':
+            continue
+        fr = it['frontier']; o = fr['orbitals']
+        summ.setdefault(it['geometry'], []).append({
+            'eps': it['eps'], 'E_Ha': it['E_Ha'], 'HOMO_eV': fr['HOMO_eV'], 'LUMO_eV': fr['LUMO_eV'],
+            'gap_eV': fr['gap_eV'], 'LUMO_on': fr['LUMO_on'],
+            'LUMO_cation_pct': o['LUMO']['mulliken'].get('cation'),
+            **{f'{k}_eV': o[k]['eV'] for k in ('LUMO+1', 'LUMO+2', 'LUMO+3') if k in o},
+            'delta_cat_minus_an_eV': fr.get('delta_virt_cation_minus_anion_eV'),
+            'dE_vs_stored_Ha': it.get('dE_vs_stored_Ha')})
+    job.r['summary'] = {'series': summ, 'switch': job.r.get('switch'), 'stored_reproduced': ok if check_stored else None}
+    job.save()
+    return ok
+
+
+if __name__ == '__main__':
+    rc.install_sigterm_handler()
+    rc.main_wrapper(parser, run, __file__)
+#INFO: ******************** input file end ********************
+
+
+System: uname_result(system='Linux', node='<vm-1>', release='7.0.0-1017-gcp', version='#19~24.04.1-Ubuntu SMP PREEMPT Thu Oct 29 22:34:06 UTC 2026', machine='x86_64')  Threads 4
+Python 3.11.16 (main, Sep  2 2026, 23:39:52) [GCC 15.3.0]
+numpy 2.4.6  scipy 1.17.1  h5py 3.16.0
+Date: Sun Nov 22 01:47:38 2026
+PySCF version 2.14.0
+PySCF path  <run-dir>/env/lib/python3.11/site-packages/pyscf
+
+[ENV] PYSCF_TMPDIR <run-dir>/scratch/headline_btpcz
+[CONFIG] conf_file None
+[INPUT] verbose = 4
+[INPUT] num. atoms = 33
+[INPUT] num. electrons = 178
+[INPUT] charge = 0
+[INPUT] spin (= nelec alpha-beta = 2S) = 0
+[INPUT] symmetry False subgroup None
+[INPUT] Mole.unit = angstrom
+[INPUT] Symbol           X                Y                Z      unit          X                Y                Z       unit  Magmom
+[INPUT]  1 C      0.555617870000   0.491417780000  -1.781432340000 AA    1.049965604214   0.928645016942  -3.366419232043 Bohr   0.0
+[INPUT]  2 C      0.466782500000   0.757992030000  -3.173559150000 AA    0.882091084740   1.432397341303  -5.997157633607 Bohr   0.0
+[INPUT]  3 C      1.438779620000   0.413437090000  -4.082756300000 AA    2.718899435406   0.781282869837  -7.715291240343 Bohr   0.0
+[INPUT]  4 H      1.336930840000   0.667774400000  -5.129053090000 AA    2.526433135085   1.261910728996  -9.692505618454 Bohr   0.0
+[INPUT]  5 C      2.554775930000  -0.286958410000  -3.627493960000 AA    4.827826817331  -0.542272804041  -6.854970102914 Bohr   0.0
+[INPUT]  6 C      2.708967580000  -0.593359720000  -2.289999920000 AA    5.119206806526  -1.121287364149  -4.327472674076 Bohr   0.0
+[INPUT]  7 H      3.582938480000  -1.124572720000  -1.940980590000 AA    6.770772448365  -2.125134447957  -3.667921728197 Bohr   0.0
+[INPUT]  8 C      1.736475490000  -0.192557720000  -1.379676380000 AA    3.281463098120  -0.363881353971  -2.607210498731 Bohr   0.0
+[INPUT]  9 N     -0.739596170000   1.437618540000  -3.701127900000 AA   -1.397634204077   2.716705312197  -6.994118082987 Bohr   0.0
+[INPUT] 10 N      3.593745920000  -0.693253750000  -4.588128200000 AA    6.791195550073  -1.310059722328  -8.670305722394 Bohr   0.0
+[INPUT] 11 N      2.010252260000  -0.474466760000   0.032601970000 AA    3.798826212688  -0.896612231610   0.061608794421 Bohr   0.0
+[INPUT] 12 O     -0.428412800000   0.920755370000  -1.034933940000 AA   -0.809582860258   1.739975477023  -1.955741703617 Bohr   0.0
+[INPUT] 13 O     -1.817909260000   0.925117480000  -3.464651150000 AA   -3.435350620711   1.748218670248  -6.547241790659 Bohr   0.0
+[INPUT] 14 O     -0.550050980000   2.442947470000  -4.371512760000 AA   -1.039445706749   4.616501654999  -8.260961866442 Bohr   0.0
+[INPUT] 15 O      3.417980710000  -0.395925330000  -5.762520100000 AA    6.459047440946  -0.748190439478 -10.889584776301 Bohr   0.0
+[INPUT] 16 O      4.561020660000  -1.301800270000  -4.151169520000 AA    8.619079895883  -2.460045979185  -7.844573489442 Bohr   0.0
+[INPUT] 17 O      1.348022690000   0.139933240000   0.866994180000 AA    2.547393693799   0.264435499323   1.638381551792 Bohr   0.0
+[INPUT] 18 O      2.886481210000  -1.279958270000   0.303486710000 AA    5.454658950603  -2.418770581172   0.573506764345 Bohr   0.0
+[INPUT] 19 C     -2.822871530000  -0.042252040000   3.185014620000 AA   -5.334454076532  -0.079844783804   6.018805334536 Bohr   0.0
+[INPUT] 20 C     -3.102125180000  -0.288025530000   4.534970060000 AA   -5.862166994317  -0.544289368583   8.569851396502 Bohr   0.0
+[INPUT] 21 H     -4.115086200000  -0.357371890000   4.911483630000 AA   -7.776385896977  -0.675334996718   9.281358925985 Bohr   0.0
+[INPUT] 22 C     -2.006022190000  -0.439945030000   5.366226230000 AA   -3.790832538900  -0.831375616564  10.140697897157 Bohr   0.0
+[INPUT] 23 H     -2.166207160000  -0.632248170000   6.420714830000 AA   -4.093538261472  -1.194775884057  12.133392552633 Bohr   0.0
+[INPUT] 24 C     -0.679631780000  -0.353050620000   4.880650650000 AA   -1.284317929751  -0.667168979908   9.223093038180 Bohr   0.0
+[INPUT] 25 H      0.140458000000  -0.482469920000   5.576751780000 AA    0.265427152004  -0.911736012141  10.538533528881 Bohr   0.0
+[INPUT] 26 C     -0.407468720000  -0.111384840000   3.546844920000 AA   -0.770004285127  -0.210486842028   6.702565505105 Bohr   0.0
+[INPUT] 27 H      0.601950830000  -0.050742720000   3.163724240000 AA    1.137522209155  -0.095889843615   5.978572347248 Bohr   0.0
+[INPUT] 28 C     -1.508519410000   0.047348060000   2.690775520000 AA   -2.850688538490   0.089474865929   5.084828795484 Bohr   0.0
+[INPUT] 29 N     -3.590011280000   0.160390630000   2.071877270000 AA   -6.784138103299   0.303094363646   3.915280604012 Bohr   0.0
+[INPUT] 30 H     -4.593116300000   0.183291000000   1.969312730000 AA   -8.679731865276   0.346369791098   3.721461713320 Bohr   0.0
+[INPUT] 31 N     -2.825039910000   0.360086420000   0.981171860000 AA   -5.338551720866   0.680464714975   1.854146096530 Bohr   0.0
+[INPUT] 32 N     -1.583641420000   0.295778120000   1.333645980000 AA   -2.992648563317   0.558939640439   2.520225649327 Bohr   0.0
+[INPUT] 33 H     -0.480343460000   0.632211140000  -0.078588520000 AA   -0.907717585126   1.194705907499  -0.148510779335 Bohr   0.0
+
+nuclear repulsion = 2094.12530771231
+number of shells = 290
+number of NR pGTOs = 947
+number of NR cGTOs = 606
+basis = 6-311++g(d,p)
+ecp = {}
+CPU time:         0.87
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+
+
+******** <class 'pyscf.df.df_jk.DFRKS'> ********
+method = DFRKS
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-10
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/headline_btpcz/chk/gas_eps1.chk
+max_memory 8000 MB (current use 129 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x71a515c979c0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x71a515c97920>
+small_rho_cutoff = 0
+Set gradient conv threshold to 1e-05
+Initial guess from minao.
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+init E= -1322.59898044289
+
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.269011947057437  LUMO = -0.143886479268295  gap/eV = 3.40484
+cycle= 1 E= -1316.29076609118  delta_E= 6.31  |g|= 2.26  |ddm|=  112
+  HOMO = -0.219335434403686  LUMO = -0.172424027986935  gap/eV = 1.27652
+cycle= 2 E= -1313.07081504947  delta_E= 3.22  |g|= 4.89  |ddm|=  166
+  HOMO = -0.264193316146434  LUMO = -0.122937054659676  gap/eV = 3.84378
+cycle= 3 E= -1317.17072875222  delta_E= -4.1  |g|= 0.42  |ddm|=  123
+  HOMO = -0.275302953382197  LUMO = -0.140583137752335  gap/eV = 3.66591
+cycle= 4 E= -1317.17769920332  delta_E= -0.00697  |g|= 0.395  |ddm|= 9.47
+  HOMO = -0.274996537575386  LUMO = -0.137509718717291  gap/eV = 3.74121
+cycle= 5 E= -1317.20652640739  delta_E= -0.0288  |g|= 0.156  |ddm|= 4.34
+  HOMO = -0.273443316594261  LUMO = -0.133891859707044  gap/eV = 3.79739
+cycle= 6 E= -1317.21087221614  delta_E= -0.00435  |g|= 0.0529  |ddm|= 1.78
+  HOMO = -0.272839034487522  LUMO = -0.131912763347546  gap/eV = 3.83480
+cycle= 7 E= -1317.21134067474  delta_E= -0.000468  |g|= 0.0168  |ddm|= 0.721
+  HOMO = -0.272986074345657  LUMO = -0.131858886583343  gap/eV = 3.84027
+cycle= 8 E= -1317.2113903607  delta_E= -4.97e-05  |g|= 0.00573  |ddm|= 0.185
+  HOMO = -0.273093006238038  LUMO = -0.131982316267409  gap/eV = 3.83982
+cycle= 9 E= -1317.21139613554  delta_E= -5.77e-06  |g|= 0.00251  |ddm|= 0.0567
+  HOMO = -0.273070789653273  LUMO = -0.132034901328194  gap/eV = 3.83778
+cycle= 10 E= -1317.21139713547  delta_E= -1e-06  |g|= 0.00113  |ddm|= 0.0221
+  HOMO = -0.273057397793583  LUMO = -0.132011071219924  gap/eV = 3.83807
+cycle= 11 E= -1317.21139732318  delta_E= -1.88e-07  |g|= 0.000588  |ddm|= 0.0101
+  HOMO = -0.273051695493306  LUMO = -0.13199458995884  gap/eV = 3.83836
+cycle= 12 E= -1317.21139738449  delta_E= -6.13e-08  |g|= 0.000223  |ddm|= 0.00743
+  HOMO = -0.273054541358399  LUMO = -0.131996124358696  gap/eV = 3.83840
+cycle= 13 E= -1317.21139739276  delta_E= -8.27e-09  |g|= 8.2e-05  |ddm|= 0.00318
+  HOMO = -0.273054217544403  LUMO = -0.131996661503276  gap/eV = 3.83837
+cycle= 14 E= -1317.21139739374  delta_E= -9.85e-10  |g|= 4.9e-05  |ddm|= 0.00107
+  HOMO = -0.273054200306274  LUMO = -0.13199741389272  gap/eV = 3.83835
+cycle= 15 E= -1317.21139739413  delta_E= -3.88e-10  |g|= 2.08e-05  |ddm|= 0.00042
+  HOMO = -0.273054020601361  LUMO = -0.131997544531135  gap/eV = 3.83834
+cycle= 16 E= -1317.21139739421  delta_E= -7.73e-11  |g|= 6.86e-06  |ddm|= 0.000194
+  HOMO = -0.273054115028709  LUMO = -0.131997258098294  gap/eV = 3.83835
+Extra cycle  E= -1317.21139739417  delta_E= 4e-11  |g|= 1.73e-05  |ddm|= 0.000214
+converged SCF energy = -1317.21139739417
+#INFO: **** input file is <run-dir>/repo/dft/revision/headline.py ****
+"""
+Headline tests for the BTPC revision (plan section 5, item 3): where does the LUMO live, and is it the geometry or the
+dielectric field that moves it?
+
+  (i)  cross single points: the gas-phase minimum in IEF-PCM water and the IEF-PCM minimum in the gas phase;
+  (ii) a permittivity series eps = 1, 2, 4, 8, 20, 78.3553 at both minima (eps = 1 is the gas-phase calculation,
+       eps = 78.3553 is water), which contains the cross points and the two stored calculations.
+For every point: total energy, HOMO-1, HOMO, LUMO, LUMO+1..LUMO+3 energies and their cation/picrate shares (Mulliken
+share as dft/fmo.py defines it, plus Loewdin), the gap, dipole, and fragment charges.  For each geometry the eps at
+which the LUMO switches from the cation to the picrate is found from the sign change of
+    Delta(eps) = E(lowest cation-localised virtual) - E(lowest picrate-localised virtual)      ("localised": share > 50 %)
+by linear interpolation in the Pekar-type factor f = (eps - 1)/eps (also given: interpolation in ln eps), and refined
+with --refine extra single points at the interpolated eps.
+
+Level of theory (rev_common.py): B3LYP/6-311++G(d,p), density fitting, grid level 4, IEF-PCM Lebedev order 29,
+conv_tol 1e-10.  The (gas geometry, eps 1) and (PCM geometry, eps 78.3553) points must reproduce the stored energies
+to 1e-6 Ha (B3LYP, btpc only); otherwise the job exits non-zero after finishing all points.
+
+Usage:
+  python dft/revision/headline.py --job headline_gas --out <dir> [--geom gas,pcm] [--eps 1,2,4,8,20,78.3553]
+         [--xc b3lyp] [--disp d3bj] [--case btpc] [--refine 1] [--guess auto|minao] [--smoke]
+  --geom entries: 'gas' / 'pcm' (the case's stored minimum, molecules/<case>/results/<case>_<model>/opt.xyz) or
+         'label=path/to/geometry.xyz' (path relative to the repository or absolute; a directory means <dir>/opt.xyz).
+  --xc pbe0 / camb3lyp with --eps 1,78.3553 gives the functional check of plan item 8 with the same analysis.
+--smoke: STO-3G, grid 2, Lebedev 17, conv_tol 1e-7, eps 1,4,78.3553 -- exercises every code path in minutes.
+
+This module also holds helpers shared by the other builder-2 scripts (frontier-orbital analysis, fmo.py descriptors,
+geometry metrics); they are plain functions and run nothing on import.
+"""
+import sys, pathlib, argparse, json, math, time
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import rev_common as rc          # first: pins the thread pools
+import numpy as np
+
+STORED_TOL_HA = 1e-6
+WATER = rc.SOLVENT_EPS['water']
+DEBYE = 2.541746473              # a.u. of dipole -> Debye
+
+
+# ============================================================================ shared helpers (used by other scripts)
+def level(smoke, grid=None):
+    """Basis, grid, Lebedev order and SCF tolerance: production values, or the reduced --smoke set."""
+    if smoke:
+        return {'basis': 'sto-3g', 'grid_level': grid or 2, 'lebedev_order': 17, 'conv_tol': 1e-7}
+    return {'basis': rc.BASIS, 'grid_level': rc.GRID_LEVEL, 'lebedev_order': rc.PCM_LEBEDEV_ORDER,
+            'conv_tol': rc.CONV_TOL_SP}
+
+
+def resolve_geom(spec, case_prefix='btpc'):
+    """'gas' | 'pcm' | 'label=path' | path  ->  (label, absolute path, model of the stored minimum or None)."""
+    if spec in ('gas', 'pcm'):
+        name = f'{case_prefix}_{spec}'
+        if name in rc.STORED:
+            return spec, rc.ROOT / rc.STORED[name]['xyz'], spec
+        mol_dir = case_prefix
+        return spec, rc.ROOT / 'molecules' / mol_dir / 'results' / name / 'opt.xyz', spec
+    label, _, path = spec.partition('=') if '=' in spec else (pathlib.Path(spec).stem, '', spec)
+    p = pathlib.Path(path)
+    if not p.is_absolute():
+        p = rc.ROOT / p
+    if p.is_dir():
+        p = p / 'opt.xyz'
+    return label, p, None
+
+
+def stored_dir(case_name):
+    """data/r2/molecules/<id>/results/<case>/ (raw outputs: final.chk, hessian.npy, final.molden) or None."""
+    for d in sorted((rc.ROOT / 'data' / 'r2' / 'molecules').glob(f'*/results/{case_name}')):
+        return d
+    return None
+
+
+def labels_of(case, natm):
+    lab = case.get('cif_labels')
+    if lab:
+        return [l.split('#')[0] for l in lab]
+    return [f'X{i + 1}' for i in range(natm)]
+
+
+def frag_of_share(shares, thresh=0.5):
+    """Fragment holding more than `thresh` of an orbital ({'anion': x, 'cation': y} in percent), else 'mixed'."""
+    best = max(shares, key=shares.get)
+    return best if shares[best] > 100 * thresh else 'mixed'
+
+
+def frontier(mf, frags, n_occ=2, n_virt=4, scan=12):
+    """Frontier-orbital energies (eV) and fragment shares (percent; Mulliken as dft/fmo.py, and Loewdin) of an RKS
+    solution: HOMO-(n_occ-1)..HOMO, LUMO..LUMO+(n_virt-1).  Also the lowest virtual and highest occupied orbital
+    localised (> 50 % Mulliken) on each fragment, searched over `scan` orbitals."""
+    mol = mf.mol
+    S = mol.intor_symmetric('int1e_ovlp'); S_half = rc.lowdin_half(S)
+    e = np.asarray(mf.mo_energy) * rc.HARTREE_EV
+    C = np.asarray(mf.mo_coeff)
+    nocc = int((np.asarray(mf.mo_occ) > 0.5).sum())
+    nmo = C.shape[1]
+
+    def shares(k):
+        return {m: {f: round(100 * rc.mo_fragment_share(mol, C[:, k], atoms, m, S, S_half), 3)
+                    for f, atoms in frags.items()} for m in ('mulliken', 'lowdin')}
+
+    out = {'n_occ': nocc, 'n_mo': nmo, 'orbitals': {}}
+    labels = [(f'HOMO-{i}' if i else 'HOMO', nocc - 1 - i) for i in range(n_occ - 1, -1, -1)]
+    labels += [(f'LUMO+{i}' if i else 'LUMO', nocc + i) for i in range(n_virt)]
+    for lab, k in labels:
+        if 0 <= k < nmo:
+            sh = shares(k)
+            out['orbitals'][lab] = {'index': int(k), 'eV': float(e[k]), **sh,
+                                    'on': frag_of_share(sh['mulliken'])}
+    out['HOMO_eV'] = float(e[nocc - 1]); out['LUMO_eV'] = float(e[nocc]); out['gap_eV'] = float(e[nocc] - e[nocc - 1])
+    out['LUMO_on'] = out['orbitals']['LUMO']['on']; out['HOMO_on'] = out['orbitals']['HOMO']['on']
+    lowest_virt, highest_occ = {}, {}
+    for k in range(nocc, min(nmo, nocc + scan)):
+        sh = shares(k)['mulliken']; f = frag_of_share(sh)
+        if f in frags and f not in lowest_virt:
+            lowest_virt[f] = {'index': int(k), 'label': 'LUMO' + (f'+{k - nocc}' if k > nocc else ''),
+                              'eV': float(e[k]), 'share_pct': sh[f]}
+    for k in range(nocc - 1, max(-1, nocc - 1 - scan), -1):
+        sh = shares(k)['mulliken']; f = frag_of_share(sh)
+        if f in frags and f not in highest_occ:
+            highest_occ[f] = {'index': int(k), 'label': 'HOMO' + (f'-{nocc - 1 - k}' if k < nocc - 1 else ''),
+                              'eV': float(e[k]), 'share_pct': sh[f]}
+    out['lowest_virtual_on'] = lowest_virt
+    out['highest_occupied_on'] = highest_occ
+    if 'cation' in lowest_virt and 'anion' in lowest_virt:
+        out['delta_virt_cation_minus_anion_eV'] = lowest_virt['cation']['eV'] - lowest_virt['anion']['eV']
+    return out
+
+
+def fmo_descriptors(H, L):
+    """Koopmans-type descriptors exactly as dft/fmo.py computes them (eV)."""
+    IP, EA = -H, -L
+    chi = (IP + EA) / 2; mu = -chi; eta = (IP - EA) / 2; S = 1 / (2 * eta); omega = mu ** 2 / (2 * eta)
+    return {'HOMO_eV': H, 'LUMO_eV': L, 'gap_eV': L - H, 'IP_eV': IP, 'EA_eV': EA, 'electronegativity_chi_eV': chi,
+            'chemical_potential_mu_eV': mu, 'hardness_eta_eV': eta, 'softness_S_eV-1': S,
+            'electrophilicity_omega_eV': omega}
+
+
+def populations(mol, dm, frags):
+    """Mulliken and Loewdin charges per atom and per fragment (and spin for a UKS density pair)."""
+    S = mol.intor_symmetric('int1e_ovlp'); S_half = rc.lowdin_half(S)
+    dm = np.asarray(dm)
+    uks = dm.ndim == 3
+    tot = dm[0] + dm[1] if uks else dm
+    Z = mol.atom_charges()
+    sl = mol.aoslice_by_atom()
+    res = {}
+    for name in ('mulliken', 'lowdin'):
+        if name == 'mulliken':
+            p = np.einsum('ij,ji->i', tot, S); s = np.einsum('ij,ji->i', dm[0] - dm[1], S) if uks else None
+        else:
+            p = np.einsum('ij,jk,ki->i', S_half, tot, S_half); s = (np.einsum('ij,jk,ki->i', S_half, dm[0] - dm[1], S_half)
+                                                                   if uks else None)
+        q_at = np.array([Z[a] - p[sl[a][2]:sl[a][3]].sum() for a in range(mol.natm)])
+        r = {'atoms': q_at.tolist(), 'fragments': {f: float(q_at[atoms].sum()) for f, atoms in frags.items()}}
+        if uks:
+            s_at = np.array([s[sl[a][2]:sl[a][3]].sum() for a in range(mol.natm)])
+            r['spin_atoms'] = s_at.tolist()
+            r['spin_fragments'] = {f: float(s_at[atoms].sum()) for f, atoms in frags.items()}
+        res[name] = r
+    return res
+
+
+def dipole_debye(mf):
+    v = mf.dip_moment(unit='Debye', verbose=0)
+    return {'total': float(np.linalg.norm(v)), 'vector': [float(x) for x in v]}
+
+
+def _dihedral(X, a, b, c, d):
+    b0 = X[a] - X[b]; b1 = X[c] - X[b]; b2 = X[d] - X[c]
+    b1n = b1 / np.linalg.norm(b1)
+    v = b0 - np.dot(b0, b1n) * b1n; w = b2 - np.dot(b2, b1n) * b1n
+    return float(np.degrees(np.arctan2(np.dot(np.cross(b1n, v), w), np.dot(v, w))))
+
+
+def _plane_normal(P):
+    c = P.mean(0)
+    return np.linalg.svd(P - c)[2][-1]
+
+
+def nearest(X, syms, i, element, among):
+    """Index of the nearest atom of `element` to atom i, among the indices `among`."""
+    cand = [j for j in among if syms[j] == element and j != i]
+    return min(cand, key=lambda j: np.linalg.norm(X[j] - X[i])) if cand else None
+
+
+def hbond_torsion_atoms(case, syms, X):
+    """C(acceptor)-O(acceptor)...N(donor)-C(donor ring): for btpc C1-O1...N4-C12 (indices 4, 0, 18, 21), the
+    inter-ion torsion of revision/round1/audit/evidence/dft/dihedrals.py."""
+    p = case.get('proton')
+    if not p:
+        return None
+    fr = rc.fragments(case)
+    O, N = p['acceptor_O'], p['donor_N']
+    cO = nearest(X, syms, O, 'C', fr.get('anion', range(len(syms))))
+    cN = nearest(X, syms, N, 'C', fr.get('cation', range(len(syms))))
+    return (cO, O, N, cN) if None not in (cO, cN) else None
+
+
+def geometry_metrics(case, syms, X):
+    """Inter-ion geometry: H-bond distances and angle, proton position, the inter-ion torsion and the angle between
+    the picrate ring (anion carbons) and the benzotriazolium ring system (cation heavy atoms)."""
+    X = np.asarray(X, float)
+    lab = labels_of(case, len(syms))
+    out = {}
+    p = case.get('proton')
+    if p:
+        H, N, O = p['H'], p['donor_N'], p['acceptor_O']
+        dHN = float(np.linalg.norm(X[H] - X[N])); dHO = float(np.linalg.norm(X[H] - X[O]))
+        v1, v2 = X[N] - X[H], X[O] - X[H]
+        out.update({'d_N...O_A': float(np.linalg.norm(X[N] - X[O])), 'd_H-N_A': dHN, 'd_H...O_A': dHO,
+                    'angle_N-H...O_deg': float(np.degrees(np.arccos(np.dot(v1, v2) / np.linalg.norm(v1) /
+                                                                     np.linalg.norm(v2)))),
+                    'proton_transferred': dHO < dHN,
+                    'hbond_labels': f'{lab[N]}-{lab[H]}...{lab[O]}'})
+    t = hbond_torsion_atoms(case, syms, X)
+    if t:
+        out['torsion_atoms'] = [int(i) for i in t]
+        out['torsion_labels'] = '-'.join(lab[i] for i in t)
+        out['torsion_deg'] = _dihedral(X, *t)
+    fr = rc.fragments(case)
+    if 'anion' in fr and 'cation' in fr:
+        ring_a = [i for i in fr['anion'] if syms[i] == 'C']
+        ring_c = [i for i in fr['cation'] if syms[i] != 'H']
+        n1, n2 = _plane_normal(X[ring_a]), _plane_normal(X[ring_c])
+        out['inter_ring_angle_deg'] = float(np.degrees(np.arccos(min(1.0, abs(float(np.dot(n1, n2)))))))
+    return out
+
+
+def dihedral(X, idx):
+    return _dihedral(np.asarray(X, float), *idx)
+
+
+def mol_geometry(mol):
+    syms = [mol.atom_pure_symbol(i) for i in range(mol.natm)]
+    return syms, mol.atom_coords() * rc.BOHR_A
+
+
+def solvent_label(eps):
+    return 'gas' if eps is None else f'IEF-PCM eps={eps:g}'
+
+
+def solvation_energy(mf):
+    ws = getattr(mf, 'with_solvent', None)
+    return None if ws is None or getattr(ws, 'e', None) is None else float(ws.e)
+
+
+# ============================================================================ this script
+def parser():
+    p = rc.add_common_args(argparse.ArgumentParser(description=__doc__.split('\n')[1]))
+    p.add_argument('--geom', default='gas,pcm', help="comma list: gas, pcm, label=path.xyz")
+    p.add_argument('--eps', default=None, help='comma list of permittivities (1 = gas phase); default 1,2,4,8,20,78.3553')
+    p.add_argument('--xc', default=rc.XC, help='functional (default b3lyp; item 8: pbe0, camb3lyp)')
+    p.add_argument('--disp', default=None, help="dispersion correction: none (default) or d3bj")
+    p.add_argument('--case', default='btpc', help='molecule prefix: btpc (default) or btpcz')
+    p.add_argument('--refine', type=int, default=1, help='extra single points at the interpolated switch eps (default 1)')
+    p.add_argument('--guess', choices=('auto', 'minao'), default='auto',
+                   help='auto: stored final.chk of the same model for the first point, then the previous eps')
+    p.add_argument('--test-delta-offset', type=float, default=0.0,
+                   help='TEST HOOK, --smoke only: add this many eV to Delta so that the switch/refine path runs')
+    return p
+
+
+def switch_from(points):
+    """points: [(eps, delta_eV)] sorted by eps.  Returns the bracket and interpolated eps of the first sign change."""
+    pts = [(e, d) for e, d in points if d is not None]
+    pts.sort()
+    for (e0, d0), (e1, d1) in zip(pts, pts[1:]):
+        if d0 == 0:
+            return {'eps_switch_f': e0, 'eps_switch_ln': e0, 'bracket': [e0, e0]}
+        if d0 * d1 < 0:
+            f = lambda e: (e - 1) / e
+            x = f(e0) + (0 - d0) * (f(e1) - f(e0)) / (d1 - d0)
+            l = math.log(e0) + (0 - d0) * (math.log(e1) - math.log(e0)) / (d1 - d0)
+            return {'eps_switch_f': 1 / (1 - x), 'eps_switch_ln': math.exp(l), 'bracket': [e0, e1],
+                    'delta_at_bracket_eV': [d0, d1],
+                    'direction': 'cation->anion' if d0 < 0 else 'anion->cation'}
+    return None
+
+
+def run(job, args):
+    lv = level(args.smoke)
+    if args.test_delta_offset and not args.smoke:
+        raise SystemExit('--test-delta-offset is a test hook for --smoke runs only')
+    disp = None if (args.disp in (None, '', 'none')) else args.disp
+    eps_list = ([float(x) for x in args.eps.split(',')] if args.eps else
+                ([1.0, 4.0, WATER] if args.smoke else [1.0, 2.0, 4.0, 8.0, 20.0, WATER]))
+    eps_list = sorted(set(eps_list))
+    case = rc.load_case(f'{args.case}_gas')
+    frags = rc.fragments(case)
+    job.r['settings'] = {**lv, 'xc': args.xc, 'disp': disp, 'pcm_method': rc.PCM_METHOD, 'eps_list': eps_list,
+                         'density_fit': True, 'auxbasis': 'PySCF default', 'max_cycle': rc.MAX_CYCLE,
+                         'eps_1_means': 'gas-phase calculation (no PCM)', 'fragment_share': 'Mulliken (as dft/fmo.py) '
+                         'and Loewdin; an orbital is localised on a fragment when its Mulliken share > 50 %',
+                         'switch_interpolation': 'linear in f=(eps-1)/eps (also ln eps)', 'refine': args.refine,
+                         'case': case['name'], 'fragments': frags}
+    job.input_file('case', rc.find_case_file(case['name']))
+    job.save()
+    check_stored = (not args.smoke and args.xc.lower() == 'b3lyp' and disp is None and args.case == 'btpc')
+    ok = True
+
+    def point(glabel, gpath, model, eps, guess_chk):
+        key = f'{glabel}|eps={eps:g}'
+        chk = job.chk_dir / f'{glabel}_eps{eps:g}.chk'
+        if job.done(key):
+            return job.get(key), chk
+        mol = rc.mol_for_case(case, gpath, basis=lv['basis'], verbose=3 if args.smoke else 4,
+                              output=job.out / f'pyscf_{glabel}.log')
+        solvent = None if eps == 1.0 else eps
+        mf = rc.make_mf(mol, xc=args.xc, disp=disp, solvent=solvent, conv_tol=lv['conv_tol'],
+                        grid_level=lv['grid_level'], lebedev_order=lv['lebedev_order'], chkfile=chk)
+        rec = {'geometry': glabel, 'xyz': str(gpath), 'eps': eps, 'model': solvent_label(solvent),
+               'settings': rc.settings_of(mf)}
+        job.put(key, rec, status='running')
+        g = chk if chk.exists() else guess_chk
+        job.log(f'{key}: SCF ({mol.nao} AO, {rec["model"]}), guess {g if g and pathlib.Path(g).exists() else "minao"}')
+        wall = rc.run_scf(mf, chk_guess=g, log=job.log)
+        fr = frontier(mf, frags)
+        if args.test_delta_offset and 'delta_virt_cation_minus_anion_eV' in fr:
+            fr['delta_virt_cation_minus_anion_eV'] += args.test_delta_offset
+            fr['TEST_delta_offset_eV'] = args.test_delta_offset
+        rec.update({'E_Ha': float(mf.e_tot), 'E_solvation_Ha': solvation_energy(mf), 'scf_cycles': mf._cycles,
+                    'scf_wall_s': round(wall, 1), **rc.runtime_sizes(mf), 'frontier': fr,
+                    'dipole_debye': dipole_debye(mf),
+                    'charges': {k: v['fragments'] for k, v in populations(mol, mf.make_rdm1(), frags).items()}})
+        if disp:
+            rec['E_dispersion_Ha'] = float(np.asarray(mf.scf_summary.get('dispersion', np.nan)))
+        job.r['timings'][key] = round(wall, 1)
+        orb = fr['orbitals']
+        job.log(f"{key}: E = {mf.e_tot:.10f} Ha ({mf._cycles} cycles, {wall:.0f} s); HOMO {fr['HOMO_eV']:.4f} "
+                f"({fr['HOMO_on']}), LUMO {fr['LUMO_eV']:.4f} ({fr['LUMO_on']}, cation "
+                f"{orb['LUMO']['mulliken'].get('cation', float('nan')):.1f} %), gap {fr['gap_eV']:.4f} eV; "
+                f"Delta(cat-an) {fr.get('delta_virt_cation_minus_anion_eV', float('nan')):+.4f} eV")
+        job.put(key, rec)
+        mol.stdout.close()
+        return rec, chk
+
+    for spec in [s.strip() for s in args.geom.split(',') if s.strip()]:
+        glabel, gpath, model = resolve_geom(spec, args.case)
+        if not gpath.exists():
+            raise FileNotFoundError(f'geometry {gpath} for --geom {spec}')
+        job.input_file(f'geometry_{glabel}', gpath)
+        stored_chk = None
+        if args.guess == 'auto' and not args.smoke and model:
+            d = stored_dir(f'{args.case}_{model}')
+            if d and (d / 'final.chk').exists():
+                stored_chk = d / 'final.chk'
+        prev = stored_chk
+        series = []
+        for eps in eps_list:
+            rec, chk = point(glabel, gpath, model, eps, prev)
+            prev = chk
+            series.append(rec)
+            ref_key = (f'{args.case}_gas' if (model == 'gas' and eps == 1.0) else
+                       f'{args.case}_pcm' if (model == 'pcm' and abs(eps - WATER) < 1e-9) else None)
+            if check_stored and ref_key in rc.STORED:
+                dE = rec['E_Ha'] - rc.STORED[ref_key]['E_Ha']
+                rec['dE_vs_stored_Ha'] = dE
+                rec['reproduces_stored'] = abs(dE) <= STORED_TOL_HA
+                job.put(f'{glabel}|eps={eps:g}', rec)
+                job.log(f"{glabel} eps {eps:g}: dE vs stored {ref_key} = {dE:+.2e} Ha -> "
+                        f"{'PASS' if rec['reproduces_stored'] else 'FAIL'}")
+                ok &= rec['reproduces_stored']
+        # LUMO switch and refinement
+        pts = [(r['eps'], r['frontier'].get('delta_virt_cation_minus_anion_eV')) for r in series]
+        sw = switch_from(pts)
+        for it in range(args.refine if sw else 0):
+            e_new = float(f"{sw['eps_switch_f']:.4g}")
+            if any(abs(e_new - e) < 1e-6 for e, _ in pts):
+                break
+            # guess: the converged density of the nearest eps in the series
+            near = min(series, key=lambda r: abs(r['eps'] - e_new))
+            rec, _ = point(glabel, gpath, model, e_new, job.chk_dir / f"{glabel}_eps{near['eps']:g}.chk")
+            rec['refinement'] = it + 1
+            job.put(f'{glabel}|eps={e_new:g}', rec)
+            pts.append((e_new, rec['frontier'].get('delta_virt_cation_minus_anion_eV')))
+            sw = switch_from(pts) or sw
+        lumo_on = {f"{e:g}": job.get(f'{glabel}|eps={e:g}')['frontier']['LUMO_on'] for e, _ in sorted(pts)}
+        job.r.setdefault('switch', {})[glabel] = sw or {'eps_switch_f': None, 'note': 'no sign change of Delta in the '
+                                                         f'eps range {min(eps_list):g}-{max(eps_list):g}',
+                                                         'LUMO_on': lumo_on}
+        if sw:
+            sw['LUMO_on'] = lumo_on
+            job.log(f"{glabel}: LUMO switches {sw['direction']} at eps ~ {sw['eps_switch_f']:.3f} (f-interpolation; "
+                    f"ln-eps {sw['eps_switch_ln']:.3f}), bracket {sw['bracket']}")
+        else:
+            job.log(f'{glabel}: no LUMO switch in the eps range; LUMO on {lumo_on}')
+        job.save()
+
+    # summary tables
+    summ = {}
+    for key, it in sorted(job.r['items'].items(), key=lambda kv: (kv[1].get('geometry', ''), kv[1].get('eps', 0))):
+        if it.get('status') != 'done':
+            continue
+        fr = it['frontier']; o = fr['orbitals']
+        summ.setdefault(it['geometry'], []).append({
+            'eps': it['eps'], 'E_Ha': it['E_Ha'], 'HOMO_eV': fr['HOMO_eV'], 'LUMO_eV': fr['LUMO_eV'],
+            'gap_eV': fr['gap_eV'], 'LUMO_on': fr['LUMO_on'],
+            'LUMO_cation_pct': o['LUMO']['mulliken'].get('cation'),
+            **{f'{k}_eV': o[k]['eV'] for k in ('LUMO+1', 'LUMO+2', 'LUMO+3') if k in o},
+            'delta_cat_minus_an_eV': fr.get('delta_virt_cation_minus_anion_eV'),
+            'dE_vs_stored_Ha': it.get('dE_vs_stored_Ha')})
+    job.r['summary'] = {'series': summ, 'switch': job.r.get('switch'), 'stored_reproduced': ok if check_stored else None}
+    job.save()
+    return ok
+
+
+if __name__ == '__main__':
+    rc.install_sigterm_handler()
+    rc.main_wrapper(parser, run, __file__)
+#INFO: ******************** input file end ********************
+
+
+System: uname_result(system='Linux', node='<vm-1>', release='7.0.0-1017-gcp', version='#19~24.04.1-Ubuntu SMP PREEMPT Thu Oct 29 22:34:06 UTC 2026', machine='x86_64')  Threads 4
+Python 3.11.16 (main, Sep  2 2026, 23:39:52) [GCC 15.3.0]
+numpy 2.4.6  scipy 1.17.1  h5py 3.16.0
+Date: Sun Nov 22 01:54:03 2026
+PySCF version 2.14.0
+PySCF path  <run-dir>/env/lib/python3.11/site-packages/pyscf
+
+[ENV] PYSCF_TMPDIR <run-dir>/scratch/headline_btpcz
+[CONFIG] conf_file None
+[INPUT] verbose = 4
+[INPUT] num. atoms = 33
+[INPUT] num. electrons = 178
+[INPUT] charge = 0
+[INPUT] spin (= nelec alpha-beta = 2S) = 0
+[INPUT] symmetry False subgroup None
+[INPUT] Mole.unit = angstrom
+[INPUT] Symbol           X                Y                Z      unit          X                Y                Z       unit  Magmom
+[INPUT]  1 C      0.555617870000   0.491417780000  -1.781432340000 AA    1.049965604214   0.928645016942  -3.366419232043 Bohr   0.0
+[INPUT]  2 C      0.466782500000   0.757992030000  -3.173559150000 AA    0.882091084740   1.432397341303  -5.997157633607 Bohr   0.0
+[INPUT]  3 C      1.438779620000   0.413437090000  -4.082756300000 AA    2.718899435406   0.781282869837  -7.715291240343 Bohr   0.0
+[INPUT]  4 H      1.336930840000   0.667774400000  -5.129053090000 AA    2.526433135085   1.261910728996  -9.692505618454 Bohr   0.0
+[INPUT]  5 C      2.554775930000  -0.286958410000  -3.627493960000 AA    4.827826817331  -0.542272804041  -6.854970102914 Bohr   0.0
+[INPUT]  6 C      2.708967580000  -0.593359720000  -2.289999920000 AA    5.119206806526  -1.121287364149  -4.327472674076 Bohr   0.0
+[INPUT]  7 H      3.582938480000  -1.124572720000  -1.940980590000 AA    6.770772448365  -2.125134447957  -3.667921728197 Bohr   0.0
+[INPUT]  8 C      1.736475490000  -0.192557720000  -1.379676380000 AA    3.281463098120  -0.363881353971  -2.607210498731 Bohr   0.0
+[INPUT]  9 N     -0.739596170000   1.437618540000  -3.701127900000 AA   -1.397634204077   2.716705312197  -6.994118082987 Bohr   0.0
+[INPUT] 10 N      3.593745920000  -0.693253750000  -4.588128200000 AA    6.791195550073  -1.310059722328  -8.670305722394 Bohr   0.0
+[INPUT] 11 N      2.010252260000  -0.474466760000   0.032601970000 AA    3.798826212688  -0.896612231610   0.061608794421 Bohr   0.0
+[INPUT] 12 O     -0.428412800000   0.920755370000  -1.034933940000 AA   -0.809582860258   1.739975477023  -1.955741703617 Bohr   0.0
+[INPUT] 13 O     -1.817909260000   0.925117480000  -3.464651150000 AA   -3.435350620711   1.748218670248  -6.547241790659 Bohr   0.0
+[INPUT] 14 O     -0.550050980000   2.442947470000  -4.371512760000 AA   -1.039445706749   4.616501654999  -8.260961866442 Bohr   0.0
+[INPUT] 15 O      3.417980710000  -0.395925330000  -5.762520100000 AA    6.459047440946  -0.748190439478 -10.889584776301 Bohr   0.0
+[INPUT] 16 O      4.561020660000  -1.301800270000  -4.151169520000 AA    8.619079895883  -2.460045979185  -7.844573489442 Bohr   0.0
+[INPUT] 17 O      1.348022690000   0.139933240000   0.866994180000 AA    2.547393693799   0.264435499323   1.638381551792 Bohr   0.0
+[INPUT] 18 O      2.886481210000  -1.279958270000   0.303486710000 AA    5.454658950603  -2.418770581172   0.573506764345 Bohr   0.0
+[INPUT] 19 C     -2.822871530000  -0.042252040000   3.185014620000 AA   -5.334454076532  -0.079844783804   6.018805334536 Bohr   0.0
+[INPUT] 20 C     -3.102125180000  -0.288025530000   4.534970060000 AA   -5.862166994317  -0.544289368583   8.569851396502 Bohr   0.0
+[INPUT] 21 H     -4.115086200000  -0.357371890000   4.911483630000 AA   -7.776385896977  -0.675334996718   9.281358925985 Bohr   0.0
+[INPUT] 22 C     -2.006022190000  -0.439945030000   5.366226230000 AA   -3.790832538900  -0.831375616564  10.140697897157 Bohr   0.0
+[INPUT] 23 H     -2.166207160000  -0.632248170000   6.420714830000 AA   -4.093538261472  -1.194775884057  12.133392552633 Bohr   0.0
+[INPUT] 24 C     -0.679631780000  -0.353050620000   4.880650650000 AA   -1.284317929751  -0.667168979908   9.223093038180 Bohr   0.0
+[INPUT] 25 H      0.140458000000  -0.482469920000   5.576751780000 AA    0.265427152004  -0.911736012141  10.538533528881 Bohr   0.0
+[INPUT] 26 C     -0.407468720000  -0.111384840000   3.546844920000 AA   -0.770004285127  -0.210486842028   6.702565505105 Bohr   0.0
+[INPUT] 27 H      0.601950830000  -0.050742720000   3.163724240000 AA    1.137522209155  -0.095889843615   5.978572347248 Bohr   0.0
+[INPUT] 28 C     -1.508519410000   0.047348060000   2.690775520000 AA   -2.850688538490   0.089474865929   5.084828795484 Bohr   0.0
+[INPUT] 29 N     -3.590011280000   0.160390630000   2.071877270000 AA   -6.784138103299   0.303094363646   3.915280604012 Bohr   0.0
+[INPUT] 30 H     -4.593116300000   0.183291000000   1.969312730000 AA   -8.679731865276   0.346369791098   3.721461713320 Bohr   0.0
+[INPUT] 31 N     -2.825039910000   0.360086420000   0.981171860000 AA   -5.338551720866   0.680464714975   1.854146096530 Bohr   0.0
+[INPUT] 32 N     -1.583641420000   0.295778120000   1.333645980000 AA   -2.992648563317   0.558939640439   2.520225649327 Bohr   0.0
+[INPUT] 33 H     -0.480343460000   0.632211140000  -0.078588520000 AA   -0.907717585126   1.194705907499  -0.148510779335 Bohr   0.0
+
+nuclear repulsion = 2094.12530771231
+number of shells = 290
+number of NR pGTOs = 947
+number of NR cGTOs = 606
+basis = 6-311++g(d,p)
+ecp = {}
+CPU time:      1575.97
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+
+
+******** <class 'pyscf.solvent._attach_solvent.PCMDFRKS'> ********
+method = PCMDFRKS
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-10
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/headline_btpcz/chk/gas_eps2.chk
+max_memory 8000 MB (current use 272 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x71a515c979c0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x71a515c97920>
+small_rho_cutoff = 0
+******** <class 'pyscf.solvent.pcm.PCM'> (In testing) ********
+
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+
+lebedev_order = 29 (302 grids per sphere)
+eps = 2.0
+frozen = False
+Set gradient conv threshold to 1e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+PCM E_diel = -0.0112285696490962
+Solvent Energy = -0.0112285696490962
+init E= -1317.22262596382
+
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.263950560211738  LUMO = -0.128080147696934  gap/eV = 3.69722
+PCM E_diel = -0.0132108097719431
+Solvent Energy = -0.0132108097719431
+cycle= 1 E= -1317.22278569193  delta_E= -0.00016  |g|= 0.0459  |ddm|= 6.29
+  HOMO = -0.263852964312851  LUMO = -0.130901201536901  gap/eV = 3.61780
+PCM E_diel = -0.0115652847276838
+Solvent Energy = -0.0115652847276838
+cycle= 2 E= -1317.22122222438  delta_E= 0.00156  |g|= 0.0988  |ddm|= 2.64
+  HOMO = -0.263738591814551  LUMO = -0.129927888003604  gap/eV = 3.64117
+PCM E_diel = -0.0125221749327146
+Solvent Energy = -0.0125221749327146
+cycle= 3 E= -1317.22325703718  delta_E= -0.00203  |g|= 0.0102  |ddm|= 1.25
+  HOMO = -0.263963639656717  LUMO = -0.129619921697838  gap/eV = 3.65568
+PCM E_diel = -0.0125678855585861
+Solvent Energy = -0.0125678855585861
+cycle= 4 E= -1317.2232724848  delta_E= -1.54e-05  |g|= 0.00563  |ddm|= 0.15
+  HOMO = -0.264056976706061  LUMO = -0.129521682894909  gap/eV = 3.66089
+PCM E_diel = -0.0125829466625381
+Solvent Energy = -0.0125829466625381
+cycle= 5 E= -1317.22327805913  delta_E= -5.57e-06  |g|= 0.0014  |ddm|= 0.0432
+  HOMO = -0.26403449338614  LUMO = -0.129546967891586  gap/eV = 3.65959
+PCM E_diel = -0.0125861538994864
+Solvent Energy = -0.0125861538994864
+cycle= 6 E= -1317.22327842259  delta_E= -3.63e-07  |g|= 0.000482  |ddm|= 0.0135
+  HOMO = -0.264019338616504  LUMO = -0.129555295099362  gap/eV = 3.65895
+PCM E_diel = -0.0125862962868342
+Solvent Energy = -0.0125862962868342
+cycle= 7 E= -1317.22327846337  delta_E= -4.08e-08  |g|= 0.000186  |ddm|= 0.00364
+  HOMO = -0.26402307984181  LUMO = -0.129554483138005  gap/eV = 3.65908
+PCM E_diel = -0.0125865706275247
+Solvent Energy = -0.0125865706275247
+cycle= 8 E= -1317.223278469  delta_E= -5.63e-09  |g|= 9.35e-05  |ddm|= 0.00346
+  HOMO = -0.26402580555909  LUMO = -0.129552867899907  gap/eV = 3.65920
+PCM E_diel = -0.0125866118702689
+Solvent Energy = -0.0125866118702689
+cycle= 9 E= -1317.22327847046  delta_E= -1.45e-09  |g|= 3.79e-05  |ddm|= 0.000601
+  HOMO = -0.264026124466258  LUMO = -0.129552321429721  gap/eV = 3.65922
+PCM E_diel = -0.0125865062427889
+Solvent Energy = -0.0125865062427889
+cycle= 10 E= -1317.22327847073  delta_E= -2.7e-10  |g|= 1.16e-05  |ddm|= 0.000311
+  HOMO = -0.264025864237339  LUMO = -0.129552944677924  gap/eV = 3.65919
+PCM E_diel = -0.0125864622347315
+Solvent Energy = -0.0125864622347315
+cycle= 11 E= -1317.22327847075  delta_E= -2.41e-11  |g|= 7.16e-06  |ddm|= 0.000154
+  HOMO = -0.26402592793113  LUMO = -0.129552558966562  gap/eV = 3.65921
+PCM E_diel = -0.0125866184342135
+Solvent Energy = -0.0125866184342135
+Extra cycle  E= -1317.22327847072  delta_E= 3.55e-11  |g|= 1.5e-05  |ddm|= 0.000158
+converged SCF energy = -1317.22327847072
+#INFO: **** input file is <run-dir>/repo/dft/revision/headline.py ****
+"""
+Headline tests for the BTPC revision (plan section 5, item 3): where does the LUMO live, and is it the geometry or the
+dielectric field that moves it?
+
+  (i)  cross single points: the gas-phase minimum in IEF-PCM water and the IEF-PCM minimum in the gas phase;
+  (ii) a permittivity series eps = 1, 2, 4, 8, 20, 78.3553 at both minima (eps = 1 is the gas-phase calculation,
+       eps = 78.3553 is water), which contains the cross points and the two stored calculations.
+For every point: total energy, HOMO-1, HOMO, LUMO, LUMO+1..LUMO+3 energies and their cation/picrate shares (Mulliken
+share as dft/fmo.py defines it, plus Loewdin), the gap, dipole, and fragment charges.  For each geometry the eps at
+which the LUMO switches from the cation to the picrate is found from the sign change of
+    Delta(eps) = E(lowest cation-localised virtual) - E(lowest picrate-localised virtual)      ("localised": share > 50 %)
+by linear interpolation in the Pekar-type factor f = (eps - 1)/eps (also given: interpolation in ln eps), and refined
+with --refine extra single points at the interpolated eps.
+
+Level of theory (rev_common.py): B3LYP/6-311++G(d,p), density fitting, grid level 4, IEF-PCM Lebedev order 29,
+conv_tol 1e-10.  The (gas geometry, eps 1) and (PCM geometry, eps 78.3553) points must reproduce the stored energies
+to 1e-6 Ha (B3LYP, btpc only); otherwise the job exits non-zero after finishing all points.
+
+Usage:
+  python dft/revision/headline.py --job headline_gas --out <dir> [--geom gas,pcm] [--eps 1,2,4,8,20,78.3553]
+         [--xc b3lyp] [--disp d3bj] [--case btpc] [--refine 1] [--guess auto|minao] [--smoke]
+  --geom entries: 'gas' / 'pcm' (the case's stored minimum, molecules/<case>/results/<case>_<model>/opt.xyz) or
+         'label=path/to/geometry.xyz' (path relative to the repository or absolute; a directory means <dir>/opt.xyz).
+  --xc pbe0 / camb3lyp with --eps 1,78.3553 gives the functional check of plan item 8 with the same analysis.
+--smoke: STO-3G, grid 2, Lebedev 17, conv_tol 1e-7, eps 1,4,78.3553 -- exercises every code path in minutes.
+
+This module also holds helpers shared by the other builder-2 scripts (frontier-orbital analysis, fmo.py descriptors,
+geometry metrics); they are plain functions and run nothing on import.
+"""
+import sys, pathlib, argparse, json, math, time
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import rev_common as rc          # first: pins the thread pools
+import numpy as np
+
+STORED_TOL_HA = 1e-6
+WATER = rc.SOLVENT_EPS['water']
+DEBYE = 2.541746473              # a.u. of dipole -> Debye
+
+
+# ============================================================================ shared helpers (used by other scripts)
+def level(smoke, grid=None):
+    """Basis, grid, Lebedev order and SCF tolerance: production values, or the reduced --smoke set."""
+    if smoke:
+        return {'basis': 'sto-3g', 'grid_level': grid or 2, 'lebedev_order': 17, 'conv_tol': 1e-7}
+    return {'basis': rc.BASIS, 'grid_level': rc.GRID_LEVEL, 'lebedev_order': rc.PCM_LEBEDEV_ORDER,
+            'conv_tol': rc.CONV_TOL_SP}
+
+
+def resolve_geom(spec, case_prefix='btpc'):
+    """'gas' | 'pcm' | 'label=path' | path  ->  (label, absolute path, model of the stored minimum or None)."""
+    if spec in ('gas', 'pcm'):
+        name = f'{case_prefix}_{spec}'
+        if name in rc.STORED:
+            return spec, rc.ROOT / rc.STORED[name]['xyz'], spec
+        mol_dir = case_prefix
+        return spec, rc.ROOT / 'molecules' / mol_dir / 'results' / name / 'opt.xyz', spec
+    label, _, path = spec.partition('=') if '=' in spec else (pathlib.Path(spec).stem, '', spec)
+    p = pathlib.Path(path)
+    if not p.is_absolute():
+        p = rc.ROOT / p
+    if p.is_dir():
+        p = p / 'opt.xyz'
+    return label, p, None
+
+
+def stored_dir(case_name):
+    """data/r2/molecules/<id>/results/<case>/ (raw outputs: final.chk, hessian.npy, final.molden) or None."""
+    for d in sorted((rc.ROOT / 'data' / 'r2' / 'molecules').glob(f'*/results/{case_name}')):
+        return d
+    return None
+
+
+def labels_of(case, natm):
+    lab = case.get('cif_labels')
+    if lab:
+        return [l.split('#')[0] for l in lab]
+    return [f'X{i + 1}' for i in range(natm)]
+
+
+def frag_of_share(shares, thresh=0.5):
+    """Fragment holding more than `thresh` of an orbital ({'anion': x, 'cation': y} in percent), else 'mixed'."""
+    best = max(shares, key=shares.get)
+    return best if shares[best] > 100 * thresh else 'mixed'
+
+
+def frontier(mf, frags, n_occ=2, n_virt=4, scan=12):
+    """Frontier-orbital energies (eV) and fragment shares (percent; Mulliken as dft/fmo.py, and Loewdin) of an RKS
+    solution: HOMO-(n_occ-1)..HOMO, LUMO..LUMO+(n_virt-1).  Also the lowest virtual and highest occupied orbital
+    localised (> 50 % Mulliken) on each fragment, searched over `scan` orbitals."""
+    mol = mf.mol
+    S = mol.intor_symmetric('int1e_ovlp'); S_half = rc.lowdin_half(S)
+    e = np.asarray(mf.mo_energy) * rc.HARTREE_EV
+    C = np.asarray(mf.mo_coeff)
+    nocc = int((np.asarray(mf.mo_occ) > 0.5).sum())
+    nmo = C.shape[1]
+
+    def shares(k):
+        return {m: {f: round(100 * rc.mo_fragment_share(mol, C[:, k], atoms, m, S, S_half), 3)
+                    for f, atoms in frags.items()} for m in ('mulliken', 'lowdin')}
+
+    out = {'n_occ': nocc, 'n_mo': nmo, 'orbitals': {}}
+    labels = [(f'HOMO-{i}' if i else 'HOMO', nocc - 1 - i) for i in range(n_occ - 1, -1, -1)]
+    labels += [(f'LUMO+{i}' if i else 'LUMO', nocc + i) for i in range(n_virt)]
+    for lab, k in labels:
+        if 0 <= k < nmo:
+            sh = shares(k)
+            out['orbitals'][lab] = {'index': int(k), 'eV': float(e[k]), **sh,
+                                    'on': frag_of_share(sh['mulliken'])}
+    out['HOMO_eV'] = float(e[nocc - 1]); out['LUMO_eV'] = float(e[nocc]); out['gap_eV'] = float(e[nocc] - e[nocc - 1])
+    out['LUMO_on'] = out['orbitals']['LUMO']['on']; out['HOMO_on'] = out['orbitals']['HOMO']['on']
+    lowest_virt, highest_occ = {}, {}
+    for k in range(nocc, min(nmo, nocc + scan)):
+        sh = shares(k)['mulliken']; f = frag_of_share(sh)
+        if f in frags and f not in lowest_virt:
+            lowest_virt[f] = {'index': int(k), 'label': 'LUMO' + (f'+{k - nocc}' if k > nocc else ''),
+                              'eV': float(e[k]), 'share_pct': sh[f]}
+    for k in range(nocc - 1, max(-1, nocc - 1 - scan), -1):
+        sh = shares(k)['mulliken']; f = frag_of_share(sh)
+        if f in frags and f not in highest_occ:
+            highest_occ[f] = {'index': int(k), 'label': 'HOMO' + (f'-{nocc - 1 - k}' if k < nocc - 1 else ''),
+                              'eV': float(e[k]), 'share_pct': sh[f]}
+    out['lowest_virtual_on'] = lowest_virt
+    out['highest_occupied_on'] = highest_occ
+    if 'cation' in lowest_virt and 'anion' in lowest_virt:
+        out['delta_virt_cation_minus_anion_eV'] = lowest_virt['cation']['eV'] - lowest_virt['anion']['eV']
+    return out
+
+
+def fmo_descriptors(H, L):
+    """Koopmans-type descriptors exactly as dft/fmo.py computes them (eV)."""
+    IP, EA = -H, -L
+    chi = (IP + EA) / 2; mu = -chi; eta = (IP - EA) / 2; S = 1 / (2 * eta); omega = mu ** 2 / (2 * eta)
+    return {'HOMO_eV': H, 'LUMO_eV': L, 'gap_eV': L - H, 'IP_eV': IP, 'EA_eV': EA, 'electronegativity_chi_eV': chi,
+            'chemical_potential_mu_eV': mu, 'hardness_eta_eV': eta, 'softness_S_eV-1': S,
+            'electrophilicity_omega_eV': omega}
+
+
+def populations(mol, dm, frags):
+    """Mulliken and Loewdin charges per atom and per fragment (and spin for a UKS density pair)."""
+    S = mol.intor_symmetric('int1e_ovlp'); S_half = rc.lowdin_half(S)
+    dm = np.asarray(dm)
+    uks = dm.ndim == 3
+    tot = dm[0] + dm[1] if uks else dm
+    Z = mol.atom_charges()
+    sl = mol.aoslice_by_atom()
+    res = {}
+    for name in ('mulliken', 'lowdin'):
+        if name == 'mulliken':
+            p = np.einsum('ij,ji->i', tot, S); s = np.einsum('ij,ji->i', dm[0] - dm[1], S) if uks else None
+        else:
+            p = np.einsum('ij,jk,ki->i', S_half, tot, S_half); s = (np.einsum('ij,jk,ki->i', S_half, dm[0] - dm[1], S_half)
+                                                                   if uks else None)
+        q_at = np.array([Z[a] - p[sl[a][2]:sl[a][3]].sum() for a in range(mol.natm)])
+        r = {'atoms': q_at.tolist(), 'fragments': {f: float(q_at[atoms].sum()) for f, atoms in frags.items()}}
+        if uks:
+            s_at = np.array([s[sl[a][2]:sl[a][3]].sum() for a in range(mol.natm)])
+            r['spin_atoms'] = s_at.tolist()
+            r['spin_fragments'] = {f: float(s_at[atoms].sum()) for f, atoms in frags.items()}
+        res[name] = r
+    return res
+
+
+def dipole_debye(mf):
+    v = mf.dip_moment(unit='Debye', verbose=0)
+    return {'total': float(np.linalg.norm(v)), 'vector': [float(x) for x in v]}
+
+
+def _dihedral(X, a, b, c, d):
+    b0 = X[a] - X[b]; b1 = X[c] - X[b]; b2 = X[d] - X[c]
+    b1n = b1 / np.linalg.norm(b1)
+    v = b0 - np.dot(b0, b1n) * b1n; w = b2 - np.dot(b2, b1n) * b1n
+    return float(np.degrees(np.arctan2(np.dot(np.cross(b1n, v), w), np.dot(v, w))))
+
+
+def _plane_normal(P):
+    c = P.mean(0)
+    return np.linalg.svd(P - c)[2][-1]
+
+
+def nearest(X, syms, i, element, among):
+    """Index of the nearest atom of `element` to atom i, among the indices `among`."""
+    cand = [j for j in among if syms[j] == element and j != i]
+    return min(cand, key=lambda j: np.linalg.norm(X[j] - X[i])) if cand else None
+
+
+def hbond_torsion_atoms(case, syms, X):
+    """C(acceptor)-O(acceptor)...N(donor)-C(donor ring): for btpc C1-O1...N4-C12 (indices 4, 0, 18, 21), the
+    inter-ion torsion of revision/round1/audit/evidence/dft/dihedrals.py."""
+    p = case.get('proton')
+    if not p:
+        return None
+    fr = rc.fragments(case)
+    O, N = p['acceptor_O'], p['donor_N']
+    cO = nearest(X, syms, O, 'C', fr.get('anion', range(len(syms))))
+    cN = nearest(X, syms, N, 'C', fr.get('cation', range(len(syms))))
+    return (cO, O, N, cN) if None not in (cO, cN) else None
+
+
+def geometry_metrics(case, syms, X):
+    """Inter-ion geometry: H-bond distances and angle, proton position, the inter-ion torsion and the angle between
+    the picrate ring (anion carbons) and the benzotriazolium ring system (cation heavy atoms)."""
+    X = np.asarray(X, float)
+    lab = labels_of(case, len(syms))
+    out = {}
+    p = case.get('proton')
+    if p:
+        H, N, O = p['H'], p['donor_N'], p['acceptor_O']
+        dHN = float(np.linalg.norm(X[H] - X[N])); dHO = float(np.linalg.norm(X[H] - X[O]))
+        v1, v2 = X[N] - X[H], X[O] - X[H]
+        out.update({'d_N...O_A': float(np.linalg.norm(X[N] - X[O])), 'd_H-N_A': dHN, 'd_H...O_A': dHO,
+                    'angle_N-H...O_deg': float(np.degrees(np.arccos(np.dot(v1, v2) / np.linalg.norm(v1) /
+                                                                     np.linalg.norm(v2)))),
+                    'proton_transferred': dHO < dHN,
+                    'hbond_labels': f'{lab[N]}-{lab[H]}...{lab[O]}'})
+    t = hbond_torsion_atoms(case, syms, X)
+    if t:
+        out['torsion_atoms'] = [int(i) for i in t]
+        out['torsion_labels'] = '-'.join(lab[i] for i in t)
+        out['torsion_deg'] = _dihedral(X, *t)
+    fr = rc.fragments(case)
+    if 'anion' in fr and 'cation' in fr:
+        ring_a = [i for i in fr['anion'] if syms[i] == 'C']
+        ring_c = [i for i in fr['cation'] if syms[i] != 'H']
+        n1, n2 = _plane_normal(X[ring_a]), _plane_normal(X[ring_c])
+        out['inter_ring_angle_deg'] = float(np.degrees(np.arccos(min(1.0, abs(float(np.dot(n1, n2)))))))
+    return out
+
+
+def dihedral(X, idx):
+    return _dihedral(np.asarray(X, float), *idx)
+
+
+def mol_geometry(mol):
+    syms = [mol.atom_pure_symbol(i) for i in range(mol.natm)]
+    return syms, mol.atom_coords() * rc.BOHR_A
+
+
+def solvent_label(eps):
+    return 'gas' if eps is None else f'IEF-PCM eps={eps:g}'
+
+
+def solvation_energy(mf):
+    ws = getattr(mf, 'with_solvent', None)
+    return None if ws is None or getattr(ws, 'e', None) is None else float(ws.e)
+
+
+# ============================================================================ this script
+def parser():
+    p = rc.add_common_args(argparse.ArgumentParser(description=__doc__.split('\n')[1]))
+    p.add_argument('--geom', default='gas,pcm', help="comma list: gas, pcm, label=path.xyz")
+    p.add_argument('--eps', default=None, help='comma list of permittivities (1 = gas phase); default 1,2,4,8,20,78.3553')
+    p.add_argument('--xc', default=rc.XC, help='functional (default b3lyp; item 8: pbe0, camb3lyp)')
+    p.add_argument('--disp', default=None, help="dispersion correction: none (default) or d3bj")
+    p.add_argument('--case', default='btpc', help='molecule prefix: btpc (default) or btpcz')
+    p.add_argument('--refine', type=int, default=1, help='extra single points at the interpolated switch eps (default 1)')
+    p.add_argument('--guess', choices=('auto', 'minao'), default='auto',
+                   help='auto: stored final.chk of the same model for the first point, then the previous eps')
+    p.add_argument('--test-delta-offset', type=float, default=0.0,
+                   help='TEST HOOK, --smoke only: add this many eV to Delta so that the switch/refine path runs')
+    return p
+
+
+def switch_from(points):
+    """points: [(eps, delta_eV)] sorted by eps.  Returns the bracket and interpolated eps of the first sign change."""
+    pts = [(e, d) for e, d in points if d is not None]
+    pts.sort()
+    for (e0, d0), (e1, d1) in zip(pts, pts[1:]):
+        if d0 == 0:
+            return {'eps_switch_f': e0, 'eps_switch_ln': e0, 'bracket': [e0, e0]}
+        if d0 * d1 < 0:
+            f = lambda e: (e - 1) / e
+            x = f(e0) + (0 - d0) * (f(e1) - f(e0)) / (d1 - d0)
+            l = math.log(e0) + (0 - d0) * (math.log(e1) - math.log(e0)) / (d1 - d0)
+            return {'eps_switch_f': 1 / (1 - x), 'eps_switch_ln': math.exp(l), 'bracket': [e0, e1],
+                    'delta_at_bracket_eV': [d0, d1],
+                    'direction': 'cation->anion' if d0 < 0 else 'anion->cation'}
+    return None
+
+
+def run(job, args):
+    lv = level(args.smoke)
+    if args.test_delta_offset and not args.smoke:
+        raise SystemExit('--test-delta-offset is a test hook for --smoke runs only')
+    disp = None if (args.disp in (None, '', 'none')) else args.disp
+    eps_list = ([float(x) for x in args.eps.split(',')] if args.eps else
+                ([1.0, 4.0, WATER] if args.smoke else [1.0, 2.0, 4.0, 8.0, 20.0, WATER]))
+    eps_list = sorted(set(eps_list))
+    case = rc.load_case(f'{args.case}_gas')
+    frags = rc.fragments(case)
+    job.r['settings'] = {**lv, 'xc': args.xc, 'disp': disp, 'pcm_method': rc.PCM_METHOD, 'eps_list': eps_list,
+                         'density_fit': True, 'auxbasis': 'PySCF default', 'max_cycle': rc.MAX_CYCLE,
+                         'eps_1_means': 'gas-phase calculation (no PCM)', 'fragment_share': 'Mulliken (as dft/fmo.py) '
+                         'and Loewdin; an orbital is localised on a fragment when its Mulliken share > 50 %',
+                         'switch_interpolation': 'linear in f=(eps-1)/eps (also ln eps)', 'refine': args.refine,
+                         'case': case['name'], 'fragments': frags}
+    job.input_file('case', rc.find_case_file(case['name']))
+    job.save()
+    check_stored = (not args.smoke and args.xc.lower() == 'b3lyp' and disp is None and args.case == 'btpc')
+    ok = True
+
+    def point(glabel, gpath, model, eps, guess_chk):
+        key = f'{glabel}|eps={eps:g}'
+        chk = job.chk_dir / f'{glabel}_eps{eps:g}.chk'
+        if job.done(key):
+            return job.get(key), chk
+        mol = rc.mol_for_case(case, gpath, basis=lv['basis'], verbose=3 if args.smoke else 4,
+                              output=job.out / f'pyscf_{glabel}.log')
+        solvent = None if eps == 1.0 else eps
+        mf = rc.make_mf(mol, xc=args.xc, disp=disp, solvent=solvent, conv_tol=lv['conv_tol'],
+                        grid_level=lv['grid_level'], lebedev_order=lv['lebedev_order'], chkfile=chk)
+        rec = {'geometry': glabel, 'xyz': str(gpath), 'eps': eps, 'model': solvent_label(solvent),
+               'settings': rc.settings_of(mf)}
+        job.put(key, rec, status='running')
+        g = chk if chk.exists() else guess_chk
+        job.log(f'{key}: SCF ({mol.nao} AO, {rec["model"]}), guess {g if g and pathlib.Path(g).exists() else "minao"}')
+        wall = rc.run_scf(mf, chk_guess=g, log=job.log)
+        fr = frontier(mf, frags)
+        if args.test_delta_offset and 'delta_virt_cation_minus_anion_eV' in fr:
+            fr['delta_virt_cation_minus_anion_eV'] += args.test_delta_offset
+            fr['TEST_delta_offset_eV'] = args.test_delta_offset
+        rec.update({'E_Ha': float(mf.e_tot), 'E_solvation_Ha': solvation_energy(mf), 'scf_cycles': mf._cycles,
+                    'scf_wall_s': round(wall, 1), **rc.runtime_sizes(mf), 'frontier': fr,
+                    'dipole_debye': dipole_debye(mf),
+                    'charges': {k: v['fragments'] for k, v in populations(mol, mf.make_rdm1(), frags).items()}})
+        if disp:
+            rec['E_dispersion_Ha'] = float(np.asarray(mf.scf_summary.get('dispersion', np.nan)))
+        job.r['timings'][key] = round(wall, 1)
+        orb = fr['orbitals']
+        job.log(f"{key}: E = {mf.e_tot:.10f} Ha ({mf._cycles} cycles, {wall:.0f} s); HOMO {fr['HOMO_eV']:.4f} "
+                f"({fr['HOMO_on']}), LUMO {fr['LUMO_eV']:.4f} ({fr['LUMO_on']}, cation "
+                f"{orb['LUMO']['mulliken'].get('cation', float('nan')):.1f} %), gap {fr['gap_eV']:.4f} eV; "
+                f"Delta(cat-an) {fr.get('delta_virt_cation_minus_anion_eV', float('nan')):+.4f} eV")
+        job.put(key, rec)
+        mol.stdout.close()
+        return rec, chk
+
+    for spec in [s.strip() for s in args.geom.split(',') if s.strip()]:
+        glabel, gpath, model = resolve_geom(spec, args.case)
+        if not gpath.exists():
+            raise FileNotFoundError(f'geometry {gpath} for --geom {spec}')
+        job.input_file(f'geometry_{glabel}', gpath)
+        stored_chk = None
+        if args.guess == 'auto' and not args.smoke and model:
+            d = stored_dir(f'{args.case}_{model}')
+            if d and (d / 'final.chk').exists():
+                stored_chk = d / 'final.chk'
+        prev = stored_chk
+        series = []
+        for eps in eps_list:
+            rec, chk = point(glabel, gpath, model, eps, prev)
+            prev = chk
+            series.append(rec)
+            ref_key = (f'{args.case}_gas' if (model == 'gas' and eps == 1.0) else
+                       f'{args.case}_pcm' if (model == 'pcm' and abs(eps - WATER) < 1e-9) else None)
+            if check_stored and ref_key in rc.STORED:
+                dE = rec['E_Ha'] - rc.STORED[ref_key]['E_Ha']
+                rec['dE_vs_stored_Ha'] = dE
+                rec['reproduces_stored'] = abs(dE) <= STORED_TOL_HA
+                job.put(f'{glabel}|eps={eps:g}', rec)
+                job.log(f"{glabel} eps {eps:g}: dE vs stored {ref_key} = {dE:+.2e} Ha -> "
+                        f"{'PASS' if rec['reproduces_stored'] else 'FAIL'}")
+                ok &= rec['reproduces_stored']
+        # LUMO switch and refinement
+        pts = [(r['eps'], r['frontier'].get('delta_virt_cation_minus_anion_eV')) for r in series]
+        sw = switch_from(pts)
+        for it in range(args.refine if sw else 0):
+            e_new = float(f"{sw['eps_switch_f']:.4g}")
+            if any(abs(e_new - e) < 1e-6 for e, _ in pts):
+                break
+            # guess: the converged density of the nearest eps in the series
+            near = min(series, key=lambda r: abs(r['eps'] - e_new))
+            rec, _ = point(glabel, gpath, model, e_new, job.chk_dir / f"{glabel}_eps{near['eps']:g}.chk")
+            rec['refinement'] = it + 1
+            job.put(f'{glabel}|eps={e_new:g}', rec)
+            pts.append((e_new, rec['frontier'].get('delta_virt_cation_minus_anion_eV')))
+            sw = switch_from(pts) or sw
+        lumo_on = {f"{e:g}": job.get(f'{glabel}|eps={e:g}')['frontier']['LUMO_on'] for e, _ in sorted(pts)}
+        job.r.setdefault('switch', {})[glabel] = sw or {'eps_switch_f': None, 'note': 'no sign change of Delta in the '
+                                                         f'eps range {min(eps_list):g}-{max(eps_list):g}',
+                                                         'LUMO_on': lumo_on}
+        if sw:
+            sw['LUMO_on'] = lumo_on
+            job.log(f"{glabel}: LUMO switches {sw['direction']} at eps ~ {sw['eps_switch_f']:.3f} (f-interpolation; "
+                    f"ln-eps {sw['eps_switch_ln']:.3f}), bracket {sw['bracket']}")
+        else:
+            job.log(f'{glabel}: no LUMO switch in the eps range; LUMO on {lumo_on}')
+        job.save()
+
+    # summary tables
+    summ = {}
+    for key, it in sorted(job.r['items'].items(), key=lambda kv: (kv[1].get('geometry', ''), kv[1].get('eps', 0))):
+        if it.get('status') != 'done':
+            continue
+        fr = it['frontier']; o = fr['orbitals']
+        summ.setdefault(it['geometry'], []).append({
+            'eps': it['eps'], 'E_Ha': it['E_Ha'], 'HOMO_eV': fr['HOMO_eV'], 'LUMO_eV': fr['LUMO_eV'],
+            'gap_eV': fr['gap_eV'], 'LUMO_on': fr['LUMO_on'],
+            'LUMO_cation_pct': o['LUMO']['mulliken'].get('cation'),
+            **{f'{k}_eV': o[k]['eV'] for k in ('LUMO+1', 'LUMO+2', 'LUMO+3') if k in o},
+            'delta_cat_minus_an_eV': fr.get('delta_virt_cation_minus_anion_eV'),
+            'dE_vs_stored_Ha': it.get('dE_vs_stored_Ha')})
+    job.r['summary'] = {'series': summ, 'switch': job.r.get('switch'), 'stored_reproduced': ok if check_stored else None}
+    job.save()
+    return ok
+
+
+if __name__ == '__main__':
+    rc.install_sigterm_handler()
+    rc.main_wrapper(parser, run, __file__)
+#INFO: ******************** input file end ********************
+
+
+System: uname_result(system='Linux', node='<vm-1>', release='7.0.0-1017-gcp', version='#19~24.04.1-Ubuntu SMP PREEMPT Thu Oct 29 22:34:06 UTC 2026', machine='x86_64')  Threads 4
+Python 3.11.16 (main, Sep  2 2026, 23:39:52) [GCC 15.3.0]
+numpy 2.4.6  scipy 1.17.1  h5py 3.16.0
+Date: Sun Nov 22 02:05:05 2026
+PySCF version 2.14.0
+PySCF path  <run-dir>/env/lib/python3.11/site-packages/pyscf
+
+[ENV] PYSCF_TMPDIR <run-dir>/scratch/headline_btpcz
+[CONFIG] conf_file None
+[INPUT] verbose = 4
+[INPUT] num. atoms = 33
+[INPUT] num. electrons = 178
+[INPUT] charge = 0
+[INPUT] spin (= nelec alpha-beta = 2S) = 0
+[INPUT] symmetry False subgroup None
+[INPUT] Mole.unit = angstrom
+[INPUT] Symbol           X                Y                Z      unit          X                Y                Z       unit  Magmom
+[INPUT]  1 C      0.555617870000   0.491417780000  -1.781432340000 AA    1.049965604214   0.928645016942  -3.366419232043 Bohr   0.0
+[INPUT]  2 C      0.466782500000   0.757992030000  -3.173559150000 AA    0.882091084740   1.432397341303  -5.997157633607 Bohr   0.0
+[INPUT]  3 C      1.438779620000   0.413437090000  -4.082756300000 AA    2.718899435406   0.781282869837  -7.715291240343 Bohr   0.0
+[INPUT]  4 H      1.336930840000   0.667774400000  -5.129053090000 AA    2.526433135085   1.261910728996  -9.692505618454 Bohr   0.0
+[INPUT]  5 C      2.554775930000  -0.286958410000  -3.627493960000 AA    4.827826817331  -0.542272804041  -6.854970102914 Bohr   0.0
+[INPUT]  6 C      2.708967580000  -0.593359720000  -2.289999920000 AA    5.119206806526  -1.121287364149  -4.327472674076 Bohr   0.0
+[INPUT]  7 H      3.582938480000  -1.124572720000  -1.940980590000 AA    6.770772448365  -2.125134447957  -3.667921728197 Bohr   0.0
+[INPUT]  8 C      1.736475490000  -0.192557720000  -1.379676380000 AA    3.281463098120  -0.363881353971  -2.607210498731 Bohr   0.0
+[INPUT]  9 N     -0.739596170000   1.437618540000  -3.701127900000 AA   -1.397634204077   2.716705312197  -6.994118082987 Bohr   0.0
+[INPUT] 10 N      3.593745920000  -0.693253750000  -4.588128200000 AA    6.791195550073  -1.310059722328  -8.670305722394 Bohr   0.0
+[INPUT] 11 N      2.010252260000  -0.474466760000   0.032601970000 AA    3.798826212688  -0.896612231610   0.061608794421 Bohr   0.0
+[INPUT] 12 O     -0.428412800000   0.920755370000  -1.034933940000 AA   -0.809582860258   1.739975477023  -1.955741703617 Bohr   0.0
+[INPUT] 13 O     -1.817909260000   0.925117480000  -3.464651150000 AA   -3.435350620711   1.748218670248  -6.547241790659 Bohr   0.0
+[INPUT] 14 O     -0.550050980000   2.442947470000  -4.371512760000 AA   -1.039445706749   4.616501654999  -8.260961866442 Bohr   0.0
+[INPUT] 15 O      3.417980710000  -0.395925330000  -5.762520100000 AA    6.459047440946  -0.748190439478 -10.889584776301 Bohr   0.0
+[INPUT] 16 O      4.561020660000  -1.301800270000  -4.151169520000 AA    8.619079895883  -2.460045979185  -7.844573489442 Bohr   0.0
+[INPUT] 17 O      1.348022690000   0.139933240000   0.866994180000 AA    2.547393693799   0.264435499323   1.638381551792 Bohr   0.0
+[INPUT] 18 O      2.886481210000  -1.279958270000   0.303486710000 AA    5.454658950603  -2.418770581172   0.573506764345 Bohr   0.0
+[INPUT] 19 C     -2.822871530000  -0.042252040000   3.185014620000 AA   -5.334454076532  -0.079844783804   6.018805334536 Bohr   0.0
+[INPUT] 20 C     -3.102125180000  -0.288025530000   4.534970060000 AA   -5.862166994317  -0.544289368583   8.569851396502 Bohr   0.0
+[INPUT] 21 H     -4.115086200000  -0.357371890000   4.911483630000 AA   -7.776385896977  -0.675334996718   9.281358925985 Bohr   0.0
+[INPUT] 22 C     -2.006022190000  -0.439945030000   5.366226230000 AA   -3.790832538900  -0.831375616564  10.140697897157 Bohr   0.0
+[INPUT] 23 H     -2.166207160000  -0.632248170000   6.420714830000 AA   -4.093538261472  -1.194775884057  12.133392552633 Bohr   0.0
+[INPUT] 24 C     -0.679631780000  -0.353050620000   4.880650650000 AA   -1.284317929751  -0.667168979908   9.223093038180 Bohr   0.0
+[INPUT] 25 H      0.140458000000  -0.482469920000   5.576751780000 AA    0.265427152004  -0.911736012141  10.538533528881 Bohr   0.0
+[INPUT] 26 C     -0.407468720000  -0.111384840000   3.546844920000 AA   -0.770004285127  -0.210486842028   6.702565505105 Bohr   0.0
+[INPUT] 27 H      0.601950830000  -0.050742720000   3.163724240000 AA    1.137522209155  -0.095889843615   5.978572347248 Bohr   0.0
+[INPUT] 28 C     -1.508519410000   0.047348060000   2.690775520000 AA   -2.850688538490   0.089474865929   5.084828795484 Bohr   0.0
+[INPUT] 29 N     -3.590011280000   0.160390630000   2.071877270000 AA   -6.784138103299   0.303094363646   3.915280604012 Bohr   0.0
+[INPUT] 30 H     -4.593116300000   0.183291000000   1.969312730000 AA   -8.679731865276   0.346369791098   3.721461713320 Bohr   0.0
+[INPUT] 31 N     -2.825039910000   0.360086420000   0.981171860000 AA   -5.338551720866   0.680464714975   1.854146096530 Bohr   0.0
+[INPUT] 32 N     -1.583641420000   0.295778120000   1.333645980000 AA   -2.992648563317   0.558939640439   2.520225649327 Bohr   0.0
+[INPUT] 33 H     -0.480343460000   0.632211140000  -0.078588520000 AA   -0.907717585126   1.194705907499  -0.148510779335 Bohr   0.0
+
+nuclear repulsion = 2094.12530771231
+number of shells = 290
+number of NR pGTOs = 947
+number of NR cGTOs = 606
+basis = 6-311++g(d,p)
+ecp = {}
+CPU time:      4185.87
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+
+
+******** <class 'pyscf.solvent._attach_solvent.PCMDFRKS'> ********
+method = PCMDFRKS
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-10
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/headline_btpcz/chk/gas_eps4.chk
+max_memory 8000 MB (current use 358 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x71a515c979c0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x71a515c97920>
+small_rho_cutoff = 0
+******** <class 'pyscf.solvent.pcm.PCM'> (In testing) ********
+
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+
+lebedev_order = 29 (302 grids per sphere)
+eps = 4.0
+frozen = False
+Set gradient conv threshold to 1e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+PCM E_diel = -0.0209392980905665
+Solvent Energy = -0.0209392980905665
+init E= -1317.23163115037
+
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.259835632975843  LUMO = -0.126888959172187  gap/eV = 3.61766
+PCM E_diel = -0.0235128077861547
+Solvent Energy = -0.0235128077861547
+cycle= 1 E= -1317.23174502043  delta_E= -0.000114  |g|= 0.0326  |ddm|= 4.53
+  HOMO = -0.259548908796732  LUMO = -0.128929692057651  gap/eV = 3.55433
+PCM E_diel = -0.0215308661138058
+Solvent Energy = -0.0215308661138058
+cycle= 2 E= -1317.23101342629  delta_E= 0.000732  |g|= 0.0686  |ddm|= 1.68
+  HOMO = -0.259483676765665  LUMO = -0.128208751564371  gap/eV = 3.57217
+PCM E_diel = -0.0227064773762658
+Solvent Energy = -0.0227064773762658
+cycle= 3 E= -1317.23197932588  delta_E= -0.000966  |g|= 0.00747  |ddm|= 0.771
+  HOMO = -0.259628576844801  LUMO = -0.128016250174619  gap/eV = 3.58135
+PCM E_diel = -0.0227636897558546
+Solvent Energy = -0.0227636897558546
+cycle= 4 E= -1317.23198779436  delta_E= -8.47e-06  |g|= 0.00393  |ddm|= 0.0963
+  HOMO = -0.259698579398993  LUMO = -0.127944434152228  gap/eV = 3.58521
+PCM E_diel = -0.0227823330331116
+Solvent Energy = -0.0227823330331116
+cycle= 5 E= -1317.23199052738  delta_E= -2.73e-06  |g|= 0.000877  |ddm|= 0.0282
+  HOMO = -0.259679610395638  LUMO = -0.127958778058539  gap/eV = 3.58431
+PCM E_diel = -0.0227855739188905
+Solvent Energy = -0.0227855739188905
+cycle= 6 E= -1317.23199066827  delta_E= -1.41e-07  |g|= 0.000318  |ddm|= 0.00907
+  HOMO = -0.259670484607584  LUMO = -0.127966816003695  gap/eV = 3.58384
+PCM E_diel = -0.0227859340769466
+Solvent Energy = -0.0227859340769466
+cycle= 7 E= -1317.23199068597  delta_E= -1.77e-08  |g|= 0.000128  |ddm|= 0.00265
+  HOMO = -0.259673987538251  LUMO = -0.127966484768853  gap/eV = 3.58394
+PCM E_diel = -0.0227864373685283
+Solvent Energy = -0.0227864373685283
+cycle= 8 E= -1317.23199068884  delta_E= -2.88e-09  |g|= 5.41e-05  |ddm|= 0.00239
+  HOMO = -0.259675420393109  LUMO = -0.127965090947996  gap/eV = 3.58402
+PCM E_diel = -0.0227863785251525
+Solvent Energy = -0.0227863785251525
+cycle= 9 E= -1317.23199068934  delta_E= -4.98e-10  |g|= 2.29e-05  |ddm|= 0.000339
+  HOMO = -0.259675378806287  LUMO = -0.127964891110252  gap/eV = 3.58402
+PCM E_diel = -0.0227862581065119
+Solvent Energy = -0.0227862581065119
+cycle= 10 E= -1317.23199068943  delta_E= -8.78e-11  |g|= 1.07e-05  |ddm|= 0.000219
+  HOMO = -0.259675138846856  LUMO = -0.127965320398744  gap/eV = 3.58401
+PCM E_diel = -0.0227862148750458
+Solvent Energy = -0.0227862148750458
+cycle= 11 E= -1317.23199068944  delta_E= -1.32e-11  |g|= 5.84e-06  |ddm|= 0.00012
+  HOMO = -0.259675270355289  LUMO = -0.127964998652347  gap/eV = 3.58402
+PCM E_diel = -0.0227864480448858
+Solvent Energy = -0.0227864480448858
+Extra cycle  E= -1317.23199068942  delta_E= 1.77e-11  |g|= 1.21e-05  |ddm|= 0.000122
+converged SCF energy = -1317.23199068942
+#INFO: **** input file is <run-dir>/repo/dft/revision/headline.py ****
+"""
+Headline tests for the BTPC revision (plan section 5, item 3): where does the LUMO live, and is it the geometry or the
+dielectric field that moves it?
+
+  (i)  cross single points: the gas-phase minimum in IEF-PCM water and the IEF-PCM minimum in the gas phase;
+  (ii) a permittivity series eps = 1, 2, 4, 8, 20, 78.3553 at both minima (eps = 1 is the gas-phase calculation,
+       eps = 78.3553 is water), which contains the cross points and the two stored calculations.
+For every point: total energy, HOMO-1, HOMO, LUMO, LUMO+1..LUMO+3 energies and their cation/picrate shares (Mulliken
+share as dft/fmo.py defines it, plus Loewdin), the gap, dipole, and fragment charges.  For each geometry the eps at
+which the LUMO switches from the cation to the picrate is found from the sign change of
+    Delta(eps) = E(lowest cation-localised virtual) - E(lowest picrate-localised virtual)      ("localised": share > 50 %)
+by linear interpolation in the Pekar-type factor f = (eps - 1)/eps (also given: interpolation in ln eps), and refined
+with --refine extra single points at the interpolated eps.
+
+Level of theory (rev_common.py): B3LYP/6-311++G(d,p), density fitting, grid level 4, IEF-PCM Lebedev order 29,
+conv_tol 1e-10.  The (gas geometry, eps 1) and (PCM geometry, eps 78.3553) points must reproduce the stored energies
+to 1e-6 Ha (B3LYP, btpc only); otherwise the job exits non-zero after finishing all points.
+
+Usage:
+  python dft/revision/headline.py --job headline_gas --out <dir> [--geom gas,pcm] [--eps 1,2,4,8,20,78.3553]
+         [--xc b3lyp] [--disp d3bj] [--case btpc] [--refine 1] [--guess auto|minao] [--smoke]
+  --geom entries: 'gas' / 'pcm' (the case's stored minimum, molecules/<case>/results/<case>_<model>/opt.xyz) or
+         'label=path/to/geometry.xyz' (path relative to the repository or absolute; a directory means <dir>/opt.xyz).
+  --xc pbe0 / camb3lyp with --eps 1,78.3553 gives the functional check of plan item 8 with the same analysis.
+--smoke: STO-3G, grid 2, Lebedev 17, conv_tol 1e-7, eps 1,4,78.3553 -- exercises every code path in minutes.
+
+This module also holds helpers shared by the other builder-2 scripts (frontier-orbital analysis, fmo.py descriptors,
+geometry metrics); they are plain functions and run nothing on import.
+"""
+import sys, pathlib, argparse, json, math, time
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import rev_common as rc          # first: pins the thread pools
+import numpy as np
+
+STORED_TOL_HA = 1e-6
+WATER = rc.SOLVENT_EPS['water']
+DEBYE = 2.541746473              # a.u. of dipole -> Debye
+
+
+# ============================================================================ shared helpers (used by other scripts)
+def level(smoke, grid=None):
+    """Basis, grid, Lebedev order and SCF tolerance: production values, or the reduced --smoke set."""
+    if smoke:
+        return {'basis': 'sto-3g', 'grid_level': grid or 2, 'lebedev_order': 17, 'conv_tol': 1e-7}
+    return {'basis': rc.BASIS, 'grid_level': rc.GRID_LEVEL, 'lebedev_order': rc.PCM_LEBEDEV_ORDER,
+            'conv_tol': rc.CONV_TOL_SP}
+
+
+def resolve_geom(spec, case_prefix='btpc'):
+    """'gas' | 'pcm' | 'label=path' | path  ->  (label, absolute path, model of the stored minimum or None)."""
+    if spec in ('gas', 'pcm'):
+        name = f'{case_prefix}_{spec}'
+        if name in rc.STORED:
+            return spec, rc.ROOT / rc.STORED[name]['xyz'], spec
+        mol_dir = case_prefix
+        return spec, rc.ROOT / 'molecules' / mol_dir / 'results' / name / 'opt.xyz', spec
+    label, _, path = spec.partition('=') if '=' in spec else (pathlib.Path(spec).stem, '', spec)
+    p = pathlib.Path(path)
+    if not p.is_absolute():
+        p = rc.ROOT / p
+    if p.is_dir():
+        p = p / 'opt.xyz'
+    return label, p, None
+
+
+def stored_dir(case_name):
+    """data/r2/molecules/<id>/results/<case>/ (raw outputs: final.chk, hessian.npy, final.molden) or None."""
+    for d in sorted((rc.ROOT / 'data' / 'r2' / 'molecules').glob(f'*/results/{case_name}')):
+        return d
+    return None
+
+
+def labels_of(case, natm):
+    lab = case.get('cif_labels')
+    if lab:
+        return [l.split('#')[0] for l in lab]
+    return [f'X{i + 1}' for i in range(natm)]
+
+
+def frag_of_share(shares, thresh=0.5):
+    """Fragment holding more than `thresh` of an orbital ({'anion': x, 'cation': y} in percent), else 'mixed'."""
+    best = max(shares, key=shares.get)
+    return best if shares[best] > 100 * thresh else 'mixed'
+
+
+def frontier(mf, frags, n_occ=2, n_virt=4, scan=12):
+    """Frontier-orbital energies (eV) and fragment shares (percent; Mulliken as dft/fmo.py, and Loewdin) of an RKS
+    solution: HOMO-(n_occ-1)..HOMO, LUMO..LUMO+(n_virt-1).  Also the lowest virtual and highest occupied orbital
+    localised (> 50 % Mulliken) on each fragment, searched over `scan` orbitals."""
+    mol = mf.mol
+    S = mol.intor_symmetric('int1e_ovlp'); S_half = rc.lowdin_half(S)
+    e = np.asarray(mf.mo_energy) * rc.HARTREE_EV
+    C = np.asarray(mf.mo_coeff)
+    nocc = int((np.asarray(mf.mo_occ) > 0.5).sum())
+    nmo = C.shape[1]
+
+    def shares(k):
+        return {m: {f: round(100 * rc.mo_fragment_share(mol, C[:, k], atoms, m, S, S_half), 3)
+                    for f, atoms in frags.items()} for m in ('mulliken', 'lowdin')}
+
+    out = {'n_occ': nocc, 'n_mo': nmo, 'orbitals': {}}
+    labels = [(f'HOMO-{i}' if i else 'HOMO', nocc - 1 - i) for i in range(n_occ - 1, -1, -1)]
+    labels += [(f'LUMO+{i}' if i else 'LUMO', nocc + i) for i in range(n_virt)]
+    for lab, k in labels:
+        if 0 <= k < nmo:
+            sh = shares(k)
+            out['orbitals'][lab] = {'index': int(k), 'eV': float(e[k]), **sh,
+                                    'on': frag_of_share(sh['mulliken'])}
+    out['HOMO_eV'] = float(e[nocc - 1]); out['LUMO_eV'] = float(e[nocc]); out['gap_eV'] = float(e[nocc] - e[nocc - 1])
+    out['LUMO_on'] = out['orbitals']['LUMO']['on']; out['HOMO_on'] = out['orbitals']['HOMO']['on']
+    lowest_virt, highest_occ = {}, {}
+    for k in range(nocc, min(nmo, nocc + scan)):
+        sh = shares(k)['mulliken']; f = frag_of_share(sh)
+        if f in frags and f not in lowest_virt:
+            lowest_virt[f] = {'index': int(k), 'label': 'LUMO' + (f'+{k - nocc}' if k > nocc else ''),
+                              'eV': float(e[k]), 'share_pct': sh[f]}
+    for k in range(nocc - 1, max(-1, nocc - 1 - scan), -1):
+        sh = shares(k)['mulliken']; f = frag_of_share(sh)
+        if f in frags and f not in highest_occ:
+            highest_occ[f] = {'index': int(k), 'label': 'HOMO' + (f'-{nocc - 1 - k}' if k < nocc - 1 else ''),
+                              'eV': float(e[k]), 'share_pct': sh[f]}
+    out['lowest_virtual_on'] = lowest_virt
+    out['highest_occupied_on'] = highest_occ
+    if 'cation' in lowest_virt and 'anion' in lowest_virt:
+        out['delta_virt_cation_minus_anion_eV'] = lowest_virt['cation']['eV'] - lowest_virt['anion']['eV']
+    return out
+
+
+def fmo_descriptors(H, L):
+    """Koopmans-type descriptors exactly as dft/fmo.py computes them (eV)."""
+    IP, EA = -H, -L
+    chi = (IP + EA) / 2; mu = -chi; eta = (IP - EA) / 2; S = 1 / (2 * eta); omega = mu ** 2 / (2 * eta)
+    return {'HOMO_eV': H, 'LUMO_eV': L, 'gap_eV': L - H, 'IP_eV': IP, 'EA_eV': EA, 'electronegativity_chi_eV': chi,
+            'chemical_potential_mu_eV': mu, 'hardness_eta_eV': eta, 'softness_S_eV-1': S,
+            'electrophilicity_omega_eV': omega}
+
+
+def populations(mol, dm, frags):
+    """Mulliken and Loewdin charges per atom and per fragment (and spin for a UKS density pair)."""
+    S = mol.intor_symmetric('int1e_ovlp'); S_half = rc.lowdin_half(S)
+    dm = np.asarray(dm)
+    uks = dm.ndim == 3
+    tot = dm[0] + dm[1] if uks else dm
+    Z = mol.atom_charges()
+    sl = mol.aoslice_by_atom()
+    res = {}
+    for name in ('mulliken', 'lowdin'):
+        if name == 'mulliken':
+            p = np.einsum('ij,ji->i', tot, S); s = np.einsum('ij,ji->i', dm[0] - dm[1], S) if uks else None
+        else:
+            p = np.einsum('ij,jk,ki->i', S_half, tot, S_half); s = (np.einsum('ij,jk,ki->i', S_half, dm[0] - dm[1], S_half)
+                                                                   if uks else None)
+        q_at = np.array([Z[a] - p[sl[a][2]:sl[a][3]].sum() for a in range(mol.natm)])
+        r = {'atoms': q_at.tolist(), 'fragments': {f: float(q_at[atoms].sum()) for f, atoms in frags.items()}}
+        if uks:
+            s_at = np.array([s[sl[a][2]:sl[a][3]].sum() for a in range(mol.natm)])
+            r['spin_atoms'] = s_at.tolist()
+            r['spin_fragments'] = {f: float(s_at[atoms].sum()) for f, atoms in frags.items()}
+        res[name] = r
+    return res
+
+
+def dipole_debye(mf):
+    v = mf.dip_moment(unit='Debye', verbose=0)
+    return {'total': float(np.linalg.norm(v)), 'vector': [float(x) for x in v]}
+
+
+def _dihedral(X, a, b, c, d):
+    b0 = X[a] - X[b]; b1 = X[c] - X[b]; b2 = X[d] - X[c]
+    b1n = b1 / np.linalg.norm(b1)
+    v = b0 - np.dot(b0, b1n) * b1n; w = b2 - np.dot(b2, b1n) * b1n
+    return float(np.degrees(np.arctan2(np.dot(np.cross(b1n, v), w), np.dot(v, w))))
+
+
+def _plane_normal(P):
+    c = P.mean(0)
+    return np.linalg.svd(P - c)[2][-1]
+
+
+def nearest(X, syms, i, element, among):
+    """Index of the nearest atom of `element` to atom i, among the indices `among`."""
+    cand = [j for j in among if syms[j] == element and j != i]
+    return min(cand, key=lambda j: np.linalg.norm(X[j] - X[i])) if cand else None
+
+
+def hbond_torsion_atoms(case, syms, X):
+    """C(acceptor)-O(acceptor)...N(donor)-C(donor ring): for btpc C1-O1...N4-C12 (indices 4, 0, 18, 21), the
+    inter-ion torsion of revision/round1/audit/evidence/dft/dihedrals.py."""
+    p = case.get('proton')
+    if not p:
+        return None
+    fr = rc.fragments(case)
+    O, N = p['acceptor_O'], p['donor_N']
+    cO = nearest(X, syms, O, 'C', fr.get('anion', range(len(syms))))
+    cN = nearest(X, syms, N, 'C', fr.get('cation', range(len(syms))))
+    return (cO, O, N, cN) if None not in (cO, cN) else None
+
+
+def geometry_metrics(case, syms, X):
+    """Inter-ion geometry: H-bond distances and angle, proton position, the inter-ion torsion and the angle between
+    the picrate ring (anion carbons) and the benzotriazolium ring system (cation heavy atoms)."""
+    X = np.asarray(X, float)
+    lab = labels_of(case, len(syms))
+    out = {}
+    p = case.get('proton')
+    if p:
+        H, N, O = p['H'], p['donor_N'], p['acceptor_O']
+        dHN = float(np.linalg.norm(X[H] - X[N])); dHO = float(np.linalg.norm(X[H] - X[O]))
+        v1, v2 = X[N] - X[H], X[O] - X[H]
+        out.update({'d_N...O_A': float(np.linalg.norm(X[N] - X[O])), 'd_H-N_A': dHN, 'd_H...O_A': dHO,
+                    'angle_N-H...O_deg': float(np.degrees(np.arccos(np.dot(v1, v2) / np.linalg.norm(v1) /
+                                                                     np.linalg.norm(v2)))),
+                    'proton_transferred': dHO < dHN,
+                    'hbond_labels': f'{lab[N]}-{lab[H]}...{lab[O]}'})
+    t = hbond_torsion_atoms(case, syms, X)
+    if t:
+        out['torsion_atoms'] = [int(i) for i in t]
+        out['torsion_labels'] = '-'.join(lab[i] for i in t)
+        out['torsion_deg'] = _dihedral(X, *t)
+    fr = rc.fragments(case)
+    if 'anion' in fr and 'cation' in fr:
+        ring_a = [i for i in fr['anion'] if syms[i] == 'C']
+        ring_c = [i for i in fr['cation'] if syms[i] != 'H']
+        n1, n2 = _plane_normal(X[ring_a]), _plane_normal(X[ring_c])
+        out['inter_ring_angle_deg'] = float(np.degrees(np.arccos(min(1.0, abs(float(np.dot(n1, n2)))))))
+    return out
+
+
+def dihedral(X, idx):
+    return _dihedral(np.asarray(X, float), *idx)
+
+
+def mol_geometry(mol):
+    syms = [mol.atom_pure_symbol(i) for i in range(mol.natm)]
+    return syms, mol.atom_coords() * rc.BOHR_A
+
+
+def solvent_label(eps):
+    return 'gas' if eps is None else f'IEF-PCM eps={eps:g}'
+
+
+def solvation_energy(mf):
+    ws = getattr(mf, 'with_solvent', None)
+    return None if ws is None or getattr(ws, 'e', None) is None else float(ws.e)
+
+
+# ============================================================================ this script
+def parser():
+    p = rc.add_common_args(argparse.ArgumentParser(description=__doc__.split('\n')[1]))
+    p.add_argument('--geom', default='gas,pcm', help="comma list: gas, pcm, label=path.xyz")
+    p.add_argument('--eps', default=None, help='comma list of permittivities (1 = gas phase); default 1,2,4,8,20,78.3553')
+    p.add_argument('--xc', default=rc.XC, help='functional (default b3lyp; item 8: pbe0, camb3lyp)')
+    p.add_argument('--disp', default=None, help="dispersion correction: none (default) or d3bj")
+    p.add_argument('--case', default='btpc', help='molecule prefix: btpc (default) or btpcz')
+    p.add_argument('--refine', type=int, default=1, help='extra single points at the interpolated switch eps (default 1)')
+    p.add_argument('--guess', choices=('auto', 'minao'), default='auto',
+                   help='auto: stored final.chk of the same model for the first point, then the previous eps')
+    p.add_argument('--test-delta-offset', type=float, default=0.0,
+                   help='TEST HOOK, --smoke only: add this many eV to Delta so that the switch/refine path runs')
+    return p
+
+
+def switch_from(points):
+    """points: [(eps, delta_eV)] sorted by eps.  Returns the bracket and interpolated eps of the first sign change."""
+    pts = [(e, d) for e, d in points if d is not None]
+    pts.sort()
+    for (e0, d0), (e1, d1) in zip(pts, pts[1:]):
+        if d0 == 0:
+            return {'eps_switch_f': e0, 'eps_switch_ln': e0, 'bracket': [e0, e0]}
+        if d0 * d1 < 0:
+            f = lambda e: (e - 1) / e
+            x = f(e0) + (0 - d0) * (f(e1) - f(e0)) / (d1 - d0)
+            l = math.log(e0) + (0 - d0) * (math.log(e1) - math.log(e0)) / (d1 - d0)
+            return {'eps_switch_f': 1 / (1 - x), 'eps_switch_ln': math.exp(l), 'bracket': [e0, e1],
+                    'delta_at_bracket_eV': [d0, d1],
+                    'direction': 'cation->anion' if d0 < 0 else 'anion->cation'}
+    return None
+
+
+def run(job, args):
+    lv = level(args.smoke)
+    if args.test_delta_offset and not args.smoke:
+        raise SystemExit('--test-delta-offset is a test hook for --smoke runs only')
+    disp = None if (args.disp in (None, '', 'none')) else args.disp
+    eps_list = ([float(x) for x in args.eps.split(',')] if args.eps else
+                ([1.0, 4.0, WATER] if args.smoke else [1.0, 2.0, 4.0, 8.0, 20.0, WATER]))
+    eps_list = sorted(set(eps_list))
+    case = rc.load_case(f'{args.case}_gas')
+    frags = rc.fragments(case)
+    job.r['settings'] = {**lv, 'xc': args.xc, 'disp': disp, 'pcm_method': rc.PCM_METHOD, 'eps_list': eps_list,
+                         'density_fit': True, 'auxbasis': 'PySCF default', 'max_cycle': rc.MAX_CYCLE,
+                         'eps_1_means': 'gas-phase calculation (no PCM)', 'fragment_share': 'Mulliken (as dft/fmo.py) '
+                         'and Loewdin; an orbital is localised on a fragment when its Mulliken share > 50 %',
+                         'switch_interpolation': 'linear in f=(eps-1)/eps (also ln eps)', 'refine': args.refine,
+                         'case': case['name'], 'fragments': frags}
+    job.input_file('case', rc.find_case_file(case['name']))
+    job.save()
+    check_stored = (not args.smoke and args.xc.lower() == 'b3lyp' and disp is None and args.case == 'btpc')
+    ok = True
+
+    def point(glabel, gpath, model, eps, guess_chk):
+        key = f'{glabel}|eps={eps:g}'
+        chk = job.chk_dir / f'{glabel}_eps{eps:g}.chk'
+        if job.done(key):
+            return job.get(key), chk
+        mol = rc.mol_for_case(case, gpath, basis=lv['basis'], verbose=3 if args.smoke else 4,
+                              output=job.out / f'pyscf_{glabel}.log')
+        solvent = None if eps == 1.0 else eps
+        mf = rc.make_mf(mol, xc=args.xc, disp=disp, solvent=solvent, conv_tol=lv['conv_tol'],
+                        grid_level=lv['grid_level'], lebedev_order=lv['lebedev_order'], chkfile=chk)
+        rec = {'geometry': glabel, 'xyz': str(gpath), 'eps': eps, 'model': solvent_label(solvent),
+               'settings': rc.settings_of(mf)}
+        job.put(key, rec, status='running')
+        g = chk if chk.exists() else guess_chk
+        job.log(f'{key}: SCF ({mol.nao} AO, {rec["model"]}), guess {g if g and pathlib.Path(g).exists() else "minao"}')
+        wall = rc.run_scf(mf, chk_guess=g, log=job.log)
+        fr = frontier(mf, frags)
+        if args.test_delta_offset and 'delta_virt_cation_minus_anion_eV' in fr:
+            fr['delta_virt_cation_minus_anion_eV'] += args.test_delta_offset
+            fr['TEST_delta_offset_eV'] = args.test_delta_offset
+        rec.update({'E_Ha': float(mf.e_tot), 'E_solvation_Ha': solvation_energy(mf), 'scf_cycles': mf._cycles,
+                    'scf_wall_s': round(wall, 1), **rc.runtime_sizes(mf), 'frontier': fr,
+                    'dipole_debye': dipole_debye(mf),
+                    'charges': {k: v['fragments'] for k, v in populations(mol, mf.make_rdm1(), frags).items()}})
+        if disp:
+            rec['E_dispersion_Ha'] = float(np.asarray(mf.scf_summary.get('dispersion', np.nan)))
+        job.r['timings'][key] = round(wall, 1)
+        orb = fr['orbitals']
+        job.log(f"{key}: E = {mf.e_tot:.10f} Ha ({mf._cycles} cycles, {wall:.0f} s); HOMO {fr['HOMO_eV']:.4f} "
+                f"({fr['HOMO_on']}), LUMO {fr['LUMO_eV']:.4f} ({fr['LUMO_on']}, cation "
+                f"{orb['LUMO']['mulliken'].get('cation', float('nan')):.1f} %), gap {fr['gap_eV']:.4f} eV; "
+                f"Delta(cat-an) {fr.get('delta_virt_cation_minus_anion_eV', float('nan')):+.4f} eV")
+        job.put(key, rec)
+        mol.stdout.close()
+        return rec, chk
+
+    for spec in [s.strip() for s in args.geom.split(',') if s.strip()]:
+        glabel, gpath, model = resolve_geom(spec, args.case)
+        if not gpath.exists():
+            raise FileNotFoundError(f'geometry {gpath} for --geom {spec}')
+        job.input_file(f'geometry_{glabel}', gpath)
+        stored_chk = None
+        if args.guess == 'auto' and not args.smoke and model:
+            d = stored_dir(f'{args.case}_{model}')
+            if d and (d / 'final.chk').exists():
+                stored_chk = d / 'final.chk'
+        prev = stored_chk
+        series = []
+        for eps in eps_list:
+            rec, chk = point(glabel, gpath, model, eps, prev)
+            prev = chk
+            series.append(rec)
+            ref_key = (f'{args.case}_gas' if (model == 'gas' and eps == 1.0) else
+                       f'{args.case}_pcm' if (model == 'pcm' and abs(eps - WATER) < 1e-9) else None)
+            if check_stored and ref_key in rc.STORED:
+                dE = rec['E_Ha'] - rc.STORED[ref_key]['E_Ha']
+                rec['dE_vs_stored_Ha'] = dE
+                rec['reproduces_stored'] = abs(dE) <= STORED_TOL_HA
+                job.put(f'{glabel}|eps={eps:g}', rec)
+                job.log(f"{glabel} eps {eps:g}: dE vs stored {ref_key} = {dE:+.2e} Ha -> "
+                        f"{'PASS' if rec['reproduces_stored'] else 'FAIL'}")
+                ok &= rec['reproduces_stored']
+        # LUMO switch and refinement
+        pts = [(r['eps'], r['frontier'].get('delta_virt_cation_minus_anion_eV')) for r in series]
+        sw = switch_from(pts)
+        for it in range(args.refine if sw else 0):
+            e_new = float(f"{sw['eps_switch_f']:.4g}")
+            if any(abs(e_new - e) < 1e-6 for e, _ in pts):
+                break
+            # guess: the converged density of the nearest eps in the series
+            near = min(series, key=lambda r: abs(r['eps'] - e_new))
+            rec, _ = point(glabel, gpath, model, e_new, job.chk_dir / f"{glabel}_eps{near['eps']:g}.chk")
+            rec['refinement'] = it + 1
+            job.put(f'{glabel}|eps={e_new:g}', rec)
+            pts.append((e_new, rec['frontier'].get('delta_virt_cation_minus_anion_eV')))
+            sw = switch_from(pts) or sw
+        lumo_on = {f"{e:g}": job.get(f'{glabel}|eps={e:g}')['frontier']['LUMO_on'] for e, _ in sorted(pts)}
+        job.r.setdefault('switch', {})[glabel] = sw or {'eps_switch_f': None, 'note': 'no sign change of Delta in the '
+                                                         f'eps range {min(eps_list):g}-{max(eps_list):g}',
+                                                         'LUMO_on': lumo_on}
+        if sw:
+            sw['LUMO_on'] = lumo_on
+            job.log(f"{glabel}: LUMO switches {sw['direction']} at eps ~ {sw['eps_switch_f']:.3f} (f-interpolation; "
+                    f"ln-eps {sw['eps_switch_ln']:.3f}), bracket {sw['bracket']}")
+        else:
+            job.log(f'{glabel}: no LUMO switch in the eps range; LUMO on {lumo_on}')
+        job.save()
+
+    # summary tables
+    summ = {}
+    for key, it in sorted(job.r['items'].items(), key=lambda kv: (kv[1].get('geometry', ''), kv[1].get('eps', 0))):
+        if it.get('status') != 'done':
+            continue
+        fr = it['frontier']; o = fr['orbitals']
+        summ.setdefault(it['geometry'], []).append({
+            'eps': it['eps'], 'E_Ha': it['E_Ha'], 'HOMO_eV': fr['HOMO_eV'], 'LUMO_eV': fr['LUMO_eV'],
+            'gap_eV': fr['gap_eV'], 'LUMO_on': fr['LUMO_on'],
+            'LUMO_cation_pct': o['LUMO']['mulliken'].get('cation'),
+            **{f'{k}_eV': o[k]['eV'] for k in ('LUMO+1', 'LUMO+2', 'LUMO+3') if k in o},
+            'delta_cat_minus_an_eV': fr.get('delta_virt_cation_minus_anion_eV'),
+            'dE_vs_stored_Ha': it.get('dE_vs_stored_Ha')})
+    job.r['summary'] = {'series': summ, 'switch': job.r.get('switch'), 'stored_reproduced': ok if check_stored else None}
+    job.save()
+    return ok
+
+
+if __name__ == '__main__':
+    rc.install_sigterm_handler()
+    rc.main_wrapper(parser, run, __file__)
+#INFO: ******************** input file end ********************
+
+
+System: uname_result(system='Linux', node='<vm-1>', release='7.0.0-1017-gcp', version='#19~24.04.1-Ubuntu SMP PREEMPT Thu Oct 29 22:34:06 UTC 2026', machine='x86_64')  Threads 4
+Python 3.11.16 (main, Sep  2 2026, 23:39:52) [GCC 15.3.0]
+numpy 2.4.6  scipy 1.17.1  h5py 3.16.0
+Date: Sun Nov 22 02:16:06 2026
+PySCF version 2.14.0
+PySCF path  <run-dir>/env/lib/python3.11/site-packages/pyscf
+
+[ENV] PYSCF_TMPDIR <run-dir>/scratch/headline_btpcz
+[CONFIG] conf_file None
+[INPUT] verbose = 4
+[INPUT] num. atoms = 33
+[INPUT] num. electrons = 178
+[INPUT] charge = 0
+[INPUT] spin (= nelec alpha-beta = 2S) = 0
+[INPUT] symmetry False subgroup None
+[INPUT] Mole.unit = angstrom
+[INPUT] Symbol           X                Y                Z      unit          X                Y                Z       unit  Magmom
+[INPUT]  1 C      0.555617870000   0.491417780000  -1.781432340000 AA    1.049965604214   0.928645016942  -3.366419232043 Bohr   0.0
+[INPUT]  2 C      0.466782500000   0.757992030000  -3.173559150000 AA    0.882091084740   1.432397341303  -5.997157633607 Bohr   0.0
+[INPUT]  3 C      1.438779620000   0.413437090000  -4.082756300000 AA    2.718899435406   0.781282869837  -7.715291240343 Bohr   0.0
+[INPUT]  4 H      1.336930840000   0.667774400000  -5.129053090000 AA    2.526433135085   1.261910728996  -9.692505618454 Bohr   0.0
+[INPUT]  5 C      2.554775930000  -0.286958410000  -3.627493960000 AA    4.827826817331  -0.542272804041  -6.854970102914 Bohr   0.0
+[INPUT]  6 C      2.708967580000  -0.593359720000  -2.289999920000 AA    5.119206806526  -1.121287364149  -4.327472674076 Bohr   0.0
+[INPUT]  7 H      3.582938480000  -1.124572720000  -1.940980590000 AA    6.770772448365  -2.125134447957  -3.667921728197 Bohr   0.0
+[INPUT]  8 C      1.736475490000  -0.192557720000  -1.379676380000 AA    3.281463098120  -0.363881353971  -2.607210498731 Bohr   0.0
+[INPUT]  9 N     -0.739596170000   1.437618540000  -3.701127900000 AA   -1.397634204077   2.716705312197  -6.994118082987 Bohr   0.0
+[INPUT] 10 N      3.593745920000  -0.693253750000  -4.588128200000 AA    6.791195550073  -1.310059722328  -8.670305722394 Bohr   0.0
+[INPUT] 11 N      2.010252260000  -0.474466760000   0.032601970000 AA    3.798826212688  -0.896612231610   0.061608794421 Bohr   0.0
+[INPUT] 12 O     -0.428412800000   0.920755370000  -1.034933940000 AA   -0.809582860258   1.739975477023  -1.955741703617 Bohr   0.0
+[INPUT] 13 O     -1.817909260000   0.925117480000  -3.464651150000 AA   -3.435350620711   1.748218670248  -6.547241790659 Bohr   0.0
+[INPUT] 14 O     -0.550050980000   2.442947470000  -4.371512760000 AA   -1.039445706749   4.616501654999  -8.260961866442 Bohr   0.0
+[INPUT] 15 O      3.417980710000  -0.395925330000  -5.762520100000 AA    6.459047440946  -0.748190439478 -10.889584776301 Bohr   0.0
+[INPUT] 16 O      4.561020660000  -1.301800270000  -4.151169520000 AA    8.619079895883  -2.460045979185  -7.844573489442 Bohr   0.0
+[INPUT] 17 O      1.348022690000   0.139933240000   0.866994180000 AA    2.547393693799   0.264435499323   1.638381551792 Bohr   0.0
+[INPUT] 18 O      2.886481210000  -1.279958270000   0.303486710000 AA    5.454658950603  -2.418770581172   0.573506764345 Bohr   0.0
+[INPUT] 19 C     -2.822871530000  -0.042252040000   3.185014620000 AA   -5.334454076532  -0.079844783804   6.018805334536 Bohr   0.0
+[INPUT] 20 C     -3.102125180000  -0.288025530000   4.534970060000 AA   -5.862166994317  -0.544289368583   8.569851396502 Bohr   0.0
+[INPUT] 21 H     -4.115086200000  -0.357371890000   4.911483630000 AA   -7.776385896977  -0.675334996718   9.281358925985 Bohr   0.0
+[INPUT] 22 C     -2.006022190000  -0.439945030000   5.366226230000 AA   -3.790832538900  -0.831375616564  10.140697897157 Bohr   0.0
+[INPUT] 23 H     -2.166207160000  -0.632248170000   6.420714830000 AA   -4.093538261472  -1.194775884057  12.133392552633 Bohr   0.0
+[INPUT] 24 C     -0.679631780000  -0.353050620000   4.880650650000 AA   -1.284317929751  -0.667168979908   9.223093038180 Bohr   0.0
+[INPUT] 25 H      0.140458000000  -0.482469920000   5.576751780000 AA    0.265427152004  -0.911736012141  10.538533528881 Bohr   0.0
+[INPUT] 26 C     -0.407468720000  -0.111384840000   3.546844920000 AA   -0.770004285127  -0.210486842028   6.702565505105 Bohr   0.0
+[INPUT] 27 H      0.601950830000  -0.050742720000   3.163724240000 AA    1.137522209155  -0.095889843615   5.978572347248 Bohr   0.0
+[INPUT] 28 C     -1.508519410000   0.047348060000   2.690775520000 AA   -2.850688538490   0.089474865929   5.084828795484 Bohr   0.0
+[INPUT] 29 N     -3.590011280000   0.160390630000   2.071877270000 AA   -6.784138103299   0.303094363646   3.915280604012 Bohr   0.0
+[INPUT] 30 H     -4.593116300000   0.183291000000   1.969312730000 AA   -8.679731865276   0.346369791098   3.721461713320 Bohr   0.0
+[INPUT] 31 N     -2.825039910000   0.360086420000   0.981171860000 AA   -5.338551720866   0.680464714975   1.854146096530 Bohr   0.0
+[INPUT] 32 N     -1.583641420000   0.295778120000   1.333645980000 AA   -2.992648563317   0.558939640439   2.520225649327 Bohr   0.0
+[INPUT] 33 H     -0.480343460000   0.632211140000  -0.078588520000 AA   -0.907717585126   1.194705907499  -0.148510779335 Bohr   0.0
+
+nuclear repulsion = 2094.12530771231
+number of shells = 290
+number of NR pGTOs = 947
+number of NR cGTOs = 606
+basis = 6-311++g(d,p)
+ecp = {}
+CPU time:      6793.71
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+
+
+******** <class 'pyscf.solvent._attach_solvent.PCMDFRKS'> ********
+method = PCMDFRKS
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-10
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/headline_btpcz/chk/gas_eps8.chk
+max_memory 8000 MB (current use 361 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x71a515c979c0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x71a515c97920>
+small_rho_cutoff = 0
+******** <class 'pyscf.solvent.pcm.PCM'> (In testing) ********
+
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+
+lebedev_order = 29 (302 grids per sphere)
+eps = 8.0
+frozen = False
+Set gradient conv threshold to 1e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+PCM E_diel = -0.0282067024469236
+Solvent Energy = -0.0282067024469236
+init E= -1317.23741094382
+
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.257828858745137  LUMO = -0.126354933160155  gap/eV = 3.57759
+PCM E_diel = -0.0303492355794312
+Solvent Energy = -0.0303492355794312
+cycle= 1 E= -1317.23746684381  delta_E= -5.59e-05  |g|= 0.0205  |ddm|= 2.87
+  HOMO = -0.257642130383773  LUMO = -0.127643474042924  gap/eV = 3.53744
+PCM E_diel = -0.0287939579162723
+Solvent Energy = -0.0287939579162723
+cycle= 2 E= -1317.23718749586  delta_E= 0.000279  |g|= 0.0428  |ddm|= 0.976
+  HOMO = -0.257588731251905  LUMO = -0.127187000199677  gap/eV = 3.54841
+PCM E_diel = -0.0297343031029271
+Solvent Energy = -0.0297343031029271
+cycle= 3 E= -1317.23755870075  delta_E= -0.000371  |g|= 0.0049  |ddm|= 0.441
+  HOMO = -0.257670672522988  LUMO = -0.127072368138025  gap/eV = 3.55376
+PCM E_diel = -0.0297822701647082
+Solvent Energy = -0.0297822701647082
+cycle= 4 E= -1317.23756245363  delta_E= -3.75e-06  |g|= 0.00242  |ddm|= 0.0583
+  HOMO = -0.257714027951586  LUMO = -0.127025515368837  gap/eV = 3.55622
+PCM E_diel = -0.0297969248136335
+Solvent Energy = -0.0297969248136335
+cycle= 5 E= -1317.23756348891  delta_E= -1.04e-06  |g|= 0.000519  |ddm|= 0.0165
+  HOMO = -0.257700953205289  LUMO = -0.127033818841951  gap/eV = 3.55563
+PCM E_diel = -0.0297992853889541
+Solvent Energy = -0.0297992853889541
+cycle= 6 E= -1317.23756353791  delta_E= -4.9e-08  |g|= 0.000198  |ddm|= 0.00568
+  HOMO = -0.257695724903869  LUMO = -0.127039690872431  gap/eV = 3.55533
+PCM E_diel = -0.0297997295457376
+Solvent Energy = -0.0297997295457376
+cycle= 7 E= -1317.23756354486  delta_E= -6.95e-09  |g|= 7.95e-05  |ddm|= 0.00227
+  HOMO = -0.257698163253198  LUMO = -0.127039385062176  gap/eV = 3.55541
+PCM E_diel = -0.0298001896901782
+Solvent Energy = -0.0298001896901782
+cycle= 8 E= -1317.237563546  delta_E= -1.14e-09  |g|= 3.08e-05  |ddm|= 0.00146
+  HOMO = -0.257698857878757  LUMO = -0.127038456214275  gap/eV = 3.55545
+PCM E_diel = -0.0298000947164991
+Solvent Energy = -0.0298000947164991
+cycle= 9 E= -1317.23756354618  delta_E= -1.81e-10  |g|= 1.08e-05  |ddm|= 0.000219
+  HOMO = -0.257698759929781  LUMO = -0.127038422594778  gap/eV = 3.55545
+PCM E_diel = -0.0298000160026795
+Solvent Energy = -0.0298000160026795
+cycle= 10 E= -1317.23756354618  delta_E= -2.73e-12  |g|= 8.34e-06  |ddm|= 0.000126
+  HOMO = -0.257698623435474  LUMO = -0.12703877092327  gap/eV = 3.55544
+PCM E_diel = -0.0298000315002293
+Solvent Energy = -0.0298000315002293
+Extra cycle  E= -1317.2375635461  delta_E= 8.32e-11  |g|= 2.31e-05  |ddm|= 0.000185
+converged SCF energy = -1317.2375635461
+#INFO: **** input file is <run-dir>/repo/dft/revision/headline.py ****
+"""
+Headline tests for the BTPC revision (plan section 5, item 3): where does the LUMO live, and is it the geometry or the
+dielectric field that moves it?
+
+  (i)  cross single points: the gas-phase minimum in IEF-PCM water and the IEF-PCM minimum in the gas phase;
+  (ii) a permittivity series eps = 1, 2, 4, 8, 20, 78.3553 at both minima (eps = 1 is the gas-phase calculation,
+       eps = 78.3553 is water), which contains the cross points and the two stored calculations.
+For every point: total energy, HOMO-1, HOMO, LUMO, LUMO+1..LUMO+3 energies and their cation/picrate shares (Mulliken
+share as dft/fmo.py defines it, plus Loewdin), the gap, dipole, and fragment charges.  For each geometry the eps at
+which the LUMO switches from the cation to the picrate is found from the sign change of
+    Delta(eps) = E(lowest cation-localised virtual) - E(lowest picrate-localised virtual)      ("localised": share > 50 %)
+by linear interpolation in the Pekar-type factor f = (eps - 1)/eps (also given: interpolation in ln eps), and refined
+with --refine extra single points at the interpolated eps.
+
+Level of theory (rev_common.py): B3LYP/6-311++G(d,p), density fitting, grid level 4, IEF-PCM Lebedev order 29,
+conv_tol 1e-10.  The (gas geometry, eps 1) and (PCM geometry, eps 78.3553) points must reproduce the stored energies
+to 1e-6 Ha (B3LYP, btpc only); otherwise the job exits non-zero after finishing all points.
+
+Usage:
+  python dft/revision/headline.py --job headline_gas --out <dir> [--geom gas,pcm] [--eps 1,2,4,8,20,78.3553]
+         [--xc b3lyp] [--disp d3bj] [--case btpc] [--refine 1] [--guess auto|minao] [--smoke]
+  --geom entries: 'gas' / 'pcm' (the case's stored minimum, molecules/<case>/results/<case>_<model>/opt.xyz) or
+         'label=path/to/geometry.xyz' (path relative to the repository or absolute; a directory means <dir>/opt.xyz).
+  --xc pbe0 / camb3lyp with --eps 1,78.3553 gives the functional check of plan item 8 with the same analysis.
+--smoke: STO-3G, grid 2, Lebedev 17, conv_tol 1e-7, eps 1,4,78.3553 -- exercises every code path in minutes.
+
+This module also holds helpers shared by the other builder-2 scripts (frontier-orbital analysis, fmo.py descriptors,
+geometry metrics); they are plain functions and run nothing on import.
+"""
+import sys, pathlib, argparse, json, math, time
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import rev_common as rc          # first: pins the thread pools
+import numpy as np
+
+STORED_TOL_HA = 1e-6
+WATER = rc.SOLVENT_EPS['water']
+DEBYE = 2.541746473              # a.u. of dipole -> Debye
+
+
+# ============================================================================ shared helpers (used by other scripts)
+def level(smoke, grid=None):
+    """Basis, grid, Lebedev order and SCF tolerance: production values, or the reduced --smoke set."""
+    if smoke:
+        return {'basis': 'sto-3g', 'grid_level': grid or 2, 'lebedev_order': 17, 'conv_tol': 1e-7}
+    return {'basis': rc.BASIS, 'grid_level': rc.GRID_LEVEL, 'lebedev_order': rc.PCM_LEBEDEV_ORDER,
+            'conv_tol': rc.CONV_TOL_SP}
+
+
+def resolve_geom(spec, case_prefix='btpc'):
+    """'gas' | 'pcm' | 'label=path' | path  ->  (label, absolute path, model of the stored minimum or None)."""
+    if spec in ('gas', 'pcm'):
+        name = f'{case_prefix}_{spec}'
+        if name in rc.STORED:
+            return spec, rc.ROOT / rc.STORED[name]['xyz'], spec
+        mol_dir = case_prefix
+        return spec, rc.ROOT / 'molecules' / mol_dir / 'results' / name / 'opt.xyz', spec
+    label, _, path = spec.partition('=') if '=' in spec else (pathlib.Path(spec).stem, '', spec)
+    p = pathlib.Path(path)
+    if not p.is_absolute():
+        p = rc.ROOT / p
+    if p.is_dir():
+        p = p / 'opt.xyz'
+    return label, p, None
+
+
+def stored_dir(case_name):
+    """data/r2/molecules/<id>/results/<case>/ (raw outputs: final.chk, hessian.npy, final.molden) or None."""
+    for d in sorted((rc.ROOT / 'data' / 'r2' / 'molecules').glob(f'*/results/{case_name}')):
+        return d
+    return None
+
+
+def labels_of(case, natm):
+    lab = case.get('cif_labels')
+    if lab:
+        return [l.split('#')[0] for l in lab]
+    return [f'X{i + 1}' for i in range(natm)]
+
+
+def frag_of_share(shares, thresh=0.5):
+    """Fragment holding more than `thresh` of an orbital ({'anion': x, 'cation': y} in percent), else 'mixed'."""
+    best = max(shares, key=shares.get)
+    return best if shares[best] > 100 * thresh else 'mixed'
+
+
+def frontier(mf, frags, n_occ=2, n_virt=4, scan=12):
+    """Frontier-orbital energies (eV) and fragment shares (percent; Mulliken as dft/fmo.py, and Loewdin) of an RKS
+    solution: HOMO-(n_occ-1)..HOMO, LUMO..LUMO+(n_virt-1).  Also the lowest virtual and highest occupied orbital
+    localised (> 50 % Mulliken) on each fragment, searched over `scan` orbitals."""
+    mol = mf.mol
+    S = mol.intor_symmetric('int1e_ovlp'); S_half = rc.lowdin_half(S)
+    e = np.asarray(mf.mo_energy) * rc.HARTREE_EV
+    C = np.asarray(mf.mo_coeff)
+    nocc = int((np.asarray(mf.mo_occ) > 0.5).sum())
+    nmo = C.shape[1]
+
+    def shares(k):
+        return {m: {f: round(100 * rc.mo_fragment_share(mol, C[:, k], atoms, m, S, S_half), 3)
+                    for f, atoms in frags.items()} for m in ('mulliken', 'lowdin')}
+
+    out = {'n_occ': nocc, 'n_mo': nmo, 'orbitals': {}}
+    labels = [(f'HOMO-{i}' if i else 'HOMO', nocc - 1 - i) for i in range(n_occ - 1, -1, -1)]
+    labels += [(f'LUMO+{i}' if i else 'LUMO', nocc + i) for i in range(n_virt)]
+    for lab, k in labels:
+        if 0 <= k < nmo:
+            sh = shares(k)
+            out['orbitals'][lab] = {'index': int(k), 'eV': float(e[k]), **sh,
+                                    'on': frag_of_share(sh['mulliken'])}
+    out['HOMO_eV'] = float(e[nocc - 1]); out['LUMO_eV'] = float(e[nocc]); out['gap_eV'] = float(e[nocc] - e[nocc - 1])
+    out['LUMO_on'] = out['orbitals']['LUMO']['on']; out['HOMO_on'] = out['orbitals']['HOMO']['on']
+    lowest_virt, highest_occ = {}, {}
+    for k in range(nocc, min(nmo, nocc + scan)):
+        sh = shares(k)['mulliken']; f = frag_of_share(sh)
+        if f in frags and f not in lowest_virt:
+            lowest_virt[f] = {'index': int(k), 'label': 'LUMO' + (f'+{k - nocc}' if k > nocc else ''),
+                              'eV': float(e[k]), 'share_pct': sh[f]}
+    for k in range(nocc - 1, max(-1, nocc - 1 - scan), -1):
+        sh = shares(k)['mulliken']; f = frag_of_share(sh)
+        if f in frags and f not in highest_occ:
+            highest_occ[f] = {'index': int(k), 'label': 'HOMO' + (f'-{nocc - 1 - k}' if k < nocc - 1 else ''),
+                              'eV': float(e[k]), 'share_pct': sh[f]}
+    out['lowest_virtual_on'] = lowest_virt
+    out['highest_occupied_on'] = highest_occ
+    if 'cation' in lowest_virt and 'anion' in lowest_virt:
+        out['delta_virt_cation_minus_anion_eV'] = lowest_virt['cation']['eV'] - lowest_virt['anion']['eV']
+    return out
+
+
+def fmo_descriptors(H, L):
+    """Koopmans-type descriptors exactly as dft/fmo.py computes them (eV)."""
+    IP, EA = -H, -L
+    chi = (IP + EA) / 2; mu = -chi; eta = (IP - EA) / 2; S = 1 / (2 * eta); omega = mu ** 2 / (2 * eta)
+    return {'HOMO_eV': H, 'LUMO_eV': L, 'gap_eV': L - H, 'IP_eV': IP, 'EA_eV': EA, 'electronegativity_chi_eV': chi,
+            'chemical_potential_mu_eV': mu, 'hardness_eta_eV': eta, 'softness_S_eV-1': S,
+            'electrophilicity_omega_eV': omega}
+
+
+def populations(mol, dm, frags):
+    """Mulliken and Loewdin charges per atom and per fragment (and spin for a UKS density pair)."""
+    S = mol.intor_symmetric('int1e_ovlp'); S_half = rc.lowdin_half(S)
+    dm = np.asarray(dm)
+    uks = dm.ndim == 3
+    tot = dm[0] + dm[1] if uks else dm
+    Z = mol.atom_charges()
+    sl = mol.aoslice_by_atom()
+    res = {}
+    for name in ('mulliken', 'lowdin'):
+        if name == 'mulliken':
+            p = np.einsum('ij,ji->i', tot, S); s = np.einsum('ij,ji->i', dm[0] - dm[1], S) if uks else None
+        else:
+            p = np.einsum('ij,jk,ki->i', S_half, tot, S_half); s = (np.einsum('ij,jk,ki->i', S_half, dm[0] - dm[1], S_half)
+                                                                   if uks else None)
+        q_at = np.array([Z[a] - p[sl[a][2]:sl[a][3]].sum() for a in range(mol.natm)])
+        r = {'atoms': q_at.tolist(), 'fragments': {f: float(q_at[atoms].sum()) for f, atoms in frags.items()}}
+        if uks:
+            s_at = np.array([s[sl[a][2]:sl[a][3]].sum() for a in range(mol.natm)])
+            r['spin_atoms'] = s_at.tolist()
+            r['spin_fragments'] = {f: float(s_at[atoms].sum()) for f, atoms in frags.items()}
+        res[name] = r
+    return res
+
+
+def dipole_debye(mf):
+    v = mf.dip_moment(unit='Debye', verbose=0)
+    return {'total': float(np.linalg.norm(v)), 'vector': [float(x) for x in v]}
+
+
+def _dihedral(X, a, b, c, d):
+    b0 = X[a] - X[b]; b1 = X[c] - X[b]; b2 = X[d] - X[c]
+    b1n = b1 / np.linalg.norm(b1)
+    v = b0 - np.dot(b0, b1n) * b1n; w = b2 - np.dot(b2, b1n) * b1n
+    return float(np.degrees(np.arctan2(np.dot(np.cross(b1n, v), w), np.dot(v, w))))
+
+
+def _plane_normal(P):
+    c = P.mean(0)
+    return np.linalg.svd(P - c)[2][-1]
+
+
+def nearest(X, syms, i, element, among):
+    """Index of the nearest atom of `element` to atom i, among the indices `among`."""
+    cand = [j for j in among if syms[j] == element and j != i]
+    return min(cand, key=lambda j: np.linalg.norm(X[j] - X[i])) if cand else None
+
+
+def hbond_torsion_atoms(case, syms, X):
+    """C(acceptor)-O(acceptor)...N(donor)-C(donor ring): for btpc C1-O1...N4-C12 (indices 4, 0, 18, 21), the
+    inter-ion torsion of revision/round1/audit/evidence/dft/dihedrals.py."""
+    p = case.get('proton')
+    if not p:
+        return None
+    fr = rc.fragments(case)
+    O, N = p['acceptor_O'], p['donor_N']
+    cO = nearest(X, syms, O, 'C', fr.get('anion', range(len(syms))))
+    cN = nearest(X, syms, N, 'C', fr.get('cation', range(len(syms))))
+    return (cO, O, N, cN) if None not in (cO, cN) else None
+
+
+def geometry_metrics(case, syms, X):
+    """Inter-ion geometry: H-bond distances and angle, proton position, the inter-ion torsion and the angle between
+    the picrate ring (anion carbons) and the benzotriazolium ring system (cation heavy atoms)."""
+    X = np.asarray(X, float)
+    lab = labels_of(case, len(syms))
+    out = {}
+    p = case.get('proton')
+    if p:
+        H, N, O = p['H'], p['donor_N'], p['acceptor_O']
+        dHN = float(np.linalg.norm(X[H] - X[N])); dHO = float(np.linalg.norm(X[H] - X[O]))
+        v1, v2 = X[N] - X[H], X[O] - X[H]
+        out.update({'d_N...O_A': float(np.linalg.norm(X[N] - X[O])), 'd_H-N_A': dHN, 'd_H...O_A': dHO,
+                    'angle_N-H...O_deg': float(np.degrees(np.arccos(np.dot(v1, v2) / np.linalg.norm(v1) /
+                                                                     np.linalg.norm(v2)))),
+                    'proton_transferred': dHO < dHN,
+                    'hbond_labels': f'{lab[N]}-{lab[H]}...{lab[O]}'})
+    t = hbond_torsion_atoms(case, syms, X)
+    if t:
+        out['torsion_atoms'] = [int(i) for i in t]
+        out['torsion_labels'] = '-'.join(lab[i] for i in t)
+        out['torsion_deg'] = _dihedral(X, *t)
+    fr = rc.fragments(case)
+    if 'anion' in fr and 'cation' in fr:
+        ring_a = [i for i in fr['anion'] if syms[i] == 'C']
+        ring_c = [i for i in fr['cation'] if syms[i] != 'H']
+        n1, n2 = _plane_normal(X[ring_a]), _plane_normal(X[ring_c])
+        out['inter_ring_angle_deg'] = float(np.degrees(np.arccos(min(1.0, abs(float(np.dot(n1, n2)))))))
+    return out
+
+
+def dihedral(X, idx):
+    return _dihedral(np.asarray(X, float), *idx)
+
+
+def mol_geometry(mol):
+    syms = [mol.atom_pure_symbol(i) for i in range(mol.natm)]
+    return syms, mol.atom_coords() * rc.BOHR_A
+
+
+def solvent_label(eps):
+    return 'gas' if eps is None else f'IEF-PCM eps={eps:g}'
+
+
+def solvation_energy(mf):
+    ws = getattr(mf, 'with_solvent', None)
+    return None if ws is None or getattr(ws, 'e', None) is None else float(ws.e)
+
+
+# ============================================================================ this script
+def parser():
+    p = rc.add_common_args(argparse.ArgumentParser(description=__doc__.split('\n')[1]))
+    p.add_argument('--geom', default='gas,pcm', help="comma list: gas, pcm, label=path.xyz")
+    p.add_argument('--eps', default=None, help='comma list of permittivities (1 = gas phase); default 1,2,4,8,20,78.3553')
+    p.add_argument('--xc', default=rc.XC, help='functional (default b3lyp; item 8: pbe0, camb3lyp)')
+    p.add_argument('--disp', default=None, help="dispersion correction: none (default) or d3bj")
+    p.add_argument('--case', default='btpc', help='molecule prefix: btpc (default) or btpcz')
+    p.add_argument('--refine', type=int, default=1, help='extra single points at the interpolated switch eps (default 1)')
+    p.add_argument('--guess', choices=('auto', 'minao'), default='auto',
+                   help='auto: stored final.chk of the same model for the first point, then the previous eps')
+    p.add_argument('--test-delta-offset', type=float, default=0.0,
+                   help='TEST HOOK, --smoke only: add this many eV to Delta so that the switch/refine path runs')
+    return p
+
+
+def switch_from(points):
+    """points: [(eps, delta_eV)] sorted by eps.  Returns the bracket and interpolated eps of the first sign change."""
+    pts = [(e, d) for e, d in points if d is not None]
+    pts.sort()
+    for (e0, d0), (e1, d1) in zip(pts, pts[1:]):
+        if d0 == 0:
+            return {'eps_switch_f': e0, 'eps_switch_ln': e0, 'bracket': [e0, e0]}
+        if d0 * d1 < 0:
+            f = lambda e: (e - 1) / e
+            x = f(e0) + (0 - d0) * (f(e1) - f(e0)) / (d1 - d0)
+            l = math.log(e0) + (0 - d0) * (math.log(e1) - math.log(e0)) / (d1 - d0)
+            return {'eps_switch_f': 1 / (1 - x), 'eps_switch_ln': math.exp(l), 'bracket': [e0, e1],
+                    'delta_at_bracket_eV': [d0, d1],
+                    'direction': 'cation->anion' if d0 < 0 else 'anion->cation'}
+    return None
+
+
+def run(job, args):
+    lv = level(args.smoke)
+    if args.test_delta_offset and not args.smoke:
+        raise SystemExit('--test-delta-offset is a test hook for --smoke runs only')
+    disp = None if (args.disp in (None, '', 'none')) else args.disp
+    eps_list = ([float(x) for x in args.eps.split(',')] if args.eps else
+                ([1.0, 4.0, WATER] if args.smoke else [1.0, 2.0, 4.0, 8.0, 20.0, WATER]))
+    eps_list = sorted(set(eps_list))
+    case = rc.load_case(f'{args.case}_gas')
+    frags = rc.fragments(case)
+    job.r['settings'] = {**lv, 'xc': args.xc, 'disp': disp, 'pcm_method': rc.PCM_METHOD, 'eps_list': eps_list,
+                         'density_fit': True, 'auxbasis': 'PySCF default', 'max_cycle': rc.MAX_CYCLE,
+                         'eps_1_means': 'gas-phase calculation (no PCM)', 'fragment_share': 'Mulliken (as dft/fmo.py) '
+                         'and Loewdin; an orbital is localised on a fragment when its Mulliken share > 50 %',
+                         'switch_interpolation': 'linear in f=(eps-1)/eps (also ln eps)', 'refine': args.refine,
+                         'case': case['name'], 'fragments': frags}
+    job.input_file('case', rc.find_case_file(case['name']))
+    job.save()
+    check_stored = (not args.smoke and args.xc.lower() == 'b3lyp' and disp is None and args.case == 'btpc')
+    ok = True
+
+    def point(glabel, gpath, model, eps, guess_chk):
+        key = f'{glabel}|eps={eps:g}'
+        chk = job.chk_dir / f'{glabel}_eps{eps:g}.chk'
+        if job.done(key):
+            return job.get(key), chk
+        mol = rc.mol_for_case(case, gpath, basis=lv['basis'], verbose=3 if args.smoke else 4,
+                              output=job.out / f'pyscf_{glabel}.log')
+        solvent = None if eps == 1.0 else eps
+        mf = rc.make_mf(mol, xc=args.xc, disp=disp, solvent=solvent, conv_tol=lv['conv_tol'],
+                        grid_level=lv['grid_level'], lebedev_order=lv['lebedev_order'], chkfile=chk)
+        rec = {'geometry': glabel, 'xyz': str(gpath), 'eps': eps, 'model': solvent_label(solvent),
+               'settings': rc.settings_of(mf)}
+        job.put(key, rec, status='running')
+        g = chk if chk.exists() else guess_chk
+        job.log(f'{key}: SCF ({mol.nao} AO, {rec["model"]}), guess {g if g and pathlib.Path(g).exists() else "minao"}')
+        wall = rc.run_scf(mf, chk_guess=g, log=job.log)
+        fr = frontier(mf, frags)
+        if args.test_delta_offset and 'delta_virt_cation_minus_anion_eV' in fr:
+            fr['delta_virt_cation_minus_anion_eV'] += args.test_delta_offset
+            fr['TEST_delta_offset_eV'] = args.test_delta_offset
+        rec.update({'E_Ha': float(mf.e_tot), 'E_solvation_Ha': solvation_energy(mf), 'scf_cycles': mf._cycles,
+                    'scf_wall_s': round(wall, 1), **rc.runtime_sizes(mf), 'frontier': fr,
+                    'dipole_debye': dipole_debye(mf),
+                    'charges': {k: v['fragments'] for k, v in populations(mol, mf.make_rdm1(), frags).items()}})
+        if disp:
+            rec['E_dispersion_Ha'] = float(np.asarray(mf.scf_summary.get('dispersion', np.nan)))
+        job.r['timings'][key] = round(wall, 1)
+        orb = fr['orbitals']
+        job.log(f"{key}: E = {mf.e_tot:.10f} Ha ({mf._cycles} cycles, {wall:.0f} s); HOMO {fr['HOMO_eV']:.4f} "
+                f"({fr['HOMO_on']}), LUMO {fr['LUMO_eV']:.4f} ({fr['LUMO_on']}, cation "
+                f"{orb['LUMO']['mulliken'].get('cation', float('nan')):.1f} %), gap {fr['gap_eV']:.4f} eV; "
+                f"Delta(cat-an) {fr.get('delta_virt_cation_minus_anion_eV', float('nan')):+.4f} eV")
+        job.put(key, rec)
+        mol.stdout.close()
+        return rec, chk
+
+    for spec in [s.strip() for s in args.geom.split(',') if s.strip()]:
+        glabel, gpath, model = resolve_geom(spec, args.case)
+        if not gpath.exists():
+            raise FileNotFoundError(f'geometry {gpath} for --geom {spec}')
+        job.input_file(f'geometry_{glabel}', gpath)
+        stored_chk = None
+        if args.guess == 'auto' and not args.smoke and model:
+            d = stored_dir(f'{args.case}_{model}')
+            if d and (d / 'final.chk').exists():
+                stored_chk = d / 'final.chk'
+        prev = stored_chk
+        series = []
+        for eps in eps_list:
+            rec, chk = point(glabel, gpath, model, eps, prev)
+            prev = chk
+            series.append(rec)
+            ref_key = (f'{args.case}_gas' if (model == 'gas' and eps == 1.0) else
+                       f'{args.case}_pcm' if (model == 'pcm' and abs(eps - WATER) < 1e-9) else None)
+            if check_stored and ref_key in rc.STORED:
+                dE = rec['E_Ha'] - rc.STORED[ref_key]['E_Ha']
+                rec['dE_vs_stored_Ha'] = dE
+                rec['reproduces_stored'] = abs(dE) <= STORED_TOL_HA
+                job.put(f'{glabel}|eps={eps:g}', rec)
+                job.log(f"{glabel} eps {eps:g}: dE vs stored {ref_key} = {dE:+.2e} Ha -> "
+                        f"{'PASS' if rec['reproduces_stored'] else 'FAIL'}")
+                ok &= rec['reproduces_stored']
+        # LUMO switch and refinement
+        pts = [(r['eps'], r['frontier'].get('delta_virt_cation_minus_anion_eV')) for r in series]
+        sw = switch_from(pts)
+        for it in range(args.refine if sw else 0):
+            e_new = float(f"{sw['eps_switch_f']:.4g}")
+            if any(abs(e_new - e) < 1e-6 for e, _ in pts):
+                break
+            # guess: the converged density of the nearest eps in the series
+            near = min(series, key=lambda r: abs(r['eps'] - e_new))
+            rec, _ = point(glabel, gpath, model, e_new, job.chk_dir / f"{glabel}_eps{near['eps']:g}.chk")
+            rec['refinement'] = it + 1
+            job.put(f'{glabel}|eps={e_new:g}', rec)
+            pts.append((e_new, rec['frontier'].get('delta_virt_cation_minus_anion_eV')))
+            sw = switch_from(pts) or sw
+        lumo_on = {f"{e:g}": job.get(f'{glabel}|eps={e:g}')['frontier']['LUMO_on'] for e, _ in sorted(pts)}
+        job.r.setdefault('switch', {})[glabel] = sw or {'eps_switch_f': None, 'note': 'no sign change of Delta in the '
+                                                         f'eps range {min(eps_list):g}-{max(eps_list):g}',
+                                                         'LUMO_on': lumo_on}
+        if sw:
+            sw['LUMO_on'] = lumo_on
+            job.log(f"{glabel}: LUMO switches {sw['direction']} at eps ~ {sw['eps_switch_f']:.3f} (f-interpolation; "
+                    f"ln-eps {sw['eps_switch_ln']:.3f}), bracket {sw['bracket']}")
+        else:
+            job.log(f'{glabel}: no LUMO switch in the eps range; LUMO on {lumo_on}')
+        job.save()
+
+    # summary tables
+    summ = {}
+    for key, it in sorted(job.r['items'].items(), key=lambda kv: (kv[1].get('geometry', ''), kv[1].get('eps', 0))):
+        if it.get('status') != 'done':
+            continue
+        fr = it['frontier']; o = fr['orbitals']
+        summ.setdefault(it['geometry'], []).append({
+            'eps': it['eps'], 'E_Ha': it['E_Ha'], 'HOMO_eV': fr['HOMO_eV'], 'LUMO_eV': fr['LUMO_eV'],
+            'gap_eV': fr['gap_eV'], 'LUMO_on': fr['LUMO_on'],
+            'LUMO_cation_pct': o['LUMO']['mulliken'].get('cation'),
+            **{f'{k}_eV': o[k]['eV'] for k in ('LUMO+1', 'LUMO+2', 'LUMO+3') if k in o},
+            'delta_cat_minus_an_eV': fr.get('delta_virt_cation_minus_anion_eV'),
+            'dE_vs_stored_Ha': it.get('dE_vs_stored_Ha')})
+    job.r['summary'] = {'series': summ, 'switch': job.r.get('switch'), 'stored_reproduced': ok if check_stored else None}
+    job.save()
+    return ok
+
+
+if __name__ == '__main__':
+    rc.install_sigterm_handler()
+    rc.main_wrapper(parser, run, __file__)
+#INFO: ******************** input file end ********************
+
+
+System: uname_result(system='Linux', node='<vm-1>', release='7.0.0-1017-gcp', version='#19~24.04.1-Ubuntu SMP PREEMPT Thu Oct 29 22:34:06 UTC 2026', machine='x86_64')  Threads 4
+Python 3.11.16 (main, Sep  2 2026, 23:39:52) [GCC 15.3.0]
+numpy 2.4.6  scipy 1.17.1  h5py 3.16.0
+Date: Sun Nov 22 02:26:02 2026
+PySCF version 2.14.0
+PySCF path  <run-dir>/env/lib/python3.11/site-packages/pyscf
+
+[ENV] PYSCF_TMPDIR <run-dir>/scratch/headline_btpcz
+[CONFIG] conf_file None
+[INPUT] verbose = 4
+[INPUT] num. atoms = 33
+[INPUT] num. electrons = 178
+[INPUT] charge = 0
+[INPUT] spin (= nelec alpha-beta = 2S) = 0
+[INPUT] symmetry False subgroup None
+[INPUT] Mole.unit = angstrom
+[INPUT] Symbol           X                Y                Z      unit          X                Y                Z       unit  Magmom
+[INPUT]  1 C      0.555617870000   0.491417780000  -1.781432340000 AA    1.049965604214   0.928645016942  -3.366419232043 Bohr   0.0
+[INPUT]  2 C      0.466782500000   0.757992030000  -3.173559150000 AA    0.882091084740   1.432397341303  -5.997157633607 Bohr   0.0
+[INPUT]  3 C      1.438779620000   0.413437090000  -4.082756300000 AA    2.718899435406   0.781282869837  -7.715291240343 Bohr   0.0
+[INPUT]  4 H      1.336930840000   0.667774400000  -5.129053090000 AA    2.526433135085   1.261910728996  -9.692505618454 Bohr   0.0
+[INPUT]  5 C      2.554775930000  -0.286958410000  -3.627493960000 AA    4.827826817331  -0.542272804041  -6.854970102914 Bohr   0.0
+[INPUT]  6 C      2.708967580000  -0.593359720000  -2.289999920000 AA    5.119206806526  -1.121287364149  -4.327472674076 Bohr   0.0
+[INPUT]  7 H      3.582938480000  -1.124572720000  -1.940980590000 AA    6.770772448365  -2.125134447957  -3.667921728197 Bohr   0.0
+[INPUT]  8 C      1.736475490000  -0.192557720000  -1.379676380000 AA    3.281463098120  -0.363881353971  -2.607210498731 Bohr   0.0
+[INPUT]  9 N     -0.739596170000   1.437618540000  -3.701127900000 AA   -1.397634204077   2.716705312197  -6.994118082987 Bohr   0.0
+[INPUT] 10 N      3.593745920000  -0.693253750000  -4.588128200000 AA    6.791195550073  -1.310059722328  -8.670305722394 Bohr   0.0
+[INPUT] 11 N      2.010252260000  -0.474466760000   0.032601970000 AA    3.798826212688  -0.896612231610   0.061608794421 Bohr   0.0
+[INPUT] 12 O     -0.428412800000   0.920755370000  -1.034933940000 AA   -0.809582860258   1.739975477023  -1.955741703617 Bohr   0.0
+[INPUT] 13 O     -1.817909260000   0.925117480000  -3.464651150000 AA   -3.435350620711   1.748218670248  -6.547241790659 Bohr   0.0
+[INPUT] 14 O     -0.550050980000   2.442947470000  -4.371512760000 AA   -1.039445706749   4.616501654999  -8.260961866442 Bohr   0.0
+[INPUT] 15 O      3.417980710000  -0.395925330000  -5.762520100000 AA    6.459047440946  -0.748190439478 -10.889584776301 Bohr   0.0
+[INPUT] 16 O      4.561020660000  -1.301800270000  -4.151169520000 AA    8.619079895883  -2.460045979185  -7.844573489442 Bohr   0.0
+[INPUT] 17 O      1.348022690000   0.139933240000   0.866994180000 AA    2.547393693799   0.264435499323   1.638381551792 Bohr   0.0
+[INPUT] 18 O      2.886481210000  -1.279958270000   0.303486710000 AA    5.454658950603  -2.418770581172   0.573506764345 Bohr   0.0
+[INPUT] 19 C     -2.822871530000  -0.042252040000   3.185014620000 AA   -5.334454076532  -0.079844783804   6.018805334536 Bohr   0.0
+[INPUT] 20 C     -3.102125180000  -0.288025530000   4.534970060000 AA   -5.862166994317  -0.544289368583   8.569851396502 Bohr   0.0
+[INPUT] 21 H     -4.115086200000  -0.357371890000   4.911483630000 AA   -7.776385896977  -0.675334996718   9.281358925985 Bohr   0.0
+[INPUT] 22 C     -2.006022190000  -0.439945030000   5.366226230000 AA   -3.790832538900  -0.831375616564  10.140697897157 Bohr   0.0
+[INPUT] 23 H     -2.166207160000  -0.632248170000   6.420714830000 AA   -4.093538261472  -1.194775884057  12.133392552633 Bohr   0.0
+[INPUT] 24 C     -0.679631780000  -0.353050620000   4.880650650000 AA   -1.284317929751  -0.667168979908   9.223093038180 Bohr   0.0
+[INPUT] 25 H      0.140458000000  -0.482469920000   5.576751780000 AA    0.265427152004  -0.911736012141  10.538533528881 Bohr   0.0
+[INPUT] 26 C     -0.407468720000  -0.111384840000   3.546844920000 AA   -0.770004285127  -0.210486842028   6.702565505105 Bohr   0.0
+[INPUT] 27 H      0.601950830000  -0.050742720000   3.163724240000 AA    1.137522209155  -0.095889843615   5.978572347248 Bohr   0.0
+[INPUT] 28 C     -1.508519410000   0.047348060000   2.690775520000 AA   -2.850688538490   0.089474865929   5.084828795484 Bohr   0.0
+[INPUT] 29 N     -3.590011280000   0.160390630000   2.071877270000 AA   -6.784138103299   0.303094363646   3.915280604012 Bohr   0.0
+[INPUT] 30 H     -4.593116300000   0.183291000000   1.969312730000 AA   -8.679731865276   0.346369791098   3.721461713320 Bohr   0.0
+[INPUT] 31 N     -2.825039910000   0.360086420000   0.981171860000 AA   -5.338551720866   0.680464714975   1.854146096530 Bohr   0.0
+[INPUT] 32 N     -1.583641420000   0.295778120000   1.333645980000 AA   -2.992648563317   0.558939640439   2.520225649327 Bohr   0.0
+[INPUT] 33 H     -0.480343460000   0.632211140000  -0.078588520000 AA   -0.907717585126   1.194705907499  -0.148510779335 Bohr   0.0
+
+nuclear repulsion = 2094.12530771231
+number of shells = 290
+number of NR pGTOs = 947
+number of NR cGTOs = 606
+basis = 6-311++g(d,p)
+ecp = {}
+CPU time:      9168.51
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+
+
+******** <class 'pyscf.solvent._attach_solvent.PCMDFRKS'> ********
+method = PCMDFRKS
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-10
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/headline_btpcz/chk/gas_eps20.chk
+max_memory 8000 MB (current use 361 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x71a515c979c0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x71a515c97920>
+small_rho_cutoff = 0
+******** <class 'pyscf.solvent.pcm.PCM'> (In testing) ********
+
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+
+lebedev_order = 29 (302 grids per sphere)
+eps = 20.0
+frozen = False
+Set gradient conv threshold to 1e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+PCM E_diel = -0.0336317099817084
+Solvent Energy = -0.0336317099817084
+init E= -1317.24139522458
+
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.256721534459603  LUMO = -0.12595817169201  gap/eV = 3.55825
+PCM E_diel = -0.035388439452043
+Solvent Energy = -0.035388439452043
+cycle= 1 E= -1317.24142649567  delta_E= -3.13e-05  |g|= 0.0142  |ddm|= 1.99
+  HOMO = -0.256611032459708  LUMO = -0.126852758076507  gap/eV = 3.53090
+PCM E_diel = -0.0341745442048094
+Solvent Energy = -0.0341745442048094
+cycle= 2 E= -1317.24129584922  delta_E= 0.000131  |g|= 0.0294  |ddm|= 0.641
+  HOMO = -0.256564298877601  LUMO = -0.126535811317575  gap/eV = 3.53826
+PCM E_diel = -0.0349205053772993
+Solvent Energy = -0.0349205053772993
+cycle= 3 E= -1317.24147016787  delta_E= -0.000174  |g|= 0.00348  |ddm|= 0.286
+  HOMO = -0.256616526871281  LUMO = -0.126458826054814  gap/eV = 3.54177
+PCM E_diel = -0.0349600398455346
+Solvent Energy = -0.0349600398455346
+cycle= 4 E= -1317.24147210322  delta_E= -1.94e-06  |g|= 0.00164  |ddm|= 0.0395
+  HOMO = -0.256645670713965  LUMO = -0.126425664212337  gap/eV = 3.54347
+PCM E_diel = -0.0349716057371501
+Solvent Energy = -0.0349716057371501
+cycle= 5 E= -1317.2414725781  delta_E= -4.75e-07  |g|= 0.00035  |ddm|= 0.0107
+  HOMO = -0.256636116839094  LUMO = -0.126431394974039  gap/eV = 3.54305
+PCM E_diel = -0.0349734145918119
+Solvent Energy = -0.0349734145918119
+cycle= 6 E= -1317.24147260029  delta_E= -2.22e-08  |g|= 0.00014  |ddm|= 0.00408
+  HOMO = -0.256632749083253  LUMO = -0.126435870656769  gap/eV = 3.54284
+PCM E_diel = -0.0349738812495235
+Solvent Energy = -0.0349738812495235
+cycle= 7 E= -1317.2414726038  delta_E= -3.51e-09  |g|= 5.59e-05  |ddm|= 0.00197
+  HOMO = -0.256634529348456  LUMO = -0.126435561416497  gap/eV = 3.54289
+PCM E_diel = -0.0349742688716954
+Solvent Energy = -0.0349742688716954
+cycle= 8 E= -1317.24147260437  delta_E= -5.68e-10  |g|= 2.11e-05  |ddm|= 0.00097
+  HOMO = -0.256634934171803  LUMO = -0.126434923434611  gap/eV = 3.54292
+PCM E_diel = -0.0349741798078591
+Solvent Energy = -0.0349741798078591
+cycle= 9 E= -1317.24147260446  delta_E= -8.78e-11  |g|= 6.37e-06  |ddm|= 0.000165
+  HOMO = -0.256634677691308  LUMO = -0.126435116721437  gap/eV = 3.54291
+PCM E_diel = -0.0349740373459732
+Solvent Energy = -0.0349740373459732
+Extra cycle  E= -1317.24147260441  delta_E= 4.59e-11  |g|= 1.6e-05  |ddm|= 0.000114
+converged SCF energy = -1317.24147260441
+#INFO: **** input file is <run-dir>/repo/dft/revision/headline.py ****
+"""
+Headline tests for the BTPC revision (plan section 5, item 3): where does the LUMO live, and is it the geometry or the
+dielectric field that moves it?
+
+  (i)  cross single points: the gas-phase minimum in IEF-PCM water and the IEF-PCM minimum in the gas phase;
+  (ii) a permittivity series eps = 1, 2, 4, 8, 20, 78.3553 at both minima (eps = 1 is the gas-phase calculation,
+       eps = 78.3553 is water), which contains the cross points and the two stored calculations.
+For every point: total energy, HOMO-1, HOMO, LUMO, LUMO+1..LUMO+3 energies and their cation/picrate shares (Mulliken
+share as dft/fmo.py defines it, plus Loewdin), the gap, dipole, and fragment charges.  For each geometry the eps at
+which the LUMO switches from the cation to the picrate is found from the sign change of
+    Delta(eps) = E(lowest cation-localised virtual) - E(lowest picrate-localised virtual)      ("localised": share > 50 %)
+by linear interpolation in the Pekar-type factor f = (eps - 1)/eps (also given: interpolation in ln eps), and refined
+with --refine extra single points at the interpolated eps.
+
+Level of theory (rev_common.py): B3LYP/6-311++G(d,p), density fitting, grid level 4, IEF-PCM Lebedev order 29,
+conv_tol 1e-10.  The (gas geometry, eps 1) and (PCM geometry, eps 78.3553) points must reproduce the stored energies
+to 1e-6 Ha (B3LYP, btpc only); otherwise the job exits non-zero after finishing all points.
+
+Usage:
+  python dft/revision/headline.py --job headline_gas --out <dir> [--geom gas,pcm] [--eps 1,2,4,8,20,78.3553]
+         [--xc b3lyp] [--disp d3bj] [--case btpc] [--refine 1] [--guess auto|minao] [--smoke]
+  --geom entries: 'gas' / 'pcm' (the case's stored minimum, molecules/<case>/results/<case>_<model>/opt.xyz) or
+         'label=path/to/geometry.xyz' (path relative to the repository or absolute; a directory means <dir>/opt.xyz).
+  --xc pbe0 / camb3lyp with --eps 1,78.3553 gives the functional check of plan item 8 with the same analysis.
+--smoke: STO-3G, grid 2, Lebedev 17, conv_tol 1e-7, eps 1,4,78.3553 -- exercises every code path in minutes.
+
+This module also holds helpers shared by the other builder-2 scripts (frontier-orbital analysis, fmo.py descriptors,
+geometry metrics); they are plain functions and run nothing on import.
+"""
+import sys, pathlib, argparse, json, math, time
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import rev_common as rc          # first: pins the thread pools
+import numpy as np
+
+STORED_TOL_HA = 1e-6
+WATER = rc.SOLVENT_EPS['water']
+DEBYE = 2.541746473              # a.u. of dipole -> Debye
+
+
+# ============================================================================ shared helpers (used by other scripts)
+def level(smoke, grid=None):
+    """Basis, grid, Lebedev order and SCF tolerance: production values, or the reduced --smoke set."""
+    if smoke:
+        return {'basis': 'sto-3g', 'grid_level': grid or 2, 'lebedev_order': 17, 'conv_tol': 1e-7}
+    return {'basis': rc.BASIS, 'grid_level': rc.GRID_LEVEL, 'lebedev_order': rc.PCM_LEBEDEV_ORDER,
+            'conv_tol': rc.CONV_TOL_SP}
+
+
+def resolve_geom(spec, case_prefix='btpc'):
+    """'gas' | 'pcm' | 'label=path' | path  ->  (label, absolute path, model of the stored minimum or None)."""
+    if spec in ('gas', 'pcm'):
+        name = f'{case_prefix}_{spec}'
+        if name in rc.STORED:
+            return spec, rc.ROOT / rc.STORED[name]['xyz'], spec
+        mol_dir = case_prefix
+        return spec, rc.ROOT / 'molecules' / mol_dir / 'results' / name / 'opt.xyz', spec
+    label, _, path = spec.partition('=') if '=' in spec else (pathlib.Path(spec).stem, '', spec)
+    p = pathlib.Path(path)
+    if not p.is_absolute():
+        p = rc.ROOT / p
+    if p.is_dir():
+        p = p / 'opt.xyz'
+    return label, p, None
+
+
+def stored_dir(case_name):
+    """data/r2/molecules/<id>/results/<case>/ (raw outputs: final.chk, hessian.npy, final.molden) or None."""
+    for d in sorted((rc.ROOT / 'data' / 'r2' / 'molecules').glob(f'*/results/{case_name}')):
+        return d
+    return None
+
+
+def labels_of(case, natm):
+    lab = case.get('cif_labels')
+    if lab:
+        return [l.split('#')[0] for l in lab]
+    return [f'X{i + 1}' for i in range(natm)]
+
+
+def frag_of_share(shares, thresh=0.5):
+    """Fragment holding more than `thresh` of an orbital ({'anion': x, 'cation': y} in percent), else 'mixed'."""
+    best = max(shares, key=shares.get)
+    return best if shares[best] > 100 * thresh else 'mixed'
+
+
+def frontier(mf, frags, n_occ=2, n_virt=4, scan=12):
+    """Frontier-orbital energies (eV) and fragment shares (percent; Mulliken as dft/fmo.py, and Loewdin) of an RKS
+    solution: HOMO-(n_occ-1)..HOMO, LUMO..LUMO+(n_virt-1).  Also the lowest virtual and highest occupied orbital
+    localised (> 50 % Mulliken) on each fragment, searched over `scan` orbitals."""
+    mol = mf.mol
+    S = mol.intor_symmetric('int1e_ovlp'); S_half = rc.lowdin_half(S)
+    e = np.asarray(mf.mo_energy) * rc.HARTREE_EV
+    C = np.asarray(mf.mo_coeff)
+    nocc = int((np.asarray(mf.mo_occ) > 0.5).sum())
+    nmo = C.shape[1]
+
+    def shares(k):
+        return {m: {f: round(100 * rc.mo_fragment_share(mol, C[:, k], atoms, m, S, S_half), 3)
+                    for f, atoms in frags.items()} for m in ('mulliken', 'lowdin')}
+
+    out = {'n_occ': nocc, 'n_mo': nmo, 'orbitals': {}}
+    labels = [(f'HOMO-{i}' if i else 'HOMO', nocc - 1 - i) for i in range(n_occ - 1, -1, -1)]
+    labels += [(f'LUMO+{i}' if i else 'LUMO', nocc + i) for i in range(n_virt)]
+    for lab, k in labels:
+        if 0 <= k < nmo:
+            sh = shares(k)
+            out['orbitals'][lab] = {'index': int(k), 'eV': float(e[k]), **sh,
+                                    'on': frag_of_share(sh['mulliken'])}
+    out['HOMO_eV'] = float(e[nocc - 1]); out['LUMO_eV'] = float(e[nocc]); out['gap_eV'] = float(e[nocc] - e[nocc - 1])
+    out['LUMO_on'] = out['orbitals']['LUMO']['on']; out['HOMO_on'] = out['orbitals']['HOMO']['on']
+    lowest_virt, highest_occ = {}, {}
+    for k in range(nocc, min(nmo, nocc + scan)):
+        sh = shares(k)['mulliken']; f = frag_of_share(sh)
+        if f in frags and f not in lowest_virt:
+            lowest_virt[f] = {'index': int(k), 'label': 'LUMO' + (f'+{k - nocc}' if k > nocc else ''),
+                              'eV': float(e[k]), 'share_pct': sh[f]}
+    for k in range(nocc - 1, max(-1, nocc - 1 - scan), -1):
+        sh = shares(k)['mulliken']; f = frag_of_share(sh)
+        if f in frags and f not in highest_occ:
+            highest_occ[f] = {'index': int(k), 'label': 'HOMO' + (f'-{nocc - 1 - k}' if k < nocc - 1 else ''),
+                              'eV': float(e[k]), 'share_pct': sh[f]}
+    out['lowest_virtual_on'] = lowest_virt
+    out['highest_occupied_on'] = highest_occ
+    if 'cation' in lowest_virt and 'anion' in lowest_virt:
+        out['delta_virt_cation_minus_anion_eV'] = lowest_virt['cation']['eV'] - lowest_virt['anion']['eV']
+    return out
+
+
+def fmo_descriptors(H, L):
+    """Koopmans-type descriptors exactly as dft/fmo.py computes them (eV)."""
+    IP, EA = -H, -L
+    chi = (IP + EA) / 2; mu = -chi; eta = (IP - EA) / 2; S = 1 / (2 * eta); omega = mu ** 2 / (2 * eta)
+    return {'HOMO_eV': H, 'LUMO_eV': L, 'gap_eV': L - H, 'IP_eV': IP, 'EA_eV': EA, 'electronegativity_chi_eV': chi,
+            'chemical_potential_mu_eV': mu, 'hardness_eta_eV': eta, 'softness_S_eV-1': S,
+            'electrophilicity_omega_eV': omega}
+
+
+def populations(mol, dm, frags):
+    """Mulliken and Loewdin charges per atom and per fragment (and spin for a UKS density pair)."""
+    S = mol.intor_symmetric('int1e_ovlp'); S_half = rc.lowdin_half(S)
+    dm = np.asarray(dm)
+    uks = dm.ndim == 3
+    tot = dm[0] + dm[1] if uks else dm
+    Z = mol.atom_charges()
+    sl = mol.aoslice_by_atom()
+    res = {}
+    for name in ('mulliken', 'lowdin'):
+        if name == 'mulliken':
+            p = np.einsum('ij,ji->i', tot, S); s = np.einsum('ij,ji->i', dm[0] - dm[1], S) if uks else None
+        else:
+            p = np.einsum('ij,jk,ki->i', S_half, tot, S_half); s = (np.einsum('ij,jk,ki->i', S_half, dm[0] - dm[1], S_half)
+                                                                   if uks else None)
+        q_at = np.array([Z[a] - p[sl[a][2]:sl[a][3]].sum() for a in range(mol.natm)])
+        r = {'atoms': q_at.tolist(), 'fragments': {f: float(q_at[atoms].sum()) for f, atoms in frags.items()}}
+        if uks:
+            s_at = np.array([s[sl[a][2]:sl[a][3]].sum() for a in range(mol.natm)])
+            r['spin_atoms'] = s_at.tolist()
+            r['spin_fragments'] = {f: float(s_at[atoms].sum()) for f, atoms in frags.items()}
+        res[name] = r
+    return res
+
+
+def dipole_debye(mf):
+    v = mf.dip_moment(unit='Debye', verbose=0)
+    return {'total': float(np.linalg.norm(v)), 'vector': [float(x) for x in v]}
+
+
+def _dihedral(X, a, b, c, d):
+    b0 = X[a] - X[b]; b1 = X[c] - X[b]; b2 = X[d] - X[c]
+    b1n = b1 / np.linalg.norm(b1)
+    v = b0 - np.dot(b0, b1n) * b1n; w = b2 - np.dot(b2, b1n) * b1n
+    return float(np.degrees(np.arctan2(np.dot(np.cross(b1n, v), w), np.dot(v, w))))
+
+
+def _plane_normal(P):
+    c = P.mean(0)
+    return np.linalg.svd(P - c)[2][-1]
+
+
+def nearest(X, syms, i, element, among):
+    """Index of the nearest atom of `element` to atom i, among the indices `among`."""
+    cand = [j for j in among if syms[j] == element and j != i]
+    return min(cand, key=lambda j: np.linalg.norm(X[j] - X[i])) if cand else None
+
+
+def hbond_torsion_atoms(case, syms, X):
+    """C(acceptor)-O(acceptor)...N(donor)-C(donor ring): for btpc C1-O1...N4-C12 (indices 4, 0, 18, 21), the
+    inter-ion torsion of revision/round1/audit/evidence/dft/dihedrals.py."""
+    p = case.get('proton')
+    if not p:
+        return None
+    fr = rc.fragments(case)
+    O, N = p['acceptor_O'], p['donor_N']
+    cO = nearest(X, syms, O, 'C', fr.get('anion', range(len(syms))))
+    cN = nearest(X, syms, N, 'C', fr.get('cation', range(len(syms))))
+    return (cO, O, N, cN) if None not in (cO, cN) else None
+
+
+def geometry_metrics(case, syms, X):
+    """Inter-ion geometry: H-bond distances and angle, proton position, the inter-ion torsion and the angle between
+    the picrate ring (anion carbons) and the benzotriazolium ring system (cation heavy atoms)."""
+    X = np.asarray(X, float)
+    lab = labels_of(case, len(syms))
+    out = {}
+    p = case.get('proton')
+    if p:
+        H, N, O = p['H'], p['donor_N'], p['acceptor_O']
+        dHN = float(np.linalg.norm(X[H] - X[N])); dHO = float(np.linalg.norm(X[H] - X[O]))
+        v1, v2 = X[N] - X[H], X[O] - X[H]
+        out.update({'d_N...O_A': float(np.linalg.norm(X[N] - X[O])), 'd_H-N_A': dHN, 'd_H...O_A': dHO,
+                    'angle_N-H...O_deg': float(np.degrees(np.arccos(np.dot(v1, v2) / np.linalg.norm(v1) /
+                                                                     np.linalg.norm(v2)))),
+                    'proton_transferred': dHO < dHN,
+                    'hbond_labels': f'{lab[N]}-{lab[H]}...{lab[O]}'})
+    t = hbond_torsion_atoms(case, syms, X)
+    if t:
+        out['torsion_atoms'] = [int(i) for i in t]
+        out['torsion_labels'] = '-'.join(lab[i] for i in t)
+        out['torsion_deg'] = _dihedral(X, *t)
+    fr = rc.fragments(case)
+    if 'anion' in fr and 'cation' in fr:
+        ring_a = [i for i in fr['anion'] if syms[i] == 'C']
+        ring_c = [i for i in fr['cation'] if syms[i] != 'H']
+        n1, n2 = _plane_normal(X[ring_a]), _plane_normal(X[ring_c])
+        out['inter_ring_angle_deg'] = float(np.degrees(np.arccos(min(1.0, abs(float(np.dot(n1, n2)))))))
+    return out
+
+
+def dihedral(X, idx):
+    return _dihedral(np.asarray(X, float), *idx)
+
+
+def mol_geometry(mol):
+    syms = [mol.atom_pure_symbol(i) for i in range(mol.natm)]
+    return syms, mol.atom_coords() * rc.BOHR_A
+
+
+def solvent_label(eps):
+    return 'gas' if eps is None else f'IEF-PCM eps={eps:g}'
+
+
+def solvation_energy(mf):
+    ws = getattr(mf, 'with_solvent', None)
+    return None if ws is None or getattr(ws, 'e', None) is None else float(ws.e)
+
+
+# ============================================================================ this script
+def parser():
+    p = rc.add_common_args(argparse.ArgumentParser(description=__doc__.split('\n')[1]))
+    p.add_argument('--geom', default='gas,pcm', help="comma list: gas, pcm, label=path.xyz")
+    p.add_argument('--eps', default=None, help='comma list of permittivities (1 = gas phase); default 1,2,4,8,20,78.3553')
+    p.add_argument('--xc', default=rc.XC, help='functional (default b3lyp; item 8: pbe0, camb3lyp)')
+    p.add_argument('--disp', default=None, help="dispersion correction: none (default) or d3bj")
+    p.add_argument('--case', default='btpc', help='molecule prefix: btpc (default) or btpcz')
+    p.add_argument('--refine', type=int, default=1, help='extra single points at the interpolated switch eps (default 1)')
+    p.add_argument('--guess', choices=('auto', 'minao'), default='auto',
+                   help='auto: stored final.chk of the same model for the first point, then the previous eps')
+    p.add_argument('--test-delta-offset', type=float, default=0.0,
+                   help='TEST HOOK, --smoke only: add this many eV to Delta so that the switch/refine path runs')
+    return p
+
+
+def switch_from(points):
+    """points: [(eps, delta_eV)] sorted by eps.  Returns the bracket and interpolated eps of the first sign change."""
+    pts = [(e, d) for e, d in points if d is not None]
+    pts.sort()
+    for (e0, d0), (e1, d1) in zip(pts, pts[1:]):
+        if d0 == 0:
+            return {'eps_switch_f': e0, 'eps_switch_ln': e0, 'bracket': [e0, e0]}
+        if d0 * d1 < 0:
+            f = lambda e: (e - 1) / e
+            x = f(e0) + (0 - d0) * (f(e1) - f(e0)) / (d1 - d0)
+            l = math.log(e0) + (0 - d0) * (math.log(e1) - math.log(e0)) / (d1 - d0)
+            return {'eps_switch_f': 1 / (1 - x), 'eps_switch_ln': math.exp(l), 'bracket': [e0, e1],
+                    'delta_at_bracket_eV': [d0, d1],
+                    'direction': 'cation->anion' if d0 < 0 else 'anion->cation'}
+    return None
+
+
+def run(job, args):
+    lv = level(args.smoke)
+    if args.test_delta_offset and not args.smoke:
+        raise SystemExit('--test-delta-offset is a test hook for --smoke runs only')
+    disp = None if (args.disp in (None, '', 'none')) else args.disp
+    eps_list = ([float(x) for x in args.eps.split(',')] if args.eps else
+                ([1.0, 4.0, WATER] if args.smoke else [1.0, 2.0, 4.0, 8.0, 20.0, WATER]))
+    eps_list = sorted(set(eps_list))
+    case = rc.load_case(f'{args.case}_gas')
+    frags = rc.fragments(case)
+    job.r['settings'] = {**lv, 'xc': args.xc, 'disp': disp, 'pcm_method': rc.PCM_METHOD, 'eps_list': eps_list,
+                         'density_fit': True, 'auxbasis': 'PySCF default', 'max_cycle': rc.MAX_CYCLE,
+                         'eps_1_means': 'gas-phase calculation (no PCM)', 'fragment_share': 'Mulliken (as dft/fmo.py) '
+                         'and Loewdin; an orbital is localised on a fragment when its Mulliken share > 50 %',
+                         'switch_interpolation': 'linear in f=(eps-1)/eps (also ln eps)', 'refine': args.refine,
+                         'case': case['name'], 'fragments': frags}
+    job.input_file('case', rc.find_case_file(case['name']))
+    job.save()
+    check_stored = (not args.smoke and args.xc.lower() == 'b3lyp' and disp is None and args.case == 'btpc')
+    ok = True
+
+    def point(glabel, gpath, model, eps, guess_chk):
+        key = f'{glabel}|eps={eps:g}'
+        chk = job.chk_dir / f'{glabel}_eps{eps:g}.chk'
+        if job.done(key):
+            return job.get(key), chk
+        mol = rc.mol_for_case(case, gpath, basis=lv['basis'], verbose=3 if args.smoke else 4,
+                              output=job.out / f'pyscf_{glabel}.log')
+        solvent = None if eps == 1.0 else eps
+        mf = rc.make_mf(mol, xc=args.xc, disp=disp, solvent=solvent, conv_tol=lv['conv_tol'],
+                        grid_level=lv['grid_level'], lebedev_order=lv['lebedev_order'], chkfile=chk)
+        rec = {'geometry': glabel, 'xyz': str(gpath), 'eps': eps, 'model': solvent_label(solvent),
+               'settings': rc.settings_of(mf)}
+        job.put(key, rec, status='running')
+        g = chk if chk.exists() else guess_chk
+        job.log(f'{key}: SCF ({mol.nao} AO, {rec["model"]}), guess {g if g and pathlib.Path(g).exists() else "minao"}')
+        wall = rc.run_scf(mf, chk_guess=g, log=job.log)
+        fr = frontier(mf, frags)
+        if args.test_delta_offset and 'delta_virt_cation_minus_anion_eV' in fr:
+            fr['delta_virt_cation_minus_anion_eV'] += args.test_delta_offset
+            fr['TEST_delta_offset_eV'] = args.test_delta_offset
+        rec.update({'E_Ha': float(mf.e_tot), 'E_solvation_Ha': solvation_energy(mf), 'scf_cycles': mf._cycles,
+                    'scf_wall_s': round(wall, 1), **rc.runtime_sizes(mf), 'frontier': fr,
+                    'dipole_debye': dipole_debye(mf),
+                    'charges': {k: v['fragments'] for k, v in populations(mol, mf.make_rdm1(), frags).items()}})
+        if disp:
+            rec['E_dispersion_Ha'] = float(np.asarray(mf.scf_summary.get('dispersion', np.nan)))
+        job.r['timings'][key] = round(wall, 1)
+        orb = fr['orbitals']
+        job.log(f"{key}: E = {mf.e_tot:.10f} Ha ({mf._cycles} cycles, {wall:.0f} s); HOMO {fr['HOMO_eV']:.4f} "
+                f"({fr['HOMO_on']}), LUMO {fr['LUMO_eV']:.4f} ({fr['LUMO_on']}, cation "
+                f"{orb['LUMO']['mulliken'].get('cation', float('nan')):.1f} %), gap {fr['gap_eV']:.4f} eV; "
+                f"Delta(cat-an) {fr.get('delta_virt_cation_minus_anion_eV', float('nan')):+.4f} eV")
+        job.put(key, rec)
+        mol.stdout.close()
+        return rec, chk
+
+    for spec in [s.strip() for s in args.geom.split(',') if s.strip()]:
+        glabel, gpath, model = resolve_geom(spec, args.case)
+        if not gpath.exists():
+            raise FileNotFoundError(f'geometry {gpath} for --geom {spec}')
+        job.input_file(f'geometry_{glabel}', gpath)
+        stored_chk = None
+        if args.guess == 'auto' and not args.smoke and model:
+            d = stored_dir(f'{args.case}_{model}')
+            if d and (d / 'final.chk').exists():
+                stored_chk = d / 'final.chk'
+        prev = stored_chk
+        series = []
+        for eps in eps_list:
+            rec, chk = point(glabel, gpath, model, eps, prev)
+            prev = chk
+            series.append(rec)
+            ref_key = (f'{args.case}_gas' if (model == 'gas' and eps == 1.0) else
+                       f'{args.case}_pcm' if (model == 'pcm' and abs(eps - WATER) < 1e-9) else None)
+            if check_stored and ref_key in rc.STORED:
+                dE = rec['E_Ha'] - rc.STORED[ref_key]['E_Ha']
+                rec['dE_vs_stored_Ha'] = dE
+                rec['reproduces_stored'] = abs(dE) <= STORED_TOL_HA
+                job.put(f'{glabel}|eps={eps:g}', rec)
+                job.log(f"{glabel} eps {eps:g}: dE vs stored {ref_key} = {dE:+.2e} Ha -> "
+                        f"{'PASS' if rec['reproduces_stored'] else 'FAIL'}")
+                ok &= rec['reproduces_stored']
+        # LUMO switch and refinement
+        pts = [(r['eps'], r['frontier'].get('delta_virt_cation_minus_anion_eV')) for r in series]
+        sw = switch_from(pts)
+        for it in range(args.refine if sw else 0):
+            e_new = float(f"{sw['eps_switch_f']:.4g}")
+            if any(abs(e_new - e) < 1e-6 for e, _ in pts):
+                break
+            # guess: the converged density of the nearest eps in the series
+            near = min(series, key=lambda r: abs(r['eps'] - e_new))
+            rec, _ = point(glabel, gpath, model, e_new, job.chk_dir / f"{glabel}_eps{near['eps']:g}.chk")
+            rec['refinement'] = it + 1
+            job.put(f'{glabel}|eps={e_new:g}', rec)
+            pts.append((e_new, rec['frontier'].get('delta_virt_cation_minus_anion_eV')))
+            sw = switch_from(pts) or sw
+        lumo_on = {f"{e:g}": job.get(f'{glabel}|eps={e:g}')['frontier']['LUMO_on'] for e, _ in sorted(pts)}
+        job.r.setdefault('switch', {})[glabel] = sw or {'eps_switch_f': None, 'note': 'no sign change of Delta in the '
+                                                         f'eps range {min(eps_list):g}-{max(eps_list):g}',
+                                                         'LUMO_on': lumo_on}
+        if sw:
+            sw['LUMO_on'] = lumo_on
+            job.log(f"{glabel}: LUMO switches {sw['direction']} at eps ~ {sw['eps_switch_f']:.3f} (f-interpolation; "
+                    f"ln-eps {sw['eps_switch_ln']:.3f}), bracket {sw['bracket']}")
+        else:
+            job.log(f'{glabel}: no LUMO switch in the eps range; LUMO on {lumo_on}')
+        job.save()
+
+    # summary tables
+    summ = {}
+    for key, it in sorted(job.r['items'].items(), key=lambda kv: (kv[1].get('geometry', ''), kv[1].get('eps', 0))):
+        if it.get('status') != 'done':
+            continue
+        fr = it['frontier']; o = fr['orbitals']
+        summ.setdefault(it['geometry'], []).append({
+            'eps': it['eps'], 'E_Ha': it['E_Ha'], 'HOMO_eV': fr['HOMO_eV'], 'LUMO_eV': fr['LUMO_eV'],
+            'gap_eV': fr['gap_eV'], 'LUMO_on': fr['LUMO_on'],
+            'LUMO_cation_pct': o['LUMO']['mulliken'].get('cation'),
+            **{f'{k}_eV': o[k]['eV'] for k in ('LUMO+1', 'LUMO+2', 'LUMO+3') if k in o},
+            'delta_cat_minus_an_eV': fr.get('delta_virt_cation_minus_anion_eV'),
+            'dE_vs_stored_Ha': it.get('dE_vs_stored_Ha')})
+    job.r['summary'] = {'series': summ, 'switch': job.r.get('switch'), 'stored_reproduced': ok if check_stored else None}
+    job.save()
+    return ok
+
+
+if __name__ == '__main__':
+    rc.install_sigterm_handler()
+    rc.main_wrapper(parser, run, __file__)
+#INFO: ******************** input file end ********************
+
+
+System: uname_result(system='Linux', node='<vm-1>', release='7.0.0-1017-gcp', version='#19~24.04.1-Ubuntu SMP PREEMPT Thu Oct 29 22:34:06 UTC 2026', machine='x86_64')  Threads 4
+Python 3.11.16 (main, Sep  2 2026, 23:39:52) [GCC 15.3.0]
+numpy 2.4.6  scipy 1.17.1  h5py 3.16.0
+Date: Sun Nov 22 02:35:05 2026
+PySCF version 2.14.0
+PySCF path  <run-dir>/env/lib/python3.11/site-packages/pyscf
+
+[ENV] PYSCF_TMPDIR <run-dir>/scratch/headline_btpcz
+[CONFIG] conf_file None
+[INPUT] verbose = 4
+[INPUT] num. atoms = 33
+[INPUT] num. electrons = 178
+[INPUT] charge = 0
+[INPUT] spin (= nelec alpha-beta = 2S) = 0
+[INPUT] symmetry False subgroup None
+[INPUT] Mole.unit = angstrom
+[INPUT] Symbol           X                Y                Z      unit          X                Y                Z       unit  Magmom
+[INPUT]  1 C      0.555617870000   0.491417780000  -1.781432340000 AA    1.049965604214   0.928645016942  -3.366419232043 Bohr   0.0
+[INPUT]  2 C      0.466782500000   0.757992030000  -3.173559150000 AA    0.882091084740   1.432397341303  -5.997157633607 Bohr   0.0
+[INPUT]  3 C      1.438779620000   0.413437090000  -4.082756300000 AA    2.718899435406   0.781282869837  -7.715291240343 Bohr   0.0
+[INPUT]  4 H      1.336930840000   0.667774400000  -5.129053090000 AA    2.526433135085   1.261910728996  -9.692505618454 Bohr   0.0
+[INPUT]  5 C      2.554775930000  -0.286958410000  -3.627493960000 AA    4.827826817331  -0.542272804041  -6.854970102914 Bohr   0.0
+[INPUT]  6 C      2.708967580000  -0.593359720000  -2.289999920000 AA    5.119206806526  -1.121287364149  -4.327472674076 Bohr   0.0
+[INPUT]  7 H      3.582938480000  -1.124572720000  -1.940980590000 AA    6.770772448365  -2.125134447957  -3.667921728197 Bohr   0.0
+[INPUT]  8 C      1.736475490000  -0.192557720000  -1.379676380000 AA    3.281463098120  -0.363881353971  -2.607210498731 Bohr   0.0
+[INPUT]  9 N     -0.739596170000   1.437618540000  -3.701127900000 AA   -1.397634204077   2.716705312197  -6.994118082987 Bohr   0.0
+[INPUT] 10 N      3.593745920000  -0.693253750000  -4.588128200000 AA    6.791195550073  -1.310059722328  -8.670305722394 Bohr   0.0
+[INPUT] 11 N      2.010252260000  -0.474466760000   0.032601970000 AA    3.798826212688  -0.896612231610   0.061608794421 Bohr   0.0
+[INPUT] 12 O     -0.428412800000   0.920755370000  -1.034933940000 AA   -0.809582860258   1.739975477023  -1.955741703617 Bohr   0.0
+[INPUT] 13 O     -1.817909260000   0.925117480000  -3.464651150000 AA   -3.435350620711   1.748218670248  -6.547241790659 Bohr   0.0
+[INPUT] 14 O     -0.550050980000   2.442947470000  -4.371512760000 AA   -1.039445706749   4.616501654999  -8.260961866442 Bohr   0.0
+[INPUT] 15 O      3.417980710000  -0.395925330000  -5.762520100000 AA    6.459047440946  -0.748190439478 -10.889584776301 Bohr   0.0
+[INPUT] 16 O      4.561020660000  -1.301800270000  -4.151169520000 AA    8.619079895883  -2.460045979185  -7.844573489442 Bohr   0.0
+[INPUT] 17 O      1.348022690000   0.139933240000   0.866994180000 AA    2.547393693799   0.264435499323   1.638381551792 Bohr   0.0
+[INPUT] 18 O      2.886481210000  -1.279958270000   0.303486710000 AA    5.454658950603  -2.418770581172   0.573506764345 Bohr   0.0
+[INPUT] 19 C     -2.822871530000  -0.042252040000   3.185014620000 AA   -5.334454076532  -0.079844783804   6.018805334536 Bohr   0.0
+[INPUT] 20 C     -3.102125180000  -0.288025530000   4.534970060000 AA   -5.862166994317  -0.544289368583   8.569851396502 Bohr   0.0
+[INPUT] 21 H     -4.115086200000  -0.357371890000   4.911483630000 AA   -7.776385896977  -0.675334996718   9.281358925985 Bohr   0.0
+[INPUT] 22 C     -2.006022190000  -0.439945030000   5.366226230000 AA   -3.790832538900  -0.831375616564  10.140697897157 Bohr   0.0
+[INPUT] 23 H     -2.166207160000  -0.632248170000   6.420714830000 AA   -4.093538261472  -1.194775884057  12.133392552633 Bohr   0.0
+[INPUT] 24 C     -0.679631780000  -0.353050620000   4.880650650000 AA   -1.284317929751  -0.667168979908   9.223093038180 Bohr   0.0
+[INPUT] 25 H      0.140458000000  -0.482469920000   5.576751780000 AA    0.265427152004  -0.911736012141  10.538533528881 Bohr   0.0
+[INPUT] 26 C     -0.407468720000  -0.111384840000   3.546844920000 AA   -0.770004285127  -0.210486842028   6.702565505105 Bohr   0.0
+[INPUT] 27 H      0.601950830000  -0.050742720000   3.163724240000 AA    1.137522209155  -0.095889843615   5.978572347248 Bohr   0.0
+[INPUT] 28 C     -1.508519410000   0.047348060000   2.690775520000 AA   -2.850688538490   0.089474865929   5.084828795484 Bohr   0.0
+[INPUT] 29 N     -3.590011280000   0.160390630000   2.071877270000 AA   -6.784138103299   0.303094363646   3.915280604012 Bohr   0.0
+[INPUT] 30 H     -4.593116300000   0.183291000000   1.969312730000 AA   -8.679731865276   0.346369791098   3.721461713320 Bohr   0.0
+[INPUT] 31 N     -2.825039910000   0.360086420000   0.981171860000 AA   -5.338551720866   0.680464714975   1.854146096530 Bohr   0.0
+[INPUT] 32 N     -1.583641420000   0.295778120000   1.333645980000 AA   -2.992648563317   0.558939640439   2.520225649327 Bohr   0.0
+[INPUT] 33 H     -0.480343460000   0.632211140000  -0.078588520000 AA   -0.907717585126   1.194705907499  -0.148510779335 Bohr   0.0
+
+nuclear repulsion = 2094.12530771231
+number of shells = 290
+number of NR pGTOs = 947
+number of NR cGTOs = 606
+basis = 6-311++g(d,p)
+ecp = {}
+CPU time:     11337.80
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+
+
+******** <class 'pyscf.solvent._attach_solvent.PCMDFRKS'> ********
+method = PCMDFRKS
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-10
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/headline_btpcz/chk/gas_eps78.3553.chk
+max_memory 8000 MB (current use 364 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x71a515c979c0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x71a515c97920>
+small_rho_cutoff = 0
+******** <class 'pyscf.solvent.pcm.PCM'> (In testing) ********
+
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+
+lebedev_order = 29 (302 grids per sphere)
+eps = 78.3553
+frozen = False
+Set gradient conv threshold to 1e-05
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+PCM E_diel = -0.0370900232579881
+Solvent Energy = -0.0370900232579881
+init E= -1317.24358859032
+
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.256197711591577  LUMO = -0.125861100121332  gap/eV = 3.54664
+PCM E_diel = -0.038135608681416
+Solvent Energy = -0.038135608681416
+cycle= 1 E= -1317.2435986773  delta_E= -1.01e-05  |g|= 0.00778  |ddm|= 1.08
+  HOMO = -0.256147026163995  LUMO = -0.126348758512837  gap/eV = 3.53199
+PCM E_diel = -0.0374343548628113
+Solvent Energy = -0.0374343548628113
+cycle= 2 E= -1317.24356018445  delta_E= 3.85e-05  |g|= 0.016  |ddm|= 0.34
+  HOMO = -0.256117985258911  LUMO = -0.126176836649975  gap/eV = 3.53588
+PCM E_diel = -0.0378703086229475
+Solvent Energy = -0.0378703086229475
+cycle= 3 E= -1317.24361161538  delta_E= -5.14e-05  |g|= 0.00194  |ddm|= 0.15
+  HOMO = -0.25614478837613  LUMO = -0.126135214993606  gap/eV = 3.53774
+PCM E_diel = -0.0378942324050455
+Solvent Energy = -0.0378942324050455
+cycle= 4 E= -1317.24361222402  delta_E= -6.09e-07  |g|= 0.000886  |ddm|= 0.0217
+  HOMO = -0.256160464030821  LUMO = -0.126116952059842  gap/eV = 3.53866
+PCM E_diel = -0.0379009513713459
+Solvent Energy = -0.0379009513713459
+cycle= 5 E= -1317.24361236201  delta_E= -1.38e-07  |g|= 0.000189  |ddm|= 0.00576
+  HOMO = -0.256155124944613  LUMO = -0.126120164804811  gap/eV = 3.53843
+PCM E_diel = -0.0379020186478193
+Solvent Energy = -0.0379020186478193
+cycle= 6 E= -1317.24361236849  delta_E= -6.47e-09  |g|= 7.79e-05  |ddm|= 0.00232
+  HOMO = -0.256153384059137  LUMO = -0.126122732248399  gap/eV = 3.53831
+PCM E_diel = -0.0379023346803611
+Solvent Energy = -0.0379023346803611
+cycle= 7 E= -1317.2436123696  delta_E= -1.11e-09  |g|= 3.08e-05  |ddm|= 0.0012
+  HOMO = -0.256154392256599  LUMO = -0.126122526971277  gap/eV = 3.53835
+PCM E_diel = -0.0379025712950153
+Solvent Energy = -0.0379025712950153
+cycle= 8 E= -1317.24361236976  delta_E= -1.6e-10  |g|= 1.12e-05  |ddm|= 0.000514
+  HOMO = -0.256154588101112  LUMO = -0.126122175805899  gap/eV = 3.53836
+PCM E_diel = -0.0379025132499726
+Solvent Energy = -0.0379025132499726
+cycle= 9 E= -1317.24361236978  delta_E= -2.91e-11  |g|= 2.75e-06  |ddm|= 9.91e-05
+  HOMO = -0.256154452470062  LUMO = -0.126122301331405  gap/eV = 3.53836
+PCM E_diel = -0.0379024383094534
+Solvent Energy = -0.0379024383094534
+Extra cycle  E= -1317.24361236978  delta_E= 2.73e-12  |g|= 5.97e-06  |ddm|= 5.07e-05
+converged SCF energy = -1317.24361236978

@@ -1,0 +1,6 @@
+[2026-11-22 07:16:53 AM IST] job charges_btpcz (dft/revision/charges.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/charges_btpcz, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 07:17:14 AM IST] gas: Multiwfn vs PySCF: Hirshfeld max |diff| 0.0272, CM5 correction max |diff| 7.9e-07 e
+[2026-11-22 07:17:14 AM IST] gas: picrate charge  Mulliken -0.6084  Loewdin -0.2257  Hirshfeld -0.2424  CM5 -0.4156 e  (grid 834040 points, N integrated 178.00001)
+[2026-11-22 07:17:33 AM IST] pcm: Multiwfn vs PySCF: Hirshfeld max |diff| 0.0288, CM5 correction max |diff| 7.8e-07 e
+[2026-11-22 07:17:33 AM IST] pcm: picrate charge  Mulliken -0.9812  Loewdin -0.8501  Hirshfeld -0.7549  CM5 -0.7911 e  (grid 834040 points, N integrated 177.99999)
+[2026-11-22 07:17:33 AM IST] job charges_btpcz finished (peak RSS 902 MB)

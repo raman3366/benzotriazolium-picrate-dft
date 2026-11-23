@@ -1,0 +1,665 @@
+#INFO: **** input file is <run-dir>/repo/dft/revision/proton_scan.py ****
+"""
+Relaxed scan of the proton coordinate of the BTPC ion pair (revision item 2, R2's "proton-transfer equilibrium").
+
+The H4N...O1 distance (case 'proton' block: H, donor_N, acceptor_O) is held at each target value with a geomeTRIC
+'$set distance' constraint and every other coordinate is relaxed at the level of record (rev_common: B3LYP/
+6-311++G(d,p), density fitting, grid level 4; IEF-PCM water with Lebedev order 29 when --solvent/the case asks for
+it).  Each point then gets a tight single point (conv_tol 1e-10) at its optimised geometry for the energy, the
+Mulliken and Loewdin charges of the picrate (H4N counted separately), the frontier orbitals and the dipole.
+
+Chains (independent, so they can run as separate jobs in parallel):
+  up       from the stored minimum outward: grid points with r(H...O) > r0, ascending (toward 1.70 A)
+  down     from the stored minimum inward:  grid points with r(H...O) < r0, descending to --down-to
+  neutral  from a neutral start (H4N put on O1, O1-H 0.98 A along the O1->N4 line): grid points <= --neutral-to,
+           ascending; it overlaps 'down', so a jump between the two branches (hysteresis) shows up
+Each chain starting at the minimum also records the free minimum ('min', a single point at the start geometry).
+Default grid (A): 1.70 1.60 1.52 1.46 1.40 1.34 1.28 1.23 1.18 1.13 1.08 1.03 0.98 (finer near the gas minimum,
+r0 = 1.437 A, and through the transfer region, where r(N-H) = r(H...O) near 1.24 A).
+
+Usage:
+  python dft/revision/proton_scan.py --job ID --out DIR [--case btpc_gas] [--chains up,down,neutral]
+         [--solvent gas|water|<eps>] [--start XYZ] [--points 1.70,...] [--down-to 1.08] [--neutral-to 1.28]
+         [--xc b3lyp] [--disp d3bj] [--maxsteps 100] [--smoke]
+Outputs in DIR: result.json (one item per point), log.txt, profile.csv, scan.xyz (final geometries, by r),
+points/<label>.xyz, traj/<label>.xyz (every optimisation step), pyscf/<label>.log, chk/<label>.chk.
+Restart: finished points are skipped; an interrupted point resumes from the last geometry in traj/<label>.xyz
+with its own checkpoint as the SCF guess.  An optimisation that hits --maxsteps without meeting the criteria is
+accepted only on negligible forces (constraint-projected max/rms gradient below the Gaussian thresholds and
+|dE| < 1e-5 Ha over the last 5 steps, the rule used for btpc_pcm); otherwise the job fails, and a rerun continues
+from the last geometry.
+--smoke: STO-3G, grid 2, Lebedev 17, loose criteria, 3 steps per point, one point per chain; not for numbers.
+
+Also the shared optimisation helpers for neutral_start.py (relax, place_H, measure, analyse, kabsch_rmsd).
+"""
+import sys, pathlib, argparse, json, time, gc
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import rev_common as rc          # first: pins the thread pools
+import numpy as np
+
+DEFAULT_GRID = (1.70, 1.60, 1.52, 1.46, 1.40, 1.34, 1.28, 1.23, 1.18, 1.13, 1.08, 1.03, 0.98)
+# geomeTRIC defaults = Gaussian's default criteria (dft/optimize.py uses these for every published geometry)
+GAU = dict(convergence_energy=1e-6, convergence_grms=3e-4, convergence_gmax=4.5e-4,
+           convergence_drms=1.2e-3, convergence_dmax=1.8e-3)
+GAU_LOOSE = dict(convergence_energy=1e-6, convergence_grms=1.7e-3, convergence_gmax=2.5e-3,
+                 convergence_drms=6.7e-3, convergence_dmax=1.0e-2)
+ENFORCE_AU = 0.1      # geomeTRIC 'enforce': constraints held exactly once within 0.1 a.u. of the target
+NEGLIGIBLE = dict(gmax=4.5e-4, grms=3.0e-4, dE=1e-5, window=5)
+
+
+# ---------------------------------------------------------------- geometry helpers
+def proton_idx(case):
+    p = case.get('proton') or {}
+    if not {'H', 'donor_N', 'acceptor_O'} <= set(p):
+        raise SystemExit(f"case {case['name']} has no 'proton' block (H, donor_N, acceptor_O)")
+    return int(p['H']), int(p['donor_N']), int(p['acceptor_O'])
+
+
+def short_label(lab):
+    return lab.split('#')[0]
+
+
+def proton_labels(case):
+    H, N, O = proton_idx(case)
+    labs = case.get('cif_labels')
+    if not labs:
+        return {'H': f'atom{H}', 'N': f'atom{N}', 'O': f'atom{O}'}
+    return {'H': short_label(labs[H]), 'N': short_label(labs[N]), 'O': short_label(labs[O])}
+
+
+def measure(xyz, H, N, O):
+    """r(N-H), r(H...O), r(N...O) in A, the N-H...O angle in degrees, delta = r(N-H) - r(H...O)."""
+    xyz = np.asarray(xyz, float)
+    rNH = float(np.linalg.norm(xyz[H] - xyz[N])); rHO = float(np.linalg.norm(xyz[H] - xyz[O]))
+    rNO = float(np.linalg.norm(xyz[N] - xyz[O]))
+    v1, v2 = xyz[N] - xyz[H], xyz[O] - xyz[H]
+    ang = float(np.degrees(np.arccos(np.clip(np.dot(v1, v2) / np.linalg.norm(v1) / np.linalg.norm(v2), -1, 1))))
+    return {'r_NH_A': rNH, 'r_HO_A': rHO, 'r_NO_A': rNO, 'NHO_deg': ang, 'delta_A': rNH - rHO}
+
+
+def place_H(xyz, H, O, r, toward=None):
+    """Copy of xyz with H at distance r (A) from O: along the current O->H direction, or along O->toward."""
+    x = np.array(xyz, float)
+    d = (x[toward] if toward is not None else x[H]) - x[O]
+    x[H] = x[O] + r * d / np.linalg.norm(d)
+    return x
+
+
+def read_frames(path):
+    """All frames of a multi-frame XYZ file: list of (symbols, coords, comment)."""
+    lines = open(path).read().splitlines()
+    out, i = [], 0
+    while i < len(lines):
+        if not lines[i].strip():
+            i += 1; continue
+        n = int(lines[i]); comment = lines[i + 1] if i + 1 < len(lines) else ''
+        block = lines[i + 2:i + 2 + n]
+        if len(block) < n:
+            break                                   # truncated last frame (killed while writing)
+        try:
+            syms = [b.split()[0] for b in block]
+            xyz = np.array([[float(v) for v in b.split()[1:4]] for b in block])
+        except (ValueError, IndexError):
+            break
+        out.append((syms, xyz, comment)); i += 2 + n
+    return out
+
+
+def append_frame(path, syms, xyz, comment):
+    with open(path, 'a') as f:
+        f.write(f'{len(syms)}\n{comment}\n' + ''.join(f'{s:2s} {a:14.8f} {b:14.8f} {c:14.8f}\n'
+                                                       for s, (a, b, c) in zip(syms, xyz)))
+        f.flush()
+
+
+def kabsch_rmsd(A, B, idx=None, w=None):
+    """RMSD (A) between coordinate sets after optimal superposition (Kabsch) of the atoms idx (default all),
+    optionally mass-weighted.  Returns (rmsd, B aligned onto A)."""
+    A = np.asarray(A, float); B = np.asarray(B, float)
+    idx = np.arange(len(A)) if idx is None else np.asarray(idx)
+    w = np.ones(len(A)) if w is None else np.asarray(w, float)
+    wa = w[idx] / w[idx].sum()
+    ca, cb = (A[idx] * wa[:, None]).sum(0), (B[idx] * wa[:, None]).sum(0)
+    P, Q = B[idx] - cb, A[idx] - ca
+    U, S, Vt = np.linalg.svd((P * wa[:, None]).T @ Q)
+    d = np.sign(np.linalg.det(U @ Vt))
+    R = U @ np.diag([1, 1, d]) @ Vt
+    Bal = (B - cb) @ R + ca
+    rmsd = float(np.sqrt((wa * ((Bal[idx] - A[idx]) ** 2).sum(1)).sum()))
+    return rmsd, Bal
+
+
+def stored_minimum(case):
+    """molecules/<mol>/results/<case>/opt.xyz, the published (or pipeline) minimum of the case."""
+    p = rc.find_case_file(case['name']).parent.parent / 'results' / case['name'] / 'opt.xyz'
+    return p if p.exists() else None
+
+
+# ---------------------------------------------------------------- level of theory
+def level_of_theory(args, case_solvent):
+    """Settings of one run.  Production values are the defaults; --smoke reduces them."""
+    smoke = bool(args.smoke)
+    solvent = case_solvent
+    if getattr(args, 'solvent', None) is not None:
+        solvent = None if str(args.solvent).lower() in ('gas', 'none', '') else args.solvent
+    eps = rc.solvent_eps(solvent)
+    L = {'xc': args.xc, 'disp': args.disp, 'basis': 'sto-3g' if smoke else rc.BASIS,
+         'grid_level': 2 if smoke else rc.GRID_LEVEL,
+         'pcm_lebedev_order': (17 if smoke else rc.PCM_LEBEDEV_ORDER),
+         'solvent': solvent, 'eps': eps, 'pcm_method': rc.PCM_METHOD if eps is not None else None,
+         'density_fit': True, 'auxbasis': 'PySCF default (aug-cc-pVTZ-JKFIT for 6-311++G(d,p))',
+         'conv_tol_opt': 1e-6 if smoke else (rc.CONV_TOL_OPT_PCM if eps is not None else rc.CONV_TOL_OPT_GAS),
+         'conv_tol_sp': 1e-8 if smoke else rc.CONV_TOL_SP, 'max_cycle': rc.MAX_CYCLE,
+         'opt_engine': 'geomeTRIC (TRIC coordinates) via pyscf.geomopt.geometric_solver',
+         'opt_criteria': dict(GAU_LOOSE if smoke else GAU),
+         'opt_criteria_name': 'GAU_LOOSE (smoke)' if smoke else 'GAU (Gaussian defaults, as dft/optimize.py)',
+         'maxsteps': args.maxsteps or (3 if smoke else 100), 'constraint_enforce_au': ENFORCE_AU,
+         'accept_unconverged': smoke, 'negligible_force_rule': NEGLIGIBLE}
+    return L
+
+
+def make_mol_mf(case, syms, xyz, L, conv_tol, chkfile, output):
+    mol = rc.build_mol(list(zip(syms, [tuple(v) for v in xyz])), case['charge'], case['spin'], basis=L['basis'],
+                       basis_overrides=case.get('basis_overrides'), verbose=4, output=output)
+    mf = rc.make_mf(mol, xc=L['xc'], disp=L['disp'], solvent=L['eps'], conv_tol=conv_tol,
+                    grid_level=L['grid_level'], lebedev_order=L['pcm_lebedev_order'], chkfile=chkfile,
+                    max_cycle=L['max_cycle'])
+    return mol, mf
+
+
+def analyse(mf, case):
+    """Charges (Mulliken, Loewdin) of the picrate, of the cation core and of the transferring H; frontier orbitals
+    and their Mulliken composition on the case's fragments; dipole moment."""
+    H, N, O = proton_idx(case)
+    fr = rc.fragments(case)
+    anion = [a for a in fr.get('anion', []) if a != H]
+    cation = [a for a in fr.get('cation', []) if a != H]
+    pops = rc.fragment_populations(mf, {'picrate': anion, 'cation_core': cation, 'H': [H]})
+    charges = {}
+    for m, d in pops.items():
+        q = {k: round(v['charge'], 5) for k, v in d.items()}
+        q['picrate_plus_H'] = round(q['picrate'] + q['H'], 5)
+        q['cation_with_H'] = round(q['cation_core'] + q['H'], 5)
+        charges[m] = q
+    occ, e = mf.mo_occ, mf.mo_energy
+    n = int((occ > 0).sum())
+    out = {'charges': charges, 'HOMO_eV': float(e[n - 1] * rc.HARTREE_EV), 'LUMO_eV': float(e[n] * rc.HARTREE_EV),
+           'gap_eV': float((e[n] - e[n - 1]) * rc.HARTREE_EV)}
+    try:
+        comp = rc.fragment_composition(mf, fr, methods=('mulliken',))
+        out['frontier_composition_mulliken_pct'] = {k: v['mulliken'] for k, v in comp.items()}
+    except Exception as ex:                                  # pragma: no cover
+        out['frontier_composition_mulliken_pct'] = f'failed: {ex}'
+    try:
+        out['dipole_debye'] = [round(float(v), 4) for v in mf.dip_moment(unit='Debye', verbose=0)]
+    except Exception:
+        pass
+    return out
+
+
+def _project_constraint(g, xyz_bohr, pair):
+    """Cartesian gradient with the component along the constrained distance removed."""
+    if pair is None:
+        return g
+    i, j = pair
+    c = np.zeros_like(g)
+    e = xyz_bohr[i] - xyz_bohr[j]; e /= np.linalg.norm(e)
+    c[i], c[j] = e, -e
+    return g - (g * c).sum() / (c * c).sum() * c
+
+
+# ---------------------------------------------------------------- one (constrained) optimisation, restartable
+def relax(job, key, case, L, syms, start_xyz, constraint=None, guess_chk=None, extra=None):
+    """Optimise from start_xyz.  constraint = (i, j, r_A): distance i-j held at r_A (geomeTRIC '$set').
+    Stores job item `key` (status running while optimising, done at the end) and returns the record."""
+    from pyscf.geomopt import geometric_solver
+    H, N, O = proton_idx(case)
+    for sub in ('traj', 'points', 'pyscf'):
+        (job.out / sub).mkdir(exist_ok=True)
+    chk = job.chk_dir / f'{key}.chk'
+    traj = job.out / 'traj' / f'{key}.xyz'
+    prev = job.get(key) or {}
+    hist = list(prev.get('history', [])) if prev.get('status') == 'running' else []
+    rec = dict(extra or {})
+    rec.update({'key': key, 'constraint': None, 'history': hist,
+                'restarted_from_step': None, 'wall_s': prev.get('wall_s', 0.0) if hist else 0.0})
+    start = np.array(start_xyz, float)
+    if hist and traj.exists():
+        frames = read_frames(traj)
+        if frames:
+            start = frames[-1][1]
+            rec['restarted_from_step'] = len(hist)
+            job.log(f'{key}: resuming from step {len(hist)} (last frame of {traj.name})')
+    elif traj.exists():
+        traj.unlink()
+    if constraint is not None:
+        i, j, r = constraint
+        start = place_H(start, i, j, r) if i == H and j == O else start
+        rec['constraint'] = {'type': 'distance', 'atoms_0based': [i, j], 'target_A': r}
+    rec['start'] = measure(start, H, N, O)
+    mol, mf = make_mol_mf(case, syms, start, L, L['conv_tol_opt'], chk, job.out / 'pyscf' / f'{key}.log')
+    if 'scf_settings' not in job.r['settings']:
+        job.r['settings']['scf_settings'] = rc.settings_of(mf); job.save()
+    rec['scf_settings'] = rc.settings_of(mf)
+    job.put(key, rec, status='running')
+    g0 = chk if chk.exists() else guess_chk
+    t_all = time.time()
+    w = rc.run_scf(mf, chk_guess=g0, log=job.log)
+    job.log(f'{key}: start SCF E = {mf.e_tot:.8f} ({mf._cycles} cycles, {w:.0f} s); '
+            f"r(N-H) {rec['start']['r_NH_A']:.3f}, r(H...O) {rec['start']['r_HO_A']:.3f} A")
+    params = dict(L['opt_criteria'])
+    cons_file = None
+    if constraint is not None:
+        i, j, r = constraint
+        cons_file = job.chk_dir / f'{key}.constraints'
+        cons_file.write_text(f'$set\ndistance {i + 1} {j + 1} {r:.6f}\n')
+        params['enforce'] = L['constraint_enforce_au']
+    pair = (constraint[0], constraint[1]) if constraint is not None else None
+    t_step = [time.time()]
+
+    def cb(env):
+        m = env['mol']; e = float(env['energy']); g = np.asarray(env['gradients']).reshape(-1, 3)
+        xb = m.atom_coords(); xa = m.atom_coords(unit='Angstrom')
+        gp = _project_constraint(g, xb, pair)
+        meas = measure(xa, H, N, O)
+        now = time.time()
+        h = {'step': len(hist), 'E_Ha': e, 'gmax': float(np.abs(gp).max()), 'grms': float(np.sqrt((gp ** 2).mean())),
+             'r_NH_A': round(meas['r_NH_A'], 5), 'r_HO_A': round(meas['r_HO_A'], 5),
+             'r_NO_A': round(meas['r_NO_A'], 5), 'wall_s': round(now - t_step[0], 1)}
+        t_step[0] = now
+        hist.append(h)
+        append_frame(traj, syms, xa, f"step {h['step']} E = {e:.10f} Ha gmax {h['gmax']:.2e} grms {h['grms']:.2e} "
+                                     f"r_NH {h['r_NH_A']:.4f} r_HO {h['r_HO_A']:.4f}")
+        rec['wall_s'] = round(rec.get('wall_s', 0.0) + h['wall_s'], 1)
+        job.put(key, rec, status='running')
+        job.log(f"{key}: step {h['step']:3d} E = {e:.8f} gmax {h['gmax']:.2e} grms {h['grms']:.2e} "
+                f"r(N-H) {h['r_NH_A']:.3f} r(H...O) {h['r_HO_A']:.3f} r(N...O) {h['r_NO_A']:.3f} ({h['wall_s']:.0f} s)")
+
+    n0 = len(hist)
+    conv, mol_opt = geometric_solver.kernel(mf, assert_convergence=True,
+                                            constraints=str(cons_file) if cons_file else None,
+                                            callback=cb, maxsteps=L['maxsteps'], **params)
+    steps_now = len(hist) - n0
+    rec['opt_steps'] = len(hist)
+    if conv:
+        rec['converged'] = True
+        rec['converged_on'] = f"geomeTRIC criteria ({L['opt_criteria_name']})"
+    else:
+        tail = hist[-NEGLIGIBLE['window']:]
+        ok = (len(tail) == NEGLIGIBLE['window'] and tail[-1]['gmax'] <= NEGLIGIBLE['gmax']
+              and tail[-1]['grms'] <= NEGLIGIBLE['grms']
+              and max(t['E_Ha'] for t in tail) - min(t['E_Ha'] for t in tail) < NEGLIGIBLE['dE'])
+        if ok:
+            rec['converged'] = True
+            rec['converged_on'] = (f"negligible forces after {len(hist)} steps (max {tail[-1]['gmax']:.2e}, "
+                                   f"rms {tail[-1]['grms']:.2e} Ha/Bohr; Gaussian thresholds 4.5e-4 / 3.0e-4; "
+                                   f"|dE| < 1e-5 Ha over the last {NEGLIGIBLE['window']} steps)")
+        elif L['accept_unconverged']:
+            rec['converged'] = False
+            rec['converged_on'] = f'NOT converged (smoke: accepted after {steps_now} steps)'
+        else:
+            job.put(key, rec, status='running')
+            raise RuntimeError(f'{key}: optimisation not converged in {L["maxsteps"]} steps '
+                               f'(last gmax {hist[-1]["gmax"]:.2e}, grms {hist[-1]["grms"]:.2e}); '
+                               f'rerun the same command to continue from the last geometry')
+    xyz_f = mol_opt.atom_coords(unit='Angstrom')
+    mol.stdout.close()
+    del mf; gc.collect()
+
+    # tight single point at the optimised geometry
+    mol2, mf2 = make_mol_mf(case, syms, xyz_f, L, L['conv_tol_sp'], chk, job.out / 'pyscf' / f'{key}.log')
+    w2 = rc.run_scf(mf2, chk_guess=chk, log=None)
+    meas = measure(xyz_f, H, N, O)
+    rec.update(meas)
+    if constraint is not None:
+        rec['constraint']['final_A'] = meas['r_HO_A'] if constraint[:2] == (H, O) else None
+        rec['constraint']['deviation_A'] = (meas['r_HO_A'] - constraint[2]) if constraint[:2] == (H, O) else None
+    rec.update({'E_Ha': float(mf2.e_tot), 'E_opt_last_Ha': hist[-1]['E_Ha'] if hist else None,
+                'sp_scf_cycles': mf2._cycles, 'sp_wall_s': round(w2, 1),
+                'wall_s': round(rec.get('wall_s', 0.0) + w + w2, 1)})
+    if hasattr(mf2, 'with_solvent') and getattr(mf2.with_solvent, 'e', None) is not None:
+        rec['E_solvation_Ha'] = float(mf2.with_solvent.e)
+    rec.update(analyse(mf2, case))
+    rec.update(rc.runtime_sizes(mf2))
+    pt = job.out / 'points' / f'{key}.xyz'
+    rc.write_xyz(pt, syms, xyz_f, f"{key} E = {mf2.e_tot:.10f} Ha r_NH {meas['r_NH_A']:.4f} r_HO {meas['r_HO_A']:.4f}")
+    rec['xyz'] = str(pt.relative_to(job.out)); rec['chk'] = str(chk.relative_to(job.out))
+    rec['peak_rss_mb'] = round(rc.peak_rss_mb(), 1)
+    mol2.stdout.close()
+    del mf2; gc.collect()
+    job.r['timings'][key] = rec['wall_s']
+    job.put(key, rec)
+    q = rec['charges']
+    job.log(f"{key}: done in {len(hist)} steps ({time.time() - t_all:.0f} s this run): E = {rec['E_Ha']:.8f} Ha, "
+            f"r(N-H) {meas['r_NH_A']:.3f}, r(H...O) {meas['r_HO_A']:.3f}, r(N...O) {meas['r_NO_A']:.3f} A; "
+            f"q(picrate) Mulliken {q['mulliken']['picrate']:+.3f}, Loewdin {q['lowdin']['picrate']:+.3f}; "
+            f"{rec['converged_on']}")
+    return rec
+
+
+def single_point(job, key, case, L, syms, xyz, guess_chk=None, extra=None):
+    """Tight single point (the free minimum of a chain), stored as item `key`."""
+    H, N, O = proton_idx(case)
+    for sub in ('points', 'pyscf'):
+        (job.out / sub).mkdir(exist_ok=True)
+    chk = job.chk_dir / f'{key}.chk'
+    mol, mf = make_mol_mf(case, syms, xyz, L, L['conv_tol_sp'], chk, job.out / 'pyscf' / f'{key}.log')
+    if 'scf_settings' not in job.r['settings']:
+        job.r['settings']['scf_settings'] = rc.settings_of(mf); job.save()
+    rec = dict(extra or {}); rec.update({'key': key, 'constraint': None, 'opt_steps': 0, 'converged': True,
+                                          'converged_on': 'stored minimum (single point, no optimisation)',
+                                          'scf_settings': rc.settings_of(mf)})
+    job.put(key, rec, status='running')
+    w = rc.run_scf(mf, chk_guess=chk if chk.exists() else guess_chk, log=job.log)
+    rec.update(measure(xyz, H, N, O))
+    rec.update({'E_Ha': float(mf.e_tot), 'sp_scf_cycles': mf._cycles, 'sp_wall_s': round(w, 1), 'wall_s': round(w, 1)})
+    if hasattr(mf, 'with_solvent') and getattr(mf.with_solvent, 'e', None) is not None:
+        rec['E_solvation_Ha'] = float(mf.with_solvent.e)
+    rec.update(analyse(mf, case)); rec.update(rc.runtime_sizes(mf))
+    pt = job.out / 'points' / f'{key}.xyz'
+    rc.write_xyz(pt, syms, xyz, f"{key} E = {mf.e_tot:.10f} Ha (stored minimum)")
+    rec['xyz'] = str(pt.relative_to(job.out)); rec['chk'] = str(chk.relative_to(job.out))
+    mol.stdout.close()
+    del mf; gc.collect()
+    job.r['timings'][key] = rec['wall_s']
+    job.put(key, rec)
+    job.log(f"{key}: E = {rec['E_Ha']:.10f} Ha ({rec['sp_scf_cycles']} cycles, {w:.0f} s), "
+            f"r(H...O) {rec['r_HO_A']:.4f} A")
+    return rec
+
+
+# ---------------------------------------------------------------- the scan
+def parser():
+    p = rc.add_common_args(argparse.ArgumentParser(description=__doc__.split('\n')[1]))
+    p.add_argument('--case', default='btpc_gas', help='case name (molecules/*/cases/<case>.json); default btpc_gas')
+    p.add_argument('--chains', default='up,down,neutral', help='comma list of up, down, neutral')
+    p.add_argument('--solvent', default=None,
+                   help="override the case's model: gas, water or a dielectric constant (IEF-PCM)")
+    p.add_argument('--start', default=None, help='start geometry (XYZ); default the stored minimum of the case')
+    p.add_argument('--points', default=None, help='comma list of r(H...O) targets in A (default grid, see doc)')
+    p.add_argument('--down-to', type=float, default=1.08, help="last (smallest) target of the 'down' chain")
+    p.add_argument('--neutral-to', type=float, default=1.28, help="last (largest) target of the 'neutral' chain")
+    p.add_argument('--neutral-r', type=float, default=0.98, help='O1-H distance of the neutral start (A)')
+    p.add_argument('--xc', default=rc.XC, help='functional (default b3lyp, the level of record)')
+    p.add_argument('--disp', default=None, help="dispersion correction, e.g. d3bj (default none, as published)")
+    p.add_argument('--maxsteps', type=int, default=None, help='optimisation steps per point (default 100)')
+    return p
+
+
+def chain_targets(chain, r0, grid, args):
+    eps = 1e-3
+    if chain == 'up':
+        return sorted(r for r in grid if r > r0 + eps)
+    if chain == 'down':
+        return sorted((r for r in grid if r < r0 - eps and r >= args.down_to - 1e-9), reverse=True)
+    if chain == 'neutral':
+        return sorted(r for r in grid if r <= args.neutral_to + 1e-9)
+    raise SystemExit(f'unknown chain {chain!r} (up, down, neutral)')
+
+
+def summarise(job, case, syms):
+    """profile.csv, scan.xyz and job.r['summary'] from the finished points (lowest energy per target first)."""
+    items = [it for it in job.r['items'].values() if it.get('status') == 'done' and it.get('E_Ha') is not None]
+    if not items:
+        return
+    ref = [it for it in items if it.get('chain') == 'min']
+    e_ref = ref[0]['E_Ha'] if ref else min(it['E_Ha'] for it in items)
+    items.sort(key=lambda it: (-it['r_HO_A'], it['E_Ha']))
+    rows = []
+    for it in items:
+        q = it.get('charges', {})
+        rows.append({'label': it['key'], 'chain': it.get('chain'), 'r_target_A': it.get('r_target_A'),
+                     'r_HO_A': round(it['r_HO_A'], 4), 'r_NH_A': round(it['r_NH_A'], 4),
+                     'r_NO_A': round(it['r_NO_A'], 4), 'NHO_deg': round(it['NHO_deg'], 1),
+                     'E_Ha': it['E_Ha'], 'dE_kcal': round((it['E_Ha'] - e_ref) * rc.HARTREE_KCAL, 3),
+                     'q_picrate_mulliken': q.get('mulliken', {}).get('picrate'),
+                     'q_picrate_lowdin': q.get('lowdin', {}).get('picrate'),
+                     'q_H_mulliken': q.get('mulliken', {}).get('H'), 'q_H_lowdin': q.get('lowdin', {}).get('H'),
+                     'HOMO_eV': round(it.get('HOMO_eV', float('nan')), 4),
+                     'LUMO_eV': round(it.get('LUMO_eV', float('nan')), 4),
+                     'LUMO_on_anion_pct': ((it.get('frontier_composition_mulliken_pct') or {}).get('LUMO') or {}).get('anion'),
+                     'opt_steps': it.get('opt_steps'), 'converged': it.get('converged')})
+    cols = list(rows[0])
+    with open(job.out / 'profile.csv', 'w') as f:
+        f.write(','.join(cols) + '\n')
+        for r in rows:
+            f.write(','.join('' if r[c] is None else str(r[c]) for c in cols) + '\n')
+    tmp = job.out / 'scan.xyz.tmp'
+    tmp.unlink(missing_ok=True)
+    for it in items:
+        s, x, _ = read_frames(job.out / it['xyz'])[0]
+        append_frame(tmp, s, x, f"{it['key']} E = {it['E_Ha']:.10f} Ha r_HO {it['r_HO_A']:.4f} r_NH {it['r_NH_A']:.4f}")
+    tmp.replace(job.out / 'scan.xyz')
+    # hysteresis: same target reached from two chains
+    by_t = {}
+    for it in items:
+        if it.get('r_target_A') is not None:
+            by_t.setdefault(round(it['r_target_A'], 3), []).append(it)
+    hyst = {f'{t:.3f}': {'chains': [i['chain'] for i in v],
+                         'dE_kcal': round((max(i['E_Ha'] for i in v) - min(i['E_Ha'] for i in v)) * rc.HARTREE_KCAL, 3)}
+            for t, v in sorted(by_t.items()) if len(v) > 1}
+    job.r['summary'] = {'E_ref_Ha': e_ref, 'E_ref': 'min point' if ref else 'lowest point', 'rows': rows,
+                        'hysteresis': hyst}
+    job.save()
+
+
+def run(job, args):
+    case = rc.load_case(args.case)
+    L = level_of_theory(args, case.get('solvent'))
+    H, N, O = proton_idx(case)
+    labs = proton_labels(case)
+    grid = [float(v) for v in args.points.split(',')] if args.points else list(DEFAULT_GRID)
+    start_path = pathlib.Path(args.start) if args.start else stored_minimum(case)
+    if start_path is None or not start_path.exists():
+        raise SystemExit(f"no start geometry: {case['name']} has no stored opt.xyz; pass --start")
+    syms, x0 = rc.read_xyz(start_path)
+    m0 = measure(x0, H, N, O)
+    r0 = m0['r_HO_A']
+    if args.smoke and not args.points:
+        grid = [round(r0 + 0.06, 3), round(r0 - 0.08, 3), args.neutral_r]
+        args.down_to, args.neutral_to = round(r0 - 0.08, 3) - 1e-6, args.neutral_r
+    chains = [c.strip() for c in args.chains.split(',') if c.strip()]
+    plan = {c: chain_targets(c, r0, grid, args) for c in chains}
+    job.r['settings'].update({k: v for k, v in L.items()})
+    job.r['settings'].update({'case': case['name'], 'scan_coordinate': f"r({labs['H']}...{labs['O']})",
+                              'proton_atoms_0based': {'H': H, 'donor_N': N, 'acceptor_O': O}, 'labels': labs,
+                              'grid_A': grid, 'chains': plan, 'down_to': args.down_to, 'neutral_to': args.neutral_to,
+                              'neutral_start_r_OH_A': args.neutral_r, 'r0_A': r0})
+    job.input_file('case', rc.ROOT / case['case_file'])
+    job.input_file('start_geometry', start_path)
+    job.save()
+    job.log(f"case {case['name']} ({L['solvent'] or 'gas phase'}), start {start_path.name}: "
+            f"r({labs['N']}-{labs['H']}) {m0['r_NH_A']:.3f}, r({labs['H']}...{labs['O']}) {r0:.3f}, "
+            f"r({labs['N']}...{labs['O']}) {m0['r_NO_A']:.3f} A; chains {plan}")
+    if args.smoke:
+        job.log('SMOKE settings: STO-3G, grid 2, Lebedev 17, loose criteria -- not for production numbers')
+
+    for chain in chains:
+        targets = plan[chain]
+        if chain in ('up', 'down'):
+            if not job.done('min'):
+                single_point(job, 'min', case, L, syms, x0, extra={'chain': 'min', 'r_target_A': None})
+            prev_xyz = x0; prev_chk = job.chk_dir / 'min.chk'
+        else:
+            prev_xyz = place_H(x0, H, O, args.neutral_r, toward=N)       # neutral start: H on the O1->N4 line
+            prev_chk = None
+        for r in targets:
+            key = f'{chain}_{r:.3f}'
+            if job.done(key):
+                it = job.get(key)
+                job.log(f"{key}: done (E = {it['E_Ha']:.8f}); skipped")
+                prev_xyz = read_frames(job.out / it['xyz'])[0][1]; prev_chk = job.out / it['chk']
+                continue
+            start = place_H(prev_xyz, H, O, r)
+            relax(job, key, case, L, syms, start, constraint=(H, O, r), guess_chk=prev_chk,
+                  extra={'chain': chain, 'r_target_A': r})
+            it = job.get(key)
+            prev_xyz = read_frames(job.out / it['xyz'])[0][1]; prev_chk = job.out / it['chk']
+        summarise(job, case, syms)
+    summarise(job, case, syms)
+    s = job.r.get('summary') or {}
+    for row in s.get('rows', []):
+        job.log(f"  {row['label']:>14s} r(H...O) {row['r_HO_A']:.3f} r(N-H) {row['r_NH_A']:.3f} "
+                f"dE {row['dE_kcal']:+8.3f} kcal/mol  q(pic) M {row['q_picrate_mulliken']:+.3f} "
+                f"L {row['q_picrate_lowdin']:+.3f}")
+    if s.get('hysteresis'):
+        job.log(f"hysteresis between chains: {s['hysteresis']}")
+    return True
+
+
+if __name__ == '__main__':
+    rc.install_sigterm_handler()
+    rc.main_wrapper(parser, run, __file__)
+#INFO: ******************** input file end ********************
+
+
+System: uname_result(system='Linux', node='<vm-1>', release='7.0.0-1017-gcp', version='#19~24.04.1-Ubuntu SMP PREEMPT Thu Oct 29 22:34:06 UTC 2026', machine='x86_64')  Threads 4
+Python 3.11.16 (main, Sep  2 2026, 23:39:52) [GCC 15.3.0]
+numpy 2.4.6  scipy 1.17.1  h5py 3.16.0
+Date: Fri Nov 20 21:44:12 2026
+PySCF version 2.14.0
+PySCF path  <run-dir>/env/lib/python3.11/site-packages/pyscf
+
+[ENV] PYSCF_TMPDIR <run-dir>/scratch/scan_gas_down
+[CONFIG] conf_file None
+[INPUT] verbose = 4
+[INPUT] num. atoms = 33
+[INPUT] num. electrons = 178
+[INPUT] charge = 0
+[INPUT] spin (= nelec alpha-beta = 2S) = 0
+[INPUT] symmetry False subgroup None
+[INPUT] Mole.unit = angstrom
+[INPUT] Symbol           X                Y                Z      unit          X                Y                Z       unit  Magmom
+[INPUT]  1 O     -0.758190720000  -0.146469680000   0.405752490000 AA   -1.432772810987  -0.276787580753   0.766761080460 Bohr   0.0
+[INPUT]  2 N     -0.387069340000   2.474275380000   1.668986690000 AA   -0.731455043816   4.675702824954   3.153927749644 Bohr   0.0
+[INPUT]  3 O      0.538537480000   1.700803360000   1.918482650000 AA    1.017688345013   3.214052542140   3.625406783230 Bohr   0.0
+[INPUT]  4 C     -1.192502020000   2.224790000000   0.476186450000 AA   -2.253502220791   4.204243784671   0.899861974729 Bohr   0.0
+[INPUT]  5 C     -1.261371930000   0.896925280000  -0.093064000000 AA   -2.383647488914   1.694943133399  -0.175865472057 Bohr   0.0
+[INPUT]  6 C     -2.063614580000   0.839511440000  -1.295553660000 AA   -3.899666382859   1.586446700039  -2.448241597078 Bohr   0.0
+[INPUT]  7 C     -2.761696110000   1.906264570000  -1.809630690000 AA   -5.218849287177   3.602317958262  -3.419706390708 Bohr   0.0
+[INPUT]  8 O     -0.657973870000   3.453660710000   2.354884050000 AA   -1.243390411420   6.526472869071   4.450085909607 Bohr   0.0
+[INPUT]  9 C     -2.656691930000   3.148151000000  -1.181974990000 AA   -5.020420145042   5.949143188776  -2.233609017186 Bohr   0.0
+[INPUT] 10 C     -1.880335340000   3.308073060000  -0.043579670000 AA   -3.553318814941   6.251352083452  -0.082353640899 Bohr   0.0
+[INPUT] 11 N     -2.161340730000  -0.430300140000  -2.027420520000 AA   -4.084342041568  -0.813149415962  -3.831269522123 Bohr   0.0
+[INPUT] 12 N     -3.365049990000   4.297774680000  -1.739865160000 AA   -6.359022876570   8.121617090290  -3.287868646073 Bohr   0.0
+[INPUT] 13 O     -4.041973620000   4.114750050000  -2.747757880000 AA   -7.638223144517   7.775750665540  -5.192509849816 Bohr   0.0
+[INPUT] 14 O     -3.243196220000   5.377467060000  -1.169568520000 AA   -6.128752624025  10.161939987270  -2.210164186713 Bohr   0.0
+[INPUT] 15 O     -3.251151630000  -0.730124010000  -2.499116070000 AA   -6.143786170133  -1.379734415869  -4.722644925799 Bohr   0.0
+[INPUT] 16 O     -1.141838680000  -1.100679930000  -2.158862010000 AA   -2.157762383635  -2.079983618505  -4.079657939628 Bohr   0.0
+[INPUT] 17 H     -1.808702250000   4.273035690000   0.437970670000 AA   -3.417951893385   8.074867174592   0.827644616892 Bohr   0.0
+[INPUT] 18 H     -3.373423250000   1.790405690000  -2.693723670000 AA   -6.374846044740   3.383376405963  -5.090399991558 Bohr   0.0
+[INPUT] 19 N      1.245795220000  -1.081521450000   1.524397330000 AA    2.354211773092  -2.043779338342   2.880693458718 Bohr   0.0
+[INPUT] 20 N      2.837932300000  -1.874109290000   2.630757610000 AA    5.362914807057  -3.541553285603   4.971411383015 Bohr   0.0
+[INPUT] 21 C      2.851060060000  -2.603088670000   1.465979410000 AA    5.387722678086  -4.919124664258   2.770299589151 Bohr   0.0
+[INPUT] 22 C      1.780400010000  -2.068280560000   0.732391800000 AA    3.364468411073  -3.908483807162   1.384019917877 Bohr   0.0
+[INPUT] 23 N      1.872094790000  -0.966000560000   2.650790930000 AA    3.537746432325  -1.825476494576   5.009268871181 Bohr   0.0
+[INPUT] 24 C      1.434770110000  -2.540206640000  -0.541712440000 AA    2.711322559612  -4.800294849402  -1.023688149870 Bohr   0.0
+[INPUT] 25 C      2.218396700000  -3.567495960000  -1.030696590000 AA    4.192162198639  -6.741590314892  -1.947734272623 Bohr   0.0
+[INPUT] 26 C      3.300928330000  -4.106976300000  -0.291102580000 AA    6.237850500518  -7.761060407080  -0.550104150354 Bohr   0.0
+[INPUT] 27 C      3.643153470000  -3.643758900000   0.966789470000 AA    6.884562288059  -6.885706384946   1.826967318413 Bohr   0.0
+[INPUT] 28 H      0.602146420000  -2.114056890000  -1.088302230000 AA    1.137891820687  -3.994988533850  -2.056593155453 Bohr   0.0
+[INPUT] 29 H      4.470428130000  -4.061573900000   1.525594310000 AA    8.447884825252  -7.675262305682   2.882955423095 Bohr   0.0
+[INPUT] 30 H      2.001426640000  -3.976931450000  -2.009647700000 AA    3.782148208008  -7.515311256669  -3.797683759862 Bohr   0.0
+[INPUT] 31 H      3.879240750000  -4.912104920000  -0.728380430000 AA    7.330702588752  -9.282532993929  -1.376439527193 Bohr   0.0
+[INPUT] 32 H      0.382070860000  -0.453204720000   1.224659430000 AA    0.722009285577  -0.856432799160   2.314270918566 Bohr   0.0
+[INPUT] 33 H      3.446344300000  -1.933090440000   3.435381540000 AA    6.512646857956  -3.653011505615   6.491930243987 Bohr   0.0
+
+nuclear repulsion = 2127.93144867434
+number of shells = 290
+number of NR pGTOs = 947
+number of NR cGTOs = 606
+basis = 6-311++g(d,p)
+ecp = {}
+CPU time:         0.79
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+
+
+******** <class 'pyscf.df.df_jk.DFRKS'> ********
+method = DFRKS
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-10
+SCF conv_tol_grad = None
+SCF max_cycles = 150
+direct_scf = False
+chkfile to save SCF result = <run-dir>/queue/out/scan_gas_down/chk/min.chk
+max_memory 8000 MB (current use 130 MB)
+XC library pyscf.dft.libxc version 7.1.2
+    S. Lehtola, C. Steigemann, M. J. T. Oliveira, and M. A. L. Marques,  SoftwareX 7, 1–5 (2018)
+XC functionals = b3lyp
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994)
+radial grids: 
+    Treutler-Ahlrichs [JCP 102, 346 (1995); DOI:10.1063/1.469408] (M4) radial grids
+    
+becke partition: Becke, JCP 88, 2547 (1988); DOI:10.1063/1.454033
+pruning grids: <function nwchem_prune at 0x736ad91d37e0>
+grids dens level: 4
+symmetrized grids: False
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x736ad91d3740>
+small_rho_cutoff = 0
+Set gradient conv threshold to 1e-05
+Initial guess from minao.
+tot grids = 834040
+******** <class 'pyscf.df.df.DF'> ********
+auxbasis = None
+max_memory = 8000
+Default auxbasis aug-cc-pvtz-jkfit is used for C 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for N 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for H 6-311++g(d,p)
+Default auxbasis aug-cc-pvtz-jkfit is used for O 6-311++g(d,p)
+init E= -1322.63489242649
+
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+  HOMO = -0.266916205071623  LUMO = -0.145662936790565  gap/eV = 3.29947
+cycle= 1 E= -1316.23930419757  delta_E=  6.4  |g|= 2.32  |ddm|=  120
+  HOMO = -0.167876653736685  LUMO = -0.155977260098185  gap/eV = 0.32380
+cycle= 2 E= -1310.79858593228  delta_E= 5.44  |g|= 5.41  |ddm|=  134
+  HOMO = -0.252365148099783  LUMO = -0.154866292961861  gap/eV = 2.65308
+cycle= 3 E= -1316.80970086388  delta_E= -6.01  |g|= 1.35  |ddm|= 99.5
+  HOMO = -0.263955681272775  LUMO = -0.125487379931112  gap/eV = 3.76791
+cycle= 4 E= -1317.1942556565  delta_E= -0.385  |g|= 0.245  |ddm|= 9.98
+  HOMO = -0.252171260895192  LUMO = -0.13789791651266  gap/eV = 3.10954
+cycle= 5 E= -1317.16472605399  delta_E= 0.0295  |g|= 0.468  |ddm|= 6.04
+  HOMO = -0.249407709252484  LUMO = -0.12880992570701  gap/eV = 3.28163
+cycle= 6 E= -1317.20645270733  delta_E= -0.0417  |g|= 0.0938  |ddm|= 3.31
+  HOMO = -0.249151848867111  LUMO = -0.123258249230472  gap/eV = 3.42574
+cycle= 7 E= -1317.20797131547  delta_E= -0.00152  |g|= 0.0337  |ddm|= 0.614
+  HOMO = -0.250370247934864  LUMO = -0.122529285428982  gap/eV = 3.47873
+cycle= 8 E= -1317.2081785355  delta_E= -0.000207  |g|= 0.0159  |ddm|= 0.413
+  HOMO = -0.25053237944968  LUMO = -0.123086924116715  gap/eV = 3.46797
+cycle= 9 E= -1317.20822826327  delta_E= -4.97e-05  |g|= 0.00361  |ddm|= 0.146
+  HOMO = -0.2504890882886  LUMO = -0.122907744552934  gap/eV = 3.47167
+cycle= 10 E= -1317.20822925639  delta_E= -9.93e-07  |g|= 0.0029  |ddm|= 0.037
+  HOMO = -0.250538556578885  LUMO = -0.122807084566292  gap/eV = 3.47575
+cycle= 11 E= -1317.20823055994  delta_E= -1.3e-06  |g|= 0.0014  |ddm|= 0.0272
+  HOMO = -0.250580392963244  LUMO = -0.122792779252436  gap/eV = 3.47728
+cycle= 12 E= -1317.20823084608  delta_E= -2.86e-07  |g|= 0.000676  |ddm|= 0.021
+  HOMO = -0.250557822586931  LUMO = -0.122821312438999  gap/eV = 3.47589
+cycle= 13 E= -1317.20823093632  delta_E= -9.02e-08  |g|= 8.74e-05  |ddm|= 0.00524
+  HOMO = -0.250558497419075  LUMO = -0.122821188928156  gap/eV = 3.47591
+cycle= 14 E= -1317.20823093757  delta_E= -1.25e-09  |g|= 5.33e-05  |ddm|= 0.000861
+  HOMO = -0.250559438434315  LUMO = -0.122819841013295  gap/eV = 3.47597
+cycle= 15 E= -1317.20823093785  delta_E= -2.76e-10  |g|= 3.98e-05  |ddm|= 0.000763
+  HOMO = -0.250559349060126  LUMO = -0.122819935918345  gap/eV = 3.47597
+cycle= 16 E= -1317.20823093795  delta_E= -9.82e-11  |g|= 3.39e-05  |ddm|= 0.000369
+  HOMO = -0.250558996441992  LUMO = -0.122819651027106  gap/eV = 3.47596
+cycle= 17 E= -1317.20823093817  delta_E= -2.18e-10  |g|= 5.76e-06  |ddm|= 0.000162
+  HOMO = -0.250559142137014  LUMO = -0.122819396792862  gap/eV = 3.47598
+cycle= 18 E= -1317.20823093817  delta_E= -9.09e-13  |g|= 4.46e-06  |ddm|= 6.31e-05
+  HOMO = -0.25055916821573  LUMO = -0.122819857333362  gap/eV = 3.47596
+Extra cycle  E= -1317.20823093815  delta_E= 1.5e-11  |g|= 1.16e-05  |ddm|= 0.000139
+converged SCF energy = -1317.20823093815

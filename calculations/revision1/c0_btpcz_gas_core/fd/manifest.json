@@ -1,0 +1,8 @@
+{
+  "case": "btpcz_gas",
+  "opt_xyz_sha256": "73ba98f9fd217065ffd630fab622edabe4eb079d1b220329169916d648c926b4",
+  "step_bohr": 0.005,
+  "ncol": 99,
+  "grid_level": 4,
+  "pcm_lebedev_order": 29
+}

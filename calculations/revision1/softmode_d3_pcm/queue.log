@@ -1,0 +1,133 @@
+
+===== queue: start softmode_d3_pcm attempt 1 at 2026-11-22T02:34:26+05:30 =====
+$ MAX_MEMORY_MB=${PCM_MAX_MEMORY_MB:-$MAX_MEMORY_MB} <run-dir>/env/bin/python dft/revision/softmode_check.py --job softmode_d3_pcm --out <run-dir>/queue/out/softmode_d3_pcm --geom <run-dir>/queue/out/opt_d3_pcm --model pcm --disp d3bj --ref-hessian auto --nmodes 10 --step 0.02
+[2026-11-22 02:34:27 AM IST] job softmode_d3_pcm (dft/revision/softmode_check.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/softmode_d3_pcm, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 02:34:27 AM IST] reference Hessian <run-dir>/repo/data/r2/molecules/btpc/results/btpc_pcm/hessian.npy: softest 10 modes at the target geometry: [-3.2  8.7 23.2 39.7 49.8 52.2 55.5 76.4 84.8 95.8] cm-1
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 02:55:05 AM IST] x0: E = -1317.3257068665 Ha, |sum g| 2.5e-05, 1238 s (15 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 03:09:46 AM IST] mode1+: E = -1317.3256878775 Ha, |sum g| 2.5e-05, 881 s (9 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 03:24:29 AM IST] mode1-: E = -1317.3256879117 Ha, |sum g| 2.5e-05, 883 s (9 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 03:40:13 AM IST] mode2+: E = -1317.3256294982 Ha, |sum g| 2.5e-05, 944 s (10 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 03:55:03 AM IST] mode2-: E = -1317.3256278026 Ha, |sum g| 2.5e-05, 890 s (9 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 04:09:48 AM IST] mode3+: E = -1317.3256715677 Ha, |sum g| 2.5e-05, 884 s (9 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 04:24:25 AM IST] mode3-: E = -1317.3256726643 Ha, |sum g| 2.4e-05, 877 s (9 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 04:39:08 AM IST] mode4+: E = -1317.3256678071 Ha, |sum g| 2.5e-05, 883 s (9 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 04:53:51 AM IST] mode4-: E = -1317.3256676741 Ha, |sum g| 2.4e-05, 883 s (9 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 05:09:41 AM IST] mode5+: E = -1317.3255409414 Ha, |sum g| 2.5e-05, 950 s (10 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 05:25:23 AM IST] mode5-: E = -1317.3255411998 Ha, |sum g| 2.4e-05, 943 s (10 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 05:40:10 AM IST] mode6+: E = -1317.3256541454 Ha, |sum g| 2.4e-05, 886 s (9 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 05:55:33 AM IST] mode6-: E = -1317.3256550062 Ha, |sum g| 2.5e-05, 923 s (10 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 06:11:00 AM IST] mode7+: E = -1317.3255754446 Ha, |sum g| 2.3e-05, 927 s (10 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 06:24:59 AM IST] mode7-: E = -1317.3255760232 Ha, |sum g| 2.6e-05, 839 s (10 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 06:37:12 AM IST] mode8+: E = -1317.3256187273 Ha, |sum g| 2.3e-05, 732 s (9 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 06:53:01 AM IST] mode8-: E = -1317.3256167915 Ha, |sum g| 2.6e-05, 950 s (10 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 07:08:01 AM IST] mode9+: E = -1317.3256493387 Ha, |sum g| 2.4e-05, 899 s (9 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 07:22:50 AM IST] mode9-: E = -1317.3256483707 Ha, |sum g| 2.5e-05, 889 s (9 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 07:35:29 AM IST] mode10+: E = -1317.3256781982 Ha, |sum g| 2.5e-05, 759 s (9 SCF cycles)
+WARN: Mole.unit (angstrom) is changed to Bohr
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+WARN: 4 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+[2026-11-22 07:48:02 AM IST] mode10-: E = -1317.3256772940 Ha, |sum g| 2.4e-05, 753 s (9 SCF cycles)
+[2026-11-22 07:48:02 AM IST] projected frequencies (cm-1): [ 96.7 100.4 186.6 196.8 314.6 348.4 435.7 481.3 571.1 671.8]; reference [-3.2  8.7 23.2 39.7 49.8 52.2 55.5 76.4 84.8 95.8]; updated full lowest [-269.1 -244.6 -213.4 -177.3 -131.4  -97. ]; asymmetry 1.91e-04; no imaginary frequency in the soft subspace
+[2026-11-22 07:48:02 AM IST] job softmode_d3_pcm finished (peak RSS 9828 MB)

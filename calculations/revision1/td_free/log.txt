@@ -1,0 +1,32 @@
+[2026-11-21 09:16:54 PM IST] job td_free (dft/revision/tddft.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/td_free, smoke False, restart #0; PySCF 2.14.0
+[2026-11-21 09:21:17 PM IST] opt/picrate-pcm step 0: E = -920.8144242911  grad rms/max 6.3e-03/2.0e-02
+[2026-11-21 09:24:30 PM IST] opt/picrate-pcm step 1: E = -920.8146431366  grad rms/max 3.3e-03/9.9e-03
+[2026-11-21 09:27:42 PM IST] opt/picrate-pcm step 2: E = -920.8148134178  grad rms/max 1.4e-03/3.6e-03
+[2026-11-21 09:30:59 PM IST] opt/picrate-pcm step 3: E = -920.8147764068  grad rms/max 1.8e-03/4.6e-03
+[2026-11-21 09:34:10 PM IST] opt/picrate-pcm step 4: E = -920.8148894487  grad rms/max 5.7e-04/1.2e-03
+[2026-11-21 09:37:12 PM IST] opt/picrate-pcm step 5: E = -920.8148988119  grad rms/max 5.2e-04/1.0e-03
+[2026-11-21 09:40:07 PM IST] opt/picrate-pcm step 6: E = -920.8149120158  grad rms/max 3.3e-04/7.5e-04
+[2026-11-21 09:43:07 PM IST] opt/picrate-pcm step 7: E = -920.8149194597  grad rms/max 2.7e-04/5.9e-04
+[2026-11-21 09:46:05 PM IST] opt/picrate-pcm step 8: E = -920.8149273571  grad rms/max 3.3e-04/5.8e-04
+[2026-11-21 09:49:18 PM IST] opt/picrate-pcm step 9: E = -920.8149282398  grad rms/max 3.6e-04/8.2e-04
+[2026-11-21 09:52:01 PM IST] opt/picrate-pcm step 10: E = -920.8149330956  grad rms/max 1.3e-04/2.3e-04
+[2026-11-21 09:54:47 PM IST] opt/picrate-pcm step 11: E = -920.8149330468  grad rms/max 1.6e-04/2.6e-04
+[2026-11-21 09:57:23 PM IST] opt/picrate-pcm step 12: E = -920.8149338320  grad rms/max 5.2e-05/9.7e-05
+[2026-11-21 09:57:23 PM IST] opt/picrate-pcm: converged in 13 steps
+[2026-11-21 10:47:42 PM IST] picrate-pcm/b3lyp: 20 states in 2771 s (PCMTDA); S1 3.045 eV (407 nm, f 0.2145); lowest bright S1 3.045 eV (407 nm, f 0.215)
+[2026-11-22 12:10:36 AM IST] picrate-pcm/camb3lyp: 20 states in 4713 s (PCMTDA); S1 3.392 eV (365 nm, f 0.2634); lowest bright S1 3.392 eV (365 nm, f 0.263)
+[2026-11-22 12:12:03 AM IST] opt/bta-pcm step 0: E = -395.9835311011  grad rms/max 1.9e-02/4.3e-02
+[2026-11-22 12:13:25 AM IST] opt/bta-pcm step 1: E = -395.9806385411  grad rms/max 2.3e-02/5.0e-02
+[2026-11-22 12:14:42 AM IST] opt/bta-pcm step 2: E = -395.9873726950  grad rms/max 7.0e-03/1.6e-02
+[2026-11-22 12:15:59 AM IST] opt/bta-pcm step 3: E = -395.9870950017  grad rms/max 7.6e-03/2.1e-02
+[2026-11-22 12:17:11 AM IST] opt/bta-pcm step 4: E = -395.9877532771  grad rms/max 3.6e-03/9.7e-03
+[2026-11-22 12:18:17 AM IST] opt/bta-pcm step 5: E = -395.9879057122  grad rms/max 1.0e-03/2.2e-03
+[2026-11-22 12:19:25 AM IST] opt/bta-pcm step 6: E = -395.9878976182  grad rms/max 1.1e-03/1.9e-03
+[2026-11-22 12:20:25 AM IST] opt/bta-pcm step 7: E = -395.9879150114  grad rms/max 4.5e-04/1.1e-03
+[2026-11-22 12:21:28 AM IST] opt/bta-pcm step 8: E = -395.9879115635  grad rms/max 5.8e-04/1.3e-03
+[2026-11-22 12:22:28 AM IST] opt/bta-pcm step 9: E = -395.9879200927  grad rms/max 1.0e-04/2.5e-04
+[2026-11-22 12:23:22 AM IST] opt/bta-pcm step 10: E = -395.9879202960  grad rms/max 6.9e-05/1.2e-04
+[2026-11-22 12:23:22 AM IST] opt/bta-pcm: converged in 11 steps
+[2026-11-22 12:40:01 AM IST] bta-pcm/b3lyp: 20 states in 919 s (PCMTDA); S1 4.895 eV (253 nm, f 0.1068); lowest bright S1 4.895 eV (253 nm, f 0.107)
+[2026-11-22 01:03:34 AM IST] bta-pcm/camb3lyp: 20 states in 1326 s (PCMTDA); S1 5.144 eV (241 nm, f 0.1277); lowest bright S1 5.144 eV (241 nm, f 0.128)
+[2026-11-22 01:03:34 AM IST] job td_free finished (peak RSS 7033 MB)

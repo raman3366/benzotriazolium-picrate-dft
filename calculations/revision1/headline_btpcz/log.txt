@@ -1,0 +1,41 @@
+[2026-11-22 07:17:38 AM IST] job headline_btpcz (dft/revision/headline.py) on <vm-1>: threads 4, max_memory 8000 MB, scratch <run-dir>/scratch/headline_btpcz, smoke False, restart #0; PySCF 2.14.0
+[2026-11-22 07:17:38 AM IST] gas|eps=1: SCF (606 AO, gas), guess minao
+[2026-11-22 07:24:03 AM IST] gas|eps=1: E = -1317.2113973942 Ha (16 cycles, 384 s); HOMO -7.4302 (cation), LUMO -3.5918 (anion, cation 0.1 %), gap 3.8384 eV; Delta(cat-an) +1.4386 eV
+[2026-11-22 07:24:03 AM IST] gas|eps=2: SCF (606 AO, IEF-PCM eps=2), guess <run-dir>/queue/out/headline_btpcz/chk/gas_eps1.chk
+[2026-11-22 07:24:03 AM IST] initial density from <run-dir>/queue/out/headline_btpcz/chk/gas_eps1.chk
+[2026-11-22 07:35:05 AM IST] gas|eps=2: E = -1317.2232784707 Ha (11 cycles, 662 s); HOMO -7.1845 (cation), LUMO -3.5253 (anion, cation 0.1 %), gap 3.6592 eV; Delta(cat-an) +1.5919 eV
+[2026-11-22 07:35:05 AM IST] gas|eps=4: SCF (606 AO, IEF-PCM eps=4), guess <run-dir>/queue/out/headline_btpcz/chk/gas_eps2.chk
+[2026-11-22 07:35:05 AM IST] initial density from <run-dir>/queue/out/headline_btpcz/chk/gas_eps2.chk
+[2026-11-22 07:46:06 AM IST] gas|eps=4: E = -1317.2319906894 Ha (11 cycles, 661 s); HOMO -7.0661 (cation), LUMO -3.4821 (anion, cation 0.1 %), gap 3.5840 eV; Delta(cat-an) +1.6480 eV
+[2026-11-22 07:46:06 AM IST] gas|eps=8: SCF (606 AO, IEF-PCM eps=8), guess <run-dir>/queue/out/headline_btpcz/chk/gas_eps4.chk
+[2026-11-22 07:46:06 AM IST] initial density from <run-dir>/queue/out/headline_btpcz/chk/gas_eps4.chk
+[2026-11-22 07:56:02 AM IST] gas|eps=8: E = -1317.2375635461 Ha (10 cycles, 595 s); HOMO -7.0123 (cation), LUMO -3.4569 (anion, cation 0.1 %), gap 3.5554 eV; Delta(cat-an) +1.6640 eV
+[2026-11-22 07:56:02 AM IST] gas|eps=20: SCF (606 AO, IEF-PCM eps=20), guess <run-dir>/queue/out/headline_btpcz/chk/gas_eps8.chk
+[2026-11-22 07:56:02 AM IST] initial density from <run-dir>/queue/out/headline_btpcz/chk/gas_eps8.chk
+[2026-11-22 08:05:05 AM IST] gas|eps=20: E = -1317.2414726044 Ha (9 cycles, 543 s); HOMO -6.9834 (cation), LUMO -3.4405 (anion, cation 0.1 %), gap 3.5429 eV; Delta(cat-an) +1.6674 eV
+[2026-11-22 08:05:05 AM IST] gas|eps=78.3553: SCF (606 AO, IEF-PCM eps=78.3553), guess <run-dir>/queue/out/headline_btpcz/chk/gas_eps20.chk
+[2026-11-22 08:05:05 AM IST] initial density from <run-dir>/queue/out/headline_btpcz/chk/gas_eps20.chk
+[2026-11-22 08:14:13 AM IST] gas|eps=78.3553: E = -1317.2436123698 Ha (9 cycles, 548 s); HOMO -6.9703 (cation), LUMO -3.4320 (anion, cation 0.1 %), gap 3.5384 eV; Delta(cat-an) +1.6668 eV
+[2026-11-22 08:14:14 AM IST] gas: no LUMO switch in the eps range; LUMO on {'1': 'anion', '2': 'anion', '4': 'anion', '8': 'anion', '20': 'anion', '78.3553': 'anion'}
+[2026-11-22 08:14:14 AM IST] pcm|eps=1: SCF (606 AO, gas), guess minao
+[2026-11-22 08:20:04 AM IST] pcm|eps=1: E = -1317.2000613234 Ha (18 cycles, 350 s); HOMO -6.4571 (anion), LUMO -3.8381 (cation, cation 99.9 %), gap 2.6190 eV; Delta(cat-an) -1.1355 eV
+[2026-11-22 08:20:04 AM IST] pcm|eps=2: SCF (606 AO, IEF-PCM eps=2), guess <run-dir>/queue/out/headline_btpcz/chk/pcm_eps1.chk
+[2026-11-22 08:20:04 AM IST] initial density from <run-dir>/queue/out/headline_btpcz/chk/pcm_eps1.chk
+[2026-11-22 08:31:44 AM IST] pcm|eps=2: E = -1317.2225132884 Ha (12 cycles, 699 s); HOMO -6.6797 (anion), LUMO -3.2269 (cation, cation 98.7 %), gap 3.4528 eV; Delta(cat-an) -0.3069 eV
+[2026-11-22 08:31:44 AM IST] pcm|eps=4: SCF (606 AO, IEF-PCM eps=4), guess <run-dir>/queue/out/headline_btpcz/chk/pcm_eps2.chk
+[2026-11-22 08:31:44 AM IST] initial density from <run-dir>/queue/out/headline_btpcz/chk/pcm_eps2.chk
+[2026-11-22 08:42:33 AM IST] pcm|eps=4: E = -1317.2368156914 Ha (11 cycles, 649 s); HOMO -6.7984 (anion), LUMO -3.0538 (anion, cation 3.9 %), gap 3.7446 eV; Delta(cat-an) +0.1651 eV
+[2026-11-22 08:42:33 AM IST] pcm|eps=8: SCF (606 AO, IEF-PCM eps=8), guess <run-dir>/queue/out/headline_btpcz/chk/pcm_eps4.chk
+[2026-11-22 08:42:33 AM IST] initial density from <run-dir>/queue/out/headline_btpcz/chk/pcm_eps4.chk
+[2026-11-22 08:52:34 AM IST] pcm|eps=8: E = -1317.2452007423 Ha (10 cycles, 600 s); HOMO -6.8578 (anion), LUMO -3.1154 (anion, cation 0.9 %), gap 3.7424 eV; Delta(cat-an) +0.3861 eV
+[2026-11-22 08:52:34 AM IST] pcm|eps=20: SCF (606 AO, IEF-PCM eps=20), guess <run-dir>/queue/out/headline_btpcz/chk/pcm_eps8.chk
+[2026-11-22 08:52:34 AM IST] initial density from <run-dir>/queue/out/headline_btpcz/chk/pcm_eps8.chk
+[2026-11-22 09:01:49 AM IST] pcm|eps=20: E = -1317.2507777025 Ha (9 cycles, 555 s); HOMO -6.8926 (anion), LUMO -3.1546 (anion, cation 0.6 %), gap 3.7380 eV; Delta(cat-an) +0.5622 eV
+[2026-11-22 09:01:49 AM IST] pcm|eps=78.3553: SCF (606 AO, IEF-PCM eps=78.3553), guess <run-dir>/queue/out/headline_btpcz/chk/pcm_eps20.chk
+[2026-11-22 09:01:49 AM IST] initial density from <run-dir>/queue/out/headline_btpcz/chk/pcm_eps20.chk
+[2026-11-22 09:10:59 AM IST] pcm|eps=78.3553: E = -1317.2537338943 Ha (9 cycles, 550 s); HOMO -6.9095 (anion), LUMO -3.1743 (anion, cation 0.5 %), gap 3.7351 eV; Delta(cat-an) +0.6162 eV
+[2026-11-22 09:11:00 AM IST] pcm|eps=2.963: SCF (606 AO, IEF-PCM eps=2.963), guess <run-dir>/queue/out/headline_btpcz/chk/pcm_eps2.chk
+[2026-11-22 09:11:00 AM IST] initial density from <run-dir>/queue/out/headline_btpcz/chk/pcm_eps2.chk
+[2026-11-22 09:20:57 AM IST] pcm|eps=2.963: E = -1317.2314874130 Ha (10 cycles, 597 s); HOMO -6.7566 (anion), LUMO -3.0388 (cation, cation 55.8 %), gap 3.7179 eV; Delta(cat-an) -0.0634 eV
+[2026-11-22 09:20:57 AM IST] pcm: LUMO switches cation->anion at eps ~ 3.193 (f-interpolation; ln-eps 3.220), bracket [2.963, 4.0]
+[2026-11-22 09:20:57 AM IST] job headline_btpcz finished (peak RSS 9826 MB)

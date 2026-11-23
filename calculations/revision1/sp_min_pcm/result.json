@@ -1,0 +1,618 @@
+{
+  "job": "sp_min_pcm",
+  "script": "dft/revision/singlepoints.py",
+  "argv": [
+    "dft/revision/singlepoints.py",
+    "--job",
+    "sp_min_pcm",
+    "--out",
+    "<run-dir>/queue/out/sp_min_pcm",
+    "--xyz",
+    "<run-dir>/repo/molecules/btpc/results/btpc_pcm/opt.xyz",
+    "--solvent",
+    "water",
+    "--methods",
+    "wb97x-d3bj,m062x,pbe0,cam-b3lyp,dfmp2",
+    "--no-grid-check"
+  ],
+  "smoke": false,
+  "status": "done",
+  "started": "2026-11-22T01:06:16+05:30",
+  "restarts": 2,
+  "last_start": "2026-11-22T06:38:36+05:30",
+  "finished": "2026-11-22T06:41:48+05:30",
+  "host": {
+    "hostname": "<vm-1>",
+    "machine": "x86_64",
+    "cpu": "AMD EPYC 7B13",
+    "cpu_count": 32,
+    "ram_mb": 128799
+  },
+  "threads": 4,
+  "max_memory_mb": 16000,
+  "scratch": "<run-dir>/scratch/sp_min_pcm",
+  "software": {
+    "python": "3.11.16",
+    "pyscf": "2.14.0",
+    "numpy": "2.4.6",
+    "executable": "<run-dir>/env/bin/python",
+    "prefix": "<run-dir>/env",
+    "scipy": "1.17.1",
+    "h5py": "3.16.0",
+    "geometric": "1.1.1",
+    "libxc": "7.1.2",
+    "pyscf-dispersion": "1.5.0",
+    "conda_builds": {
+      "pyscf": "2.14.0 py311h990ede3_1302",
+      "pyscf-dispersion": "1.5.0 py311h5df2867_0",
+      "libxc-c": "7.1.2 cpu_hed2233d_2",
+      "libcint": "6.1.3 h64ba90f_2",
+      "libopenblas": "0.3.34 pthreads_hf13c14d_2",
+      "libblas": "3.11.0 12_h4a7cf45_openblas",
+      "numpy": "2.4.6 py311h2e04523_0",
+      "scipy": "1.17.1 py311hbe70eeb_1",
+      "geometric": "1.1.1 pyhd8ed1ab_0",
+      "python": "3.11.16 h5f976f7_2_cpython",
+      "_x86_64-microarch-level": "3 3_x86_64_v3"
+    }
+  },
+  "script_sha256": {
+    "singlepoints.py": "8eddc675d38d9808ddca7ee1a4c01bc10ccecf0c345f7d1b9e8ccbb6a062f381",
+    "rev_common.py": "fba929added9222d92adeca239e64fcb87eaaeefe6511ad436c2624eba72515a",
+    "proton_scan.py": "40700af2261d997133f57a35785309db744535ad3cd5022f207a2a260b800185"
+  },
+  "settings": {
+    "basis": "6-311++g(d,p)",
+    "grid_level": 4,
+    "grid_check_level": 5,
+    "pcm_lebedev_order": 29,
+    "solvent": "water",
+    "eps": 78.3553,
+    "pcm_method": "IEF-PCM",
+    "conv_tol": 1e-10,
+    "max_cycle": 150,
+    "density_fit": true,
+    "dft_auxbasis": "PySCF default (aug-cc-pVTZ-JKFIT)",
+    "mp2_auxbasis": "aug-cc-pvtz-ri",
+    "mp2_frozen_core": "pyscf.data.elements.chemcore",
+    "scs_mp2": [
+      1.2,
+      0.3333333333333333
+    ],
+    "case": "btpc_gas",
+    "methods": [
+      "wb97x-d3bj",
+      "m062x",
+      "pbe0",
+      "cam-b3lyp",
+      "dfmp2"
+    ],
+    "select": "lowest",
+    "geometries": [
+      {
+        "label": "opt",
+        "source": "xyz",
+        "path": "<run-dir>/repo/molecules/btpc/results/btpc_pcm/opt.xyz",
+        "r_target_A": null,
+        "chain": "xyz",
+        "E_b3lyp_Ha": null,
+        "chk": null,
+        "r_NH_A": 1.05258,
+        "r_HO_A": 1.63529,
+        "r_NO_A": 2.67182,
+        "NHO_deg": 167.16381,
+        "delta_A": -0.58272,
+        "local": "geoms/opt.xyz"
+      }
+    ]
+  },
+  "inputs": {
+    "case": {
+      "path": "molecules/btpc/cases/btpc_gas.json",
+      "sha256": "2bfe9b766a4937b7bc9179ec861e86d5d3aac512a1687588a16f26ffff25aebc"
+    }
+  },
+  "items": {
+    "opt|wb97x-d3bj": {
+      "geometry": "opt",
+      "method": "wb97x-d3bj",
+      "kind": "dft",
+      "xc": "wb97x-d3bj",
+      "grid_level": 4,
+      "E_Ha": -1317.606695153187,
+      "scf_cycles": 16,
+      "scf_wall_s": 989.1,
+      "guess": "minao",
+      "newton_fallback": false,
+      "scf_settings": {
+        "method": "PCMDFRKS",
+        "xc": "wb97x-d3bj",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": {
+          "model": "IEF-PCM",
+          "eps": 78.3553,
+          "lebedev_order": 29,
+          "vdw_scale": 1.2,
+          "r_probe": 0.0,
+          "radii_table": null,
+          "surface_discretization_method": "SWIG",
+          "equilibrium_solvation": false
+        },
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/opt_wb97x-d3bj.chk",
+      "E_disp_Ha": -0.07840037746962898,
+      "E_solvation_Ha": -0.05923344534222529,
+      "charges": {
+        "mulliken": {
+          "picrate": -1.00767,
+          "cation_core": 0.25976,
+          "H": 0.74792,
+          "picrate_plus_H": -0.25975,
+          "cation_with_H": 1.00768
+        },
+        "lowdin": {
+          "picrate": -0.85521,
+          "cation_core": 0.72473,
+          "H": 0.13049,
+          "picrate_plus_H": -0.72472,
+          "cation_with_H": 0.85522
+        }
+      },
+      "HOMO_eV": -9.04998279316658,
+      "LUMO_eV": -0.891347257760245,
+      "gap_eV": 8.158635535406335,
+      "frontier_composition_mulliken_pct": {
+        "HOMO-1": {
+          "anion": 0.16,
+          "cation": 99.84
+        },
+        "HOMO": {
+          "anion": 99.96,
+          "cation": 0.04
+        },
+        "LUMO": {
+          "anion": 99.77,
+          "cation": 0.23
+        },
+        "LUMO+1": {
+          "anion": 99.69,
+          "cation": 0.31
+        }
+      },
+      "dipole_debye": [
+        14.9708,
+        -15.9706,
+        7.9718
+      ],
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_pcm_points": 3853,
+      "n_mo": 603,
+      "r_HO_A": 1.63529,
+      "wall_s": 989.4,
+      "peak_rss_mb": 9812.2,
+      "status": "done",
+      "at": "2026-11-22T01:22:45+05:30"
+    },
+    "opt|m062x": {
+      "geometry": "opt",
+      "method": "m062x",
+      "kind": "dft",
+      "xc": "m062x",
+      "grid_level": 4,
+      "E_Ha": -1316.731921567622,
+      "scf_cycles": 15,
+      "scf_wall_s": 1100.7,
+      "guess": "minao",
+      "newton_fallback": false,
+      "scf_settings": {
+        "method": "PCMDFRKS",
+        "xc": "m062x",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": {
+          "model": "IEF-PCM",
+          "eps": 78.3553,
+          "lebedev_order": 29,
+          "vdw_scale": 1.2,
+          "r_probe": 0.0,
+          "radii_table": null,
+          "surface_discretization_method": "SWIG",
+          "equilibrium_solvation": false
+        },
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/opt_m062x.chk",
+      "E_solvation_Ha": -0.05933347189679397,
+      "charges": {
+        "mulliken": {
+          "picrate": -1.00288,
+          "cation_core": 0.28946,
+          "H": 0.71342,
+          "picrate_plus_H": -0.28946,
+          "cation_with_H": 1.00288
+        },
+        "lowdin": {
+          "picrate": -0.86,
+          "cation_core": 0.72165,
+          "H": 0.13835,
+          "picrate_plus_H": -0.72165,
+          "cation_with_H": 0.86
+        }
+      },
+      "HOMO_eV": -8.131727045608445,
+      "LUMO_eV": -2.122819716144499,
+      "gap_eV": 6.008907329463945,
+      "frontier_composition_mulliken_pct": {
+        "HOMO-1": {
+          "anion": 0.15,
+          "cation": 99.85
+        },
+        "HOMO": {
+          "anion": 99.93,
+          "cation": 0.07
+        },
+        "LUMO": {
+          "anion": 99.74,
+          "cation": 0.26
+        },
+        "LUMO+1": {
+          "anion": 99.7,
+          "cation": 0.3
+        }
+      },
+      "dipole_debye": [
+        15.0688,
+        -16.1526,
+        7.9805
+      ],
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_pcm_points": 3853,
+      "n_mo": 603,
+      "r_HO_A": 1.63529,
+      "wall_s": 1100.9,
+      "peak_rss_mb": 9812.2,
+      "status": "done",
+      "at": "2026-11-22T01:41:06+05:30"
+    },
+    "opt|pbe0": {
+      "geometry": "opt",
+      "method": "pbe0",
+      "kind": "dft",
+      "xc": "pbe0",
+      "grid_level": 4,
+      "E_Ha": -1315.817211010432,
+      "scf_cycles": 15,
+      "scf_wall_s": 870.5,
+      "guess": "minao",
+      "newton_fallback": false,
+      "scf_settings": {
+        "method": "PCMDFRKS",
+        "xc": "pbe0",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": {
+          "model": "IEF-PCM",
+          "eps": 78.3553,
+          "lebedev_order": 29,
+          "vdw_scale": 1.2,
+          "r_probe": 0.0,
+          "radii_table": null,
+          "surface_discretization_method": "SWIG",
+          "equilibrium_solvation": false
+        },
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/opt_pbe0.chk",
+      "E_solvation_Ha": -0.05887756293187193,
+      "charges": {
+        "mulliken": {
+          "picrate": -1.01508,
+          "cation_core": 0.21137,
+          "H": 0.8037,
+          "picrate_plus_H": -0.21138,
+          "cation_with_H": 1.01507
+        },
+        "lowdin": {
+          "picrate": -0.85524,
+          "cation_core": 0.72411,
+          "H": 0.13113,
+          "picrate_plus_H": -0.72411,
+          "cation_with_H": 0.85524
+        }
+      },
+      "HOMO_eV": -7.095708851023708,
+      "LUMO_eV": -2.9651842121473755,
+      "gap_eV": 4.130524638876333,
+      "frontier_composition_mulliken_pct": {
+        "HOMO-1": {
+          "anion": 0.22,
+          "cation": 99.78
+        },
+        "HOMO": {
+          "anion": 99.92,
+          "cation": 0.08
+        },
+        "LUMO": {
+          "anion": 99.86,
+          "cation": 0.14
+        },
+        "LUMO+1": {
+          "anion": 99.86,
+          "cation": 0.14
+        }
+      },
+      "dipole_debye": [
+        15.2059,
+        -16.4054,
+        7.9053
+      ],
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_pcm_points": 3853,
+      "n_mo": 603,
+      "r_HO_A": 1.63529,
+      "wall_s": 870.7,
+      "peak_rss_mb": 9812.2,
+      "status": "done",
+      "at": "2026-11-22T01:55:37+05:30"
+    },
+    "opt|cam-b3lyp": {
+      "geometry": "opt",
+      "method": "cam-b3lyp",
+      "kind": "dft",
+      "xc": "cam-b3lyp",
+      "grid_level": 4,
+      "E_Ha": -1316.6994159926967,
+      "scf_cycles": 15,
+      "scf_wall_s": 972.5,
+      "guess": "minao",
+      "newton_fallback": false,
+      "scf_settings": {
+        "method": "PCMDFRKS",
+        "xc": "cam-b3lyp",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": {
+          "model": "IEF-PCM",
+          "eps": 78.3553,
+          "lebedev_order": 29,
+          "vdw_scale": 1.2,
+          "r_probe": 0.0,
+          "radii_table": null,
+          "surface_discretization_method": "SWIG",
+          "equilibrium_solvation": false
+        },
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/opt_cam-b3lyp.chk",
+      "E_solvation_Ha": -0.060095417577421886,
+      "charges": {
+        "mulliken": {
+          "picrate": -0.99706,
+          "cation_core": 0.27869,
+          "H": 0.71838,
+          "picrate_plus_H": -0.27868,
+          "cation_with_H": 0.99707
+        },
+        "lowdin": {
+          "picrate": -0.85354,
+          "cation_core": 0.72106,
+          "H": 0.13248,
+          "picrate_plus_H": -0.72106,
+          "cation_with_H": 0.85354
+        }
+      },
+      "HOMO_eV": -8.195777088300016,
+      "LUMO_eV": -1.9230871577102322,
+      "gap_eV": 6.272689930589784,
+      "frontier_composition_mulliken_pct": {
+        "HOMO-1": {
+          "anion": 0.17,
+          "cation": 99.83
+        },
+        "HOMO": {
+          "anion": 99.93,
+          "cation": 0.07
+        },
+        "LUMO": {
+          "anion": 99.81,
+          "cation": 0.19
+        },
+        "LUMO+1": {
+          "anion": 99.79,
+          "cation": 0.21
+        }
+      },
+      "dipole_debye": [
+        15.08,
+        -16.1252,
+        7.877
+      ],
+      "n_grid_points": 834040,
+      "n_aux": 2968,
+      "n_pcm_points": 3853,
+      "n_mo": 603,
+      "r_HO_A": 1.63529,
+      "wall_s": 972.9,
+      "peak_rss_mb": 9812.2,
+      "status": "done",
+      "at": "2026-11-22T02:11:50+05:30"
+    },
+    "opt|dfmp2": {
+      "geometry": "opt",
+      "method": "dfmp2",
+      "kind": "mp2",
+      "E_HF_Ha": -1309.7428873937424,
+      "E_corr_Ha": -4.127160324983532,
+      "E_corr_os_Ha": -2.971295770816786,
+      "E_corr_ss_Ha": -1.1558645541667456,
+      "E_Ha": -1313.870047718726,
+      "E_SCS_MP2_Ha": -1313.6937305034448,
+      "frozen_core_orbitals": 25,
+      "mp2_auxbasis": "aug-cc-pvtz-ri",
+      "n_aux_mp2": 3018,
+      "hf_auxbasis": "PySCF default JK-fit",
+      "hf_scf_cycles": 1,
+      "hf_wall_s": 131.8,
+      "mp2_wall_s": 58.9,
+      "guess": "<run-dir>/queue/out/sp_min_pcm/chk/opt_dfmp2.chk",
+      "newton_fallback": false,
+      "HF_HOMO_eV": -9.23727310793636,
+      "HF_LUMO_eV": 0.6496665955099291,
+      "scf_settings": {
+        "method": "PCMDFRHF",
+        "xc": null,
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 606,
+        "nelectron": 178,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": null,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 16000,
+        "density_fit": true,
+        "solvent": {
+          "model": "IEF-PCM",
+          "eps": 78.3553,
+          "lebedev_order": 29,
+          "vdw_scale": 1.2,
+          "r_probe": 0.0,
+          "radii_table": null,
+          "surface_discretization_method": "SWIG",
+          "equilibrium_solvation": false
+        },
+        "auxbasis": null,
+        "auxbasis_default": {
+          "N": "aug-cc-pvtz-jkfit",
+          "H": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "chk": "chk/opt_dfmp2.chk",
+      "solvent_scheme": "PTE: MP2 correlation with the IEF-PCM reaction field frozen at the HF density",
+      "E_solvation_HF_Ha": -0.06444093840476704,
+      "n_aux": 2968,
+      "n_pcm_points": 3853,
+      "n_mo": 603,
+      "r_HO_A": 1.63529,
+      "wall_s": 190.9,
+      "peak_rss_mb": 15640.8,
+      "status": "done",
+      "at": "2026-11-22T06:41:48+05:30"
+    }
+  },
+  "timings": {
+    "opt|wb97x-d3bj": 989.4,
+    "opt|m062x": 1100.9,
+    "opt|pbe0": 870.7,
+    "opt|cam-b3lyp": 972.9,
+    "opt|dfmp2": 190.9
+  },
+  "error": null,
+  "summary": {
+    "reference_geometry": "lowest per method",
+    "E_ref_Ha": {
+      "wb97x-d3bj": -1317.606695153187,
+      "m062x": -1316.731921567622,
+      "pbe0": -1315.817211010432,
+      "cam-b3lyp": -1316.6994159926967,
+      "dfmp2": -1313.870047718726,
+      "scs-mp2": -1313.6937305034448
+    },
+    "columns": [
+      "wb97x-d3bj",
+      "m062x",
+      "pbe0",
+      "cam-b3lyp",
+      "dfmp2",
+      "scs-mp2"
+    ],
+    "rows": [
+      {
+        "geometry": "opt",
+        "r_HO_A": 1.63529,
+        "r_NH_A": 1.05258,
+        "r_NO_A": 2.67182,
+        "wb97x-d3bj": 0.0,
+        "m062x": 0.0,
+        "pbe0": 0.0,
+        "cam-b3lyp": 0.0,
+        "dfmp2": 0.0,
+        "scs-mp2": 0.0
+      }
+    ]
+  },
+  "peak_rss_mb": 15640.8
+}

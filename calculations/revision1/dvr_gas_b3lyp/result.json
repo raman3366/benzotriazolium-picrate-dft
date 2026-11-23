@@ -1,0 +1,598 @@
+{
+  "job": "dvr_gas_b3lyp",
+  "script": "dft/revision/dvr.py",
+  "argv": [
+    "dft/revision/dvr.py",
+    "--job",
+    "dvr_gas_b3lyp",
+    "--out",
+    "<run-dir>/queue/out/dvr_gas_b3lyp",
+    "--scan",
+    "<run-dir>/queue/out/scan_gas_up",
+    "--scan",
+    "<run-dir>/queue/out/scan_gas_down",
+    "--scan",
+    "<run-dir>/queue/out/scan_gas_neutral",
+    "--selftest"
+  ],
+  "smoke": false,
+  "status": "done",
+  "started": "2026-11-22T04:55:57+05:30",
+  "restarts": 0,
+  "last_start": "2026-11-22T04:55:57+05:30",
+  "finished": "2026-11-22T04:56:01+05:30",
+  "host": {
+    "hostname": "<vm-1>",
+    "machine": "x86_64",
+    "cpu_count": 32
+  },
+  "threads": 1,
+  "software": {
+    "python": "3.11.16",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "executable": "<run-dir>/env/bin/python",
+    "matplotlib": "3.11.2"
+  },
+  "script_sha256": {
+    "dvr.py": "30b53ef71ae5b64a3b5443fca748e2fe979ed072ec61e1c2263e04b23737e60a"
+  },
+  "settings": {
+    "coord": "xH",
+    "mass": "H",
+    "interp": "cubic",
+    "walls": "extrapolate",
+    "npts": 801,
+    "pad_A": 0.3,
+    "nlevels": 6,
+    "chains": "all",
+    "methods": "all",
+    "sensitivity": [
+      [
+        "xH",
+        "H",
+        "pchip",
+        "extrapolate"
+      ],
+      [
+        "xH",
+        "H",
+        "cubic",
+        "box"
+      ],
+      [
+        "xH",
+        "reduced",
+        "cubic",
+        "extrapolate"
+      ],
+      [
+        "half_delta",
+        "H",
+        "cubic",
+        "extrapolate"
+      ],
+      [
+        "rHO",
+        "H",
+        "cubic",
+        "extrapolate"
+      ],
+      [
+        "mwpath",
+        "unit",
+        "cubic",
+        "extrapolate"
+      ]
+    ],
+    "masses_u": {
+      "H": 1.00782503207,
+      "C": 12.0,
+      "N": 14.0030740048,
+      "O": 15.99491461956,
+      "Cl": 34.96885268,
+      "S": 31.972071,
+      "Zn": 63.9291422
+    },
+    "constants": {
+      "bohr_A": 0.529177210903,
+      "u_me": 1822.888486209,
+      "hartree_cm": 219474.6313632,
+      "hartree_kcal": 627.509474
+    },
+    "proton_atoms_0based": {
+      "H": 31,
+      "donor_N": 18,
+      "acceptor_O": 0
+    }
+  },
+  "inputs": {
+    "result:<run-dir>/queue/out/scan_gas_up": {
+      "path": "<run-dir>/queue/out/scan_gas_up/result.json",
+      "sha256": "79e5c67d2aa7c9f8c4fb622c6871e84b4e4fd2254e870a24d631b948075e6493"
+    },
+    "result:<run-dir>/queue/out/scan_gas_down": {
+      "path": "<run-dir>/queue/out/scan_gas_down/result.json",
+      "sha256": "e44a4aa69012e79792a882ee4435358a87dff4a3dba8b5fae542b98bbf40b909"
+    },
+    "result:<run-dir>/queue/out/scan_gas_neutral": {
+      "path": "<run-dir>/queue/out/scan_gas_neutral/result.json",
+      "sha256": "e95aee95a818c905f66e587ce883452a16a9e483e86f97ff2d5781c3a9d23379"
+    }
+  },
+  "items": {
+    "b3lyp": {
+      "coord": "xH",
+      "mass": "H",
+      "mass_u": 1.00782503207,
+      "interp": "cubic",
+      "walls": "extrapolate",
+      "npts": 801,
+      "dx_A": 0.0025942243795603853,
+      "grid_A": [
+        -1.7753795036482651,
+        0.3
+      ],
+      "scan_range_A": [
+        -1.475379503648265,
+        0.0
+      ],
+      "grid_convergence_cm": 2.4965478305977156,
+      "ZPE_cm": 280.61,
+      "ZPE_kcal": 0.8023,
+      "fundamental_cm": 473.77,
+      "levels": [
+        {
+          "n": 0,
+          "E_cm": 280.61,
+          "E_kcal": 0.8023,
+          "P_O_side": 0.99796,
+          "P_outside_scan": 0.24352
+        },
+        {
+          "n": 1,
+          "E_cm": 754.38,
+          "E_kcal": 2.1569,
+          "P_O_side": 0.73629,
+          "P_outside_scan": 0.17452
+        },
+        {
+          "n": 2,
+          "E_cm": 912.18,
+          "E_kcal": 2.6081,
+          "P_O_side": 0.27027,
+          "P_outside_scan": 0.13548
+        },
+        {
+          "n": 3,
+          "E_cm": 1214.43,
+          "E_kcal": 3.4722,
+          "P_O_side": 0.37335,
+          "P_outside_scan": 0.22759
+        },
+        {
+          "n": 4,
+          "E_cm": 1536.33,
+          "E_kcal": 4.3926,
+          "P_O_side": 0.48804,
+          "P_outside_scan": 0.3097
+        },
+        {
+          "n": 5,
+          "E_cm": 1949.86,
+          "E_kcal": 5.5749,
+          "P_O_side": 0.40849,
+          "P_outside_scan": 0.32446
+        }
+      ],
+      "minima": [
+        {
+          "x_A": -1.0147,
+          "r_HO_A": 1.4335,
+          "V_kcal": 2.0427,
+          "side": "N"
+        }
+      ],
+      "maxima": [
+        {
+          "x_A": -0.7325,
+          "r_HO_A": 1.2319,
+          "V_kcal": 2.3582
+        }
+      ],
+      "boundary_minimum": [
+        "O end"
+      ],
+      "transfer_point_x_A": -0.7378,
+      "V_transfer_point_kcal": 2.3576,
+      "ground_turning_points_A": [
+        -0.3589329924083243,
+        0.3
+      ],
+      "barrier": null,
+      "second_minimum": null,
+      "second_minimum_below_ZPE": null,
+      "range_limited": true,
+      "data_minima": [
+        {
+          "index": 4,
+          "r_HO_A": 1.437,
+          "V_kcal": 2.0429
+        }
+      ],
+      "spline_undershoot_kcal": 0.0,
+      "warnings": [
+        "the lowest point is at the O end of the scan: the scan does not bracket the minimum",
+        "the profile does not rise toward the O end; the extension there is flat up to the hard wall",
+        "24.4 % of the ground state lies outside the scanned range",
+        "DVR grid not converged (2.50 cm-1 between N and 2N-1 points)"
+      ],
+      "method": "b3lyp",
+      "source": "proton_scan",
+      "n_points": 14,
+      "points": [
+        {
+          "label": "up_1.700",
+          "r_HO_A": 1.7,
+          "r_NH_A": 1.0592,
+          "x_A": -1.47538,
+          "dE_kcal": 2.6025
+        },
+        {
+          "label": "up_1.600",
+          "r_HO_A": 1.6,
+          "r_NH_A": 1.0714,
+          "x_A": -1.32997,
+          "dE_kcal": 2.2936
+        },
+        {
+          "label": "up_1.520",
+          "r_HO_A": 1.52,
+          "r_NH_A": 1.0865,
+          "x_A": -1.19929,
+          "dE_kcal": 2.1117
+        },
+        {
+          "label": "up_1.460",
+          "r_HO_A": 1.46,
+          "r_NH_A": 1.1019,
+          "x_A": -1.04527,
+          "dE_kcal": 2.0504
+        },
+        {
+          "label": "min",
+          "r_HO_A": 1.437,
+          "r_NH_A": 1.1093,
+          "x_A": -1.01909,
+          "dE_kcal": 2.0429
+        },
+        {
+          "label": "down_1.400",
+          "r_HO_A": 1.4,
+          "r_NH_A": 1.1235,
+          "x_A": -0.97226,
+          "dE_kcal": 2.0601
+        },
+        {
+          "label": "down_1.340",
+          "r_HO_A": 1.34,
+          "r_NH_A": 1.1523,
+          "x_A": -0.88875,
+          "dE_kcal": 2.1583
+        },
+        {
+          "label": "neutral_1.280",
+          "r_HO_A": 1.28,
+          "r_NH_A": 1.1932,
+          "x_A": -0.79955,
+          "dE_kcal": 2.2959
+        },
+        {
+          "label": "down_1.230",
+          "r_HO_A": 1.23,
+          "r_NH_A": 1.2412,
+          "x_A": -0.72982,
+          "dE_kcal": 2.358
+        },
+        {
+          "label": "down_1.180",
+          "r_HO_A": 1.18,
+          "r_NH_A": 1.3074,
+          "x_A": -0.66158,
+          "dE_kcal": 2.2512
+        },
+        {
+          "label": "down_1.130",
+          "r_HO_A": 1.13,
+          "r_NH_A": 1.4036,
+          "x_A": -0.57157,
+          "dE_kcal": 1.8431
+        },
+        {
+          "label": "down_1.080",
+          "r_HO_A": 1.08,
+          "r_NH_A": 1.5446,
+          "x_A": -0.4233,
+          "dE_kcal": 1.0816
+        },
+        {
+          "label": "neutral_1.030",
+          "r_HO_A": 1.03,
+          "r_NH_A": 1.7638,
+          "x_A": -0.13865,
+          "dE_kcal": 0.174
+        },
+        {
+          "label": "neutral_0.980",
+          "r_HO_A": 0.98,
+          "r_NH_A": 1.9507,
+          "x_A": 0.0,
+          "dE_kcal": 0.0
+        }
+      ],
+      "m_eff_path_u": 103.04020183334875,
+      "m_eff_segments_u": [
+        51.063,
+        72.308,
+        138.84,
+        35.708,
+        33.848,
+        104.877,
+        98.096,
+        92.963,
+        11.853,
+        116.565,
+        174.85,
+        189.8,
+        60.957
+      ],
+      "sensitivity": [
+        {
+          "coord": "xH",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "pchip",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 283.69,
+          "fundamental_cm": 473.08,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": true,
+          "grid_convergence_cm": 0.6498161296021097,
+          "warnings": [
+            "the lowest point is at the O end of the scan: the scan does not bracket the minimum",
+            "the profile does not rise toward the O end; the extension there is flat up to the hard wall",
+            "24.1 % of the ground state lies outside the scanned range"
+          ],
+          "P_O_side_v0": 0.99793,
+          "P_outside_v0": 0.24141
+        },
+        {
+          "coord": "xH",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "box",
+          "skipped": null,
+          "ZPE_cm": 543.77,
+          "fundamental_cm": 362.19,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": false,
+          "grid_convergence_cm": 1.3400562970316545,
+          "warnings": [
+            "the lowest point is at the O end of the scan: the scan does not bracket the minimum",
+            "DVR grid not converged (1.34 cm-1 between N and 2N-1 points)"
+          ],
+          "P_O_side_v0": 0.96821,
+          "P_outside_v0": 2e-05
+        },
+        {
+          "coord": "xH",
+          "mass": "reduced",
+          "mass_u": 0.9750662950627464,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 286.39,
+          "fundamental_cm": 477.13,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": true,
+          "grid_convergence_cm": 0.6571539035075616,
+          "warnings": [
+            "the lowest point is at the O end of the scan: the scan does not bracket the minimum",
+            "the profile does not rise toward the O end; the extension there is flat up to the hard wall",
+            "24.0 % of the ground state lies outside the scanned range"
+          ],
+          "P_O_side_v0": 0.99769,
+          "P_outside_v0": 0.23975
+        },
+        {
+          "coord": "half_delta",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 419.52,
+          "fundamental_cm": 565.62,
+          "second_minimum": {
+            "x_A": -0.6479,
+            "r_HO_A": 1.435,
+            "V_kcal": 2.0784,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": false,
+          "range_limited": true,
+          "grid_convergence_cm": 0.982528780599325,
+          "warnings": [
+            "the lowest point is at the O end of the scan: the scan does not bracket the minimum",
+            "the interpolant has 2 interior minima, the points themselves 1",
+            "26.2 % of the ground state lies outside the scanned range"
+          ],
+          "P_O_side_v0": 0.98302,
+          "P_outside_v0": 0.26222
+        },
+        {
+          "coord": "rHO",
+          "mass": "H",
+          "mass_u": 1.00782503207,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 807.04,
+          "fundamental_cm": 355.19,
+          "second_minimum": {
+            "x_A": -0.4552,
+            "r_HO_A": 1.4352,
+            "V_kcal": 2.1308,
+            "side": "N"
+          },
+          "second_minimum_below_ZPE": true,
+          "range_limited": true,
+          "grid_convergence_cm": 0.9127927299943719,
+          "warnings": [
+            "the lowest point is at the O end of the scan: the scan does not bracket the minimum",
+            "the interpolant has 2 interior minima, the points themselves 1",
+            "12.1 % of the ground state lies outside the scanned range"
+          ],
+          "P_O_side_v0": 0.6165,
+          "P_outside_v0": 0.12149
+        },
+        {
+          "coord": "mwpath",
+          "mass": "unit (mass-weighted path)",
+          "mass_u": 1.0,
+          "interp": "cubic",
+          "walls": "extrapolate",
+          "skipped": null,
+          "ZPE_cm": 71.22,
+          "fundamental_cm": 68.17,
+          "second_minimum": null,
+          "second_minimum_below_ZPE": null,
+          "range_limited": true,
+          "grid_convergence_cm": 0.1353172769796302,
+          "warnings": [
+            "the lowest point is at the O end of the scan: the scan does not bracket the minimum",
+            "the profile does not rise toward the O end; the extension there is flat up to the hard wall",
+            "2.8 % of the ground state lies outside the scanned range"
+          ],
+          "P_O_side_v0": 1.0,
+          "P_outside_v0": 0.02821
+        }
+      ],
+      "figures": [
+        "dvr_b3lyp.png"
+      ],
+      "wall_s": 3.21,
+      "verdict": "B3LYP: ZPE 281 cm-1 (0.80 kcal/mol); single well: no second minimum along the proton coordinate; the transfer point (r(N-H) = r(H...O)) lies 2.36 kcal/mol above the minimum, 1.56 kcal/mol above the ground level; ground-state weight on the O side 99.8 % | WARNINGS: the lowest point is at the O end of the scan: the scan does not bracket the minimum; the profile does not rise toward the O end; the extension there is flat up to the hard wall; 24.4 % of the ground state lies outside the scanned range; DVR grid not converged (2.50 cm-1 between N and 2N-1 points)",
+      "status": "done",
+      "at": "2026-11-22T04:56:01+05:30"
+    }
+  },
+  "timings": {},
+  "error": null,
+  "selftest": {
+    "harmonic": {
+      "E_cm": [
+        1500.0,
+        4500.0,
+        7500.0,
+        10500.0,
+        13500.0
+      ],
+      "exact_cm": [
+        1500.0,
+        4500.0,
+        7500.0,
+        10500.0,
+        13500.0
+      ],
+      "max_rel_err": 1.3340701951064737e-12,
+      "pass": true
+    },
+    "morse": {
+      "E_cm": [
+        1485.7615,
+        4371.8531,
+        7144.0363,
+        9802.3112,
+        12346.6776
+      ],
+      "exact_cm": [
+        1485.7615,
+        4371.8531,
+        7144.0363,
+        9802.3112,
+        12346.6776
+      ],
+      "max_rel_err": 4.125640422574136e-13,
+      "pass": true
+    },
+    "sampled_harmonic": {
+      "E_cm": [
+        1500.0,
+        4500.0,
+        7500.0
+      ],
+      "max_rel_err": 1.0032228172683103e-10,
+      "pass": true,
+      "P_outside_scan_v0": 2.8520692803416054e-05
+    },
+    "double_well": {
+      "barrier_kcal": 6.0,
+      "E_cm": [
+        959.637,
+        1015.612,
+        2327.374,
+        2994.435
+      ],
+      "splitting_cm": 55.975373129772,
+      "P_left_v0": 0.4999999999865956,
+      "pass": true
+    },
+    "sampled_double_well": {
+      "minima": [
+        {
+          "x_A": -0.3133,
+          "r_HO_A": 1.7533,
+          "V_kcal": 0.0,
+          "side": "N"
+        },
+        {
+          "x_A": 0.2846,
+          "r_HO_A": 1.1554,
+          "V_kcal": 5.9938,
+          "side": "O"
+        }
+      ],
+      "barrier": {
+        "x_A": 0.0278,
+        "r_HO_A": 1.4122,
+        "V_kcal": 11.2051
+      },
+      "ZPE_cm": 1447.33,
+      "ZPE_direct_cm": 1447.33,
+      "P_O_v0": 0.00199,
+      "P_O_v0_direct": 0.00188,
+      "second_minimum_below_ZPE": false,
+      "verdict": "test: ZPE 1447 cm-1 (4.14 kcal/mol); double well: second minimum on the O side at r(H...O) 1.155 A, 5.99 kcal/mol above the global minimum, barrier 11.21 kcal/mol; it lies above the zero-point level; ground-state weight on the O side 0.2 %",
+      "pass": true
+    }
+  },
+  "summary": {
+    "b3lyp": {
+      "verdict": "B3LYP: ZPE 281 cm-1 (0.80 kcal/mol); single well: no second minimum along the proton coordinate; the transfer point (r(N-H) = r(H...O)) lies 2.36 kcal/mol above the minimum, 1.56 kcal/mol above the ground level; ground-state weight on the O side 99.8 % | WARNINGS: the lowest point is at the O end of the scan: the scan does not bracket the minimum; the profile does not rise toward the O end; the extension there is flat up to the hard wall; 24.4 % of the ground state lies outside the scanned range; DVR grid not converged (2.50 cm-1 between N and 2N-1 points)",
+      "ZPE_cm": 280.61,
+      "fundamental_cm": 473.77,
+      "second_minimum_below_ZPE": null,
+      "range_limited": true
+    }
+  },
+  "figures": [
+    "dvr_b3lyp.png",
+    "profiles.png"
+  ]
+}

@@ -1,0 +1,56 @@
+
+===== queue: start c0_btpcz_pcm_analysis attempt 1 at 2026-11-21T23:38:53+05:30 =====
+$ export DFT_MAX_MEMORY_MB=$(( ${MAX_MEMORY_MB:-8000} / 2 )) NO_AUTO_PCM=1; ./run_case.sh btpcz_pcm $THREADS -- --from mwfn
+[run_case] btpcz_pcm  threads=4  mem=4000MB  fd=autox2  2026-11-21T18:08:53+00:00
+[pipeline] mwfn: done (2.6 min) 
+[pipeline] plots: FAILED (0.0 min) exit code 1, see logs/plots.log
+Traceback (most recent call last):
+  File "<run-dir>/repo/dft/pipeline.py", line 140, in <module>
+    sys.exit(0 if main(name, start) else 1)
+                  ^^^^^^^^^^^^^^^^^
+  File "<run-dir>/repo/dft/pipeline.py", line 116, in main
+    ok = run_stage(case, stage)
+         ^^^^^^^^^^^^^^^^^^^^^^
+  File "<run-dir>/repo/dft/pipeline.py", line 102, in run_stage
+    rc = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, cwd=ROOT).returncode
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<run-dir>/repo/tools/env/lib/python3.11/subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<run-dir>/repo/tools/env/lib/python3.11/subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "<run-dir>/repo/tools/env/lib/python3.11/subprocess.py", line 1955, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: '/Applications/ParaView-6.1.1.app/Contents/bin/pvbatch'
+
+===== queue: start c0_btpcz_pcm_analysis attempt 2 at 2026-11-21T23:41:33+05:30 =====
+$ export DFT_MAX_MEMORY_MB=$(( ${MAX_MEMORY_MB:-8000} / 2 )) NO_AUTO_PCM=1; ./run_case.sh btpcz_pcm $THREADS -- --from mwfn
+[run_case] btpcz_pcm  threads=4  mem=4000MB  fd=autox2  2026-11-21T18:11:33+00:00
+[pipeline] mwfn: done (2.6 min) 
+[pipeline] plots: FAILED (0.0 min) exit code 1, see logs/plots.log
+Traceback (most recent call last):
+  File "<run-dir>/repo/dft/pipeline.py", line 140, in <module>
+    sys.exit(0 if main(name, start) else 1)
+                  ^^^^^^^^^^^^^^^^^
+  File "<run-dir>/repo/dft/pipeline.py", line 116, in main
+    ok = run_stage(case, stage)
+         ^^^^^^^^^^^^^^^^^^^^^^
+  File "<run-dir>/repo/dft/pipeline.py", line 102, in run_stage
+    rc = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, cwd=ROOT).returncode
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<run-dir>/repo/tools/env/lib/python3.11/subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<run-dir>/repo/tools/env/lib/python3.11/subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "<run-dir>/repo/tools/env/lib/python3.11/subprocess.py", line 1955, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: '/Applications/ParaView-6.1.1.app/Contents/bin/pvbatch'
+
+===== queue: start c0_btpcz_pcm_analysis attempt 1 at 2026-11-22T01:03:35+05:30 =====
+$ export PVBATCH=/bin/false; export DFT_MAX_MEMORY_MB=$(( ${MAX_MEMORY_MB:-8000} / 2 )) NO_AUTO_PCM=1; ./run_case.sh btpcz_pcm $THREADS -- --from mwfn
+[run_case] btpcz_pcm  threads=4  mem=4000MB  fd=autox2  2026-11-21T19:33:35+00:00
+[pipeline] mwfn: done (2.5 min) 
+[pipeline] plots: done (0.1 min) 
+[pipeline] render: FAILED (0.0 min) exit code 1, see logs/render.log
+[pipeline] report: done (0.0 min) 

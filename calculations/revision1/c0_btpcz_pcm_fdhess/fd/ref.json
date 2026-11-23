@@ -1,0 +1,10 @@
+{
+  "E_Ha": -1317.2537338943607,
+  "wall_s": 368.4,
+  "nao": 606,
+  "natm": 33,
+  "grid_level": 4,
+  "lebedev_order": 29,
+  "max_memory_mb": 8000,
+  "chk": "<run-dir>/repo/molecules/btpcz/results/btpcz_pcm/final.chk"
+}

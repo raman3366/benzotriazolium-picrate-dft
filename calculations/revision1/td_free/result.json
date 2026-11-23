@@ -1,0 +1,2904 @@
+{
+  "job": "td_free",
+  "script": "dft/revision/tddft.py",
+  "argv": [
+    "dft/revision/tddft.py",
+    "--job",
+    "td_free",
+    "--out",
+    "<run-dir>/queue/out/td_free",
+    "--systems",
+    "picrate-pcm,bta-pcm",
+    "--xc",
+    "b3lyp,camb3lyp",
+    "--nstates",
+    "20",
+    "--tda"
+  ],
+  "smoke": false,
+  "status": "done",
+  "started": "2026-11-21T21:16:54+05:30",
+  "restarts": 0,
+  "last_start": "2026-11-21T21:16:54+05:30",
+  "finished": "2026-11-22T01:03:34+05:30",
+  "host": {
+    "hostname": "<vm-1>",
+    "machine": "x86_64",
+    "cpu": "AMD EPYC 7B13",
+    "cpu_count": 32,
+    "ram_mb": 128799
+  },
+  "threads": 4,
+  "max_memory_mb": 8000,
+  "scratch": "<run-dir>/scratch/td_free",
+  "software": {
+    "python": "3.11.16",
+    "pyscf": "2.14.0",
+    "numpy": "2.4.6",
+    "executable": "<run-dir>/env/bin/python",
+    "prefix": "<run-dir>/env",
+    "scipy": "1.17.1",
+    "h5py": "3.16.0",
+    "geometric": "1.1.1",
+    "libxc": "7.1.2",
+    "pyscf-dispersion": "1.5.0",
+    "conda_builds": {
+      "pyscf": "2.14.0 py311h990ede3_1302",
+      "pyscf-dispersion": "1.5.0 py311h5df2867_0",
+      "libxc-c": "7.1.2 cpu_hed2233d_2",
+      "libcint": "6.1.3 h64ba90f_2",
+      "libopenblas": "0.3.34 pthreads_hf13c14d_2",
+      "libblas": "3.11.0 12_h4a7cf45_openblas",
+      "numpy": "2.4.6 py311h2e04523_0",
+      "scipy": "1.17.1 py311hbe70eeb_1",
+      "geometric": "1.1.1 pyhd8ed1ab_0",
+      "python": "3.11.16 h5f976f7_2_cpython",
+      "_x86_64-microarch-level": "3 3_x86_64_v3"
+    }
+  },
+  "script_sha256": {
+    "tddft.py": "d58215eceb0a10520f1707c7fe0167e472ad493ff8a7ff90d9175a1eca5d2f7d",
+    "rev_common.py": "fba929added9222d92adeca239e64fcb87eaaeefe6511ad436c2624eba72515a"
+  },
+  "settings": {
+    "basis": "6-311++g(d,p)",
+    "grid_level": 4,
+    "lebedev_order": 29,
+    "conv_tol": 1e-10,
+    "xc": [
+      "b3lyp",
+      "camb3lyp"
+    ],
+    "nstates": 20,
+    "response": "TDA",
+    "td_conv_tol_Ha": 1e-06,
+    "pcm_method": "IEF-PCM",
+    "pcm_ground_state_eps": 78.3553,
+    "pcm_response": "non-equilibrium, optical eps 1.78 (PySCF 2.14 default)",
+    "free_species_optimisation": "B3LYP, geomeTRIC default criteria",
+    "ct_analysis": "Omega matrix of X+Y (X for TDA), Loewdin partition"
+  },
+  "inputs": {
+    "geometry_pcm": {
+      "path": "molecules/btpc/results/btpc_pcm/opt.xyz",
+      "sha256": "bc3eba08ce8205f9ec8dcb011700c2347fd331012c58fdd29080c4f091050538"
+    }
+  },
+  "items": {
+    "opt/picrate-pcm": {
+      "atoms_from_pair": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "charge": -1,
+      "converged": true,
+      "steps": 13,
+      "E_Ha": -920.8149338320443,
+      "xyz": "free/picrate-pcm.xyz",
+      "history": [
+        {
+          "E_Ha": -920.8144242910614,
+          "grms": 0.006298058348398999,
+          "gmax": 0.019555050478779406
+        },
+        {
+          "E_Ha": -920.8146431366258,
+          "grms": 0.003294999060636644,
+          "gmax": 0.009936212417912302
+        },
+        {
+          "E_Ha": -920.8148134177582,
+          "grms": 0.0014037293452306178,
+          "gmax": 0.003602795077086867
+        },
+        {
+          "E_Ha": -920.8147764068456,
+          "grms": 0.0017874708742009015,
+          "gmax": 0.004636906426212245
+        },
+        {
+          "E_Ha": -920.8148894487033,
+          "grms": 0.0005670132208142734,
+          "gmax": 0.0011935408298737501
+        },
+        {
+          "E_Ha": -920.8148988118555,
+          "grms": 0.0005185833798235889,
+          "gmax": 0.0010429447304093052
+        },
+        {
+          "E_Ha": -920.814912015808,
+          "grms": 0.00033294193133964317,
+          "gmax": 0.0007510523003423592
+        },
+        {
+          "E_Ha": -920.8149194596895,
+          "grms": 0.00027388948239547755,
+          "gmax": 0.000592530097408248
+        },
+        {
+          "E_Ha": -920.8149273570684,
+          "grms": 0.0003281029619599945,
+          "gmax": 0.0005848857458513893
+        },
+        {
+          "E_Ha": -920.8149282398085,
+          "grms": 0.0003634981841148394,
+          "gmax": 0.0008151379491886151
+        },
+        {
+          "E_Ha": -920.8149330955575,
+          "grms": 0.0001255495234044209,
+          "gmax": 0.0002253962256322011
+        },
+        {
+          "E_Ha": -920.8149330468152,
+          "grms": 0.00016032256380199385,
+          "gmax": 0.00026346769868829383
+        },
+        {
+          "E_Ha": -920.8149338320443,
+          "grms": 5.2151086776925986e-05,
+          "gmax": 9.674511532208379e-05
+        }
+      ],
+      "wall_min": 40.48,
+      "status": "done",
+      "at": "2026-11-21T21:57:23+05:30"
+    },
+    "picrate-pcm/b3lyp": {
+      "system": "picrate-pcm",
+      "xc": "b3lyp",
+      "geometry": "<run-dir>/queue/out/td_free/free/picrate-pcm.xyz",
+      "charge": -1,
+      "settings": {
+        "method": "PCMDFRKS",
+        "xc": "b3lyp",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 366,
+        "nelectron": 116,
+        "charge": -1,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": {
+          "model": "IEF-PCM",
+          "eps": 78.3553,
+          "lebedev_order": 29,
+          "vdw_scale": 1.2,
+          "r_probe": 0.0,
+          "radii_table": null,
+          "surface_discretization_method": "SWIG",
+          "equilibrium_solvation": false
+        },
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "E_Ha": -920.8149338342462,
+      "scf_cycles": 16,
+      "scf_wall_s": 246.9,
+      "frontier": {
+        "HOMO_eV": -6.634353651999068,
+        "LUMO_eV": -3.0338244862789363,
+        "gap_eV": 3.6005291657201317
+      },
+      "td_solvent": {
+        "eps_response": 1.78,
+        "equilibrium_solvation": false
+      },
+      "td_class": "PCMTDA",
+      "td_wall_s": 2771.5,
+      "states": [
+        {
+          "state": 1,
+          "E_eV": 3.045193310272579,
+          "lambda_nm": 407.1472178194888,
+          "f": 0.21453139883072816,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO",
+              "weight_pct": 94.8
+            }
+          ]
+        },
+        {
+          "state": 2,
+          "E_eV": 3.2686451010132127,
+          "lambda_nm": 379.31373571749174,
+          "f": 0.00842403468268573,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO",
+              "weight_pct": 80.9
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+2",
+              "weight_pct": 11.4
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+1",
+              "weight_pct": 5.7
+            }
+          ]
+        },
+        {
+          "state": 3,
+          "E_eV": 3.369289025382545,
+          "lambda_nm": 367.98326728863213,
+          "f": 0.2295871960809508,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+1",
+              "weight_pct": 69.5
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+2",
+              "weight_pct": 13.9
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO",
+              "weight_pct": 12.1
+            }
+          ]
+        },
+        {
+          "state": 4,
+          "E_eV": 3.5854330659035876,
+          "lambda_nm": 345.79978518927936,
+          "f": 0.02825969550987125,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+1",
+              "weight_pct": 68.8
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+2",
+              "weight_pct": 15.7
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO",
+              "weight_pct": 7.5
+            }
+          ]
+        },
+        {
+          "state": 5,
+          "E_eV": 3.634522445734074,
+          "lambda_nm": 341.12926870357677,
+          "f": 0.011043425096812557,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+2",
+              "weight_pct": 67.8
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+1",
+              "weight_pct": 20.7
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+1",
+              "weight_pct": 4.1
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO",
+              "weight_pct": 2.7
+            }
+          ]
+        },
+        {
+          "state": 6,
+          "E_eV": 3.770099323382958,
+          "lambda_nm": 328.8618886802892,
+          "f": 0.022254174816717126,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO",
+              "weight_pct": 49.5
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+2",
+              "weight_pct": 13.0
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+2",
+              "weight_pct": 9.3
+            },
+            {
+              "from": "HOMO-5",
+              "to": "LUMO",
+              "weight_pct": 8.5
+            }
+          ]
+        },
+        {
+          "state": 7,
+          "E_eV": 3.86667147070907,
+          "lambda_nm": 320.64839058401765,
+          "f": 0.002739177080180478,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-4",
+              "to": "LUMO",
+              "weight_pct": 25.3
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+1",
+              "weight_pct": 23.8
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+1",
+              "weight_pct": 15.3
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+2",
+              "weight_pct": 14.7
+            }
+          ]
+        },
+        {
+          "state": 8,
+          "E_eV": 3.8943676774711857,
+          "lambda_nm": 318.36798337569746,
+          "f": 0.0007752411021285642,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+1",
+              "weight_pct": 60.9
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO",
+              "weight_pct": 9.8
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+1",
+              "weight_pct": 7.4
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+2",
+              "weight_pct": 6.9
+            }
+          ]
+        },
+        {
+          "state": 9,
+          "E_eV": 4.0112139455498195,
+          "lambda_nm": 309.09395530386104,
+          "f": 0.301168269861144,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+2",
+              "weight_pct": 61.6
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+1",
+              "weight_pct": 14.7
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO",
+              "weight_pct": 6.8
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO",
+              "weight_pct": 4.3
+            }
+          ]
+        },
+        {
+          "state": 10,
+          "E_eV": 4.436954397998291,
+          "lambda_nm": 279.4353677737477,
+          "f": 0.0012672070415650698,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+1",
+              "weight_pct": 73.7
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO",
+              "weight_pct": 13.0
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+2",
+              "weight_pct": 6.5
+            }
+          ]
+        },
+        {
+          "state": 11,
+          "E_eV": 4.538853170669848,
+          "lambda_nm": 273.16195025031465,
+          "f": 0.005227120914855773,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-9",
+              "to": "LUMO+1",
+              "weight_pct": 29.1
+            },
+            {
+              "from": "HOMO-10",
+              "to": "LUMO",
+              "weight_pct": 14.6
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+1",
+              "weight_pct": 11.9
+            },
+            {
+              "from": "HOMO-7",
+              "to": "LUMO+1",
+              "weight_pct": 11.3
+            }
+          ]
+        },
+        {
+          "state": 12,
+          "E_eV": 4.593916568715552,
+          "lambda_nm": 269.88778865582594,
+          "f": 0.024052697424579834,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+2",
+              "weight_pct": 20.8
+            },
+            {
+              "from": "HOMO-11",
+              "to": "LUMO",
+              "weight_pct": 17.4
+            },
+            {
+              "from": "HOMO-9",
+              "to": "LUMO",
+              "weight_pct": 17.0
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO",
+              "weight_pct": 10.5
+            }
+          ]
+        },
+        {
+          "state": 13,
+          "E_eV": 4.599145747588681,
+          "lambda_nm": 269.5809291649532,
+          "f": 0.0006461736521489285,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-11",
+              "to": "LUMO+1",
+              "weight_pct": 27.3
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO",
+              "weight_pct": 22.6
+            },
+            {
+              "from": "HOMO-9",
+              "to": "LUMO+1",
+              "weight_pct": 12.2
+            },
+            {
+              "from": "HOMO-10",
+              "to": "LUMO",
+              "weight_pct": 10.9
+            }
+          ]
+        },
+        {
+          "state": 14,
+          "E_eV": 4.763682984648116,
+          "lambda_nm": 260.26962499302095,
+          "f": 0.021918351427999614,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-3",
+              "to": "LUMO",
+              "weight_pct": 53.9
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO",
+              "weight_pct": 11.9
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+2",
+              "weight_pct": 8.5
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+1",
+              "weight_pct": 8.0
+            }
+          ]
+        },
+        {
+          "state": 15,
+          "E_eV": 4.808837349355888,
+          "lambda_nm": 257.82572666261393,
+          "f": 0.07254286644570423,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+2",
+              "weight_pct": 46.9
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO",
+              "weight_pct": 16.5
+            },
+            {
+              "from": "HOMO-9",
+              "to": "LUMO",
+              "weight_pct": 9.0
+            },
+            {
+              "from": "HOMO-11",
+              "to": "LUMO",
+              "weight_pct": 6.8
+            }
+          ]
+        },
+        {
+          "state": 16,
+          "E_eV": 4.890325166008907,
+          "lambda_nm": 253.52955926484128,
+          "f": 0.15326456546319733,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO",
+              "weight_pct": 21.7
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+1",
+              "weight_pct": 18.3
+            },
+            {
+              "from": "HOMO-10",
+              "to": "LUMO",
+              "weight_pct": 13.7
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO",
+              "weight_pct": 13.0
+            }
+          ]
+        },
+        {
+          "state": 17,
+          "E_eV": 5.116241440259615,
+          "lambda_nm": 242.3345337543504,
+          "f": 0.009244010895230456,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+1",
+              "weight_pct": 47.4
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+2",
+              "weight_pct": 22.6
+            },
+            {
+              "from": "HOMO-5",
+              "to": "LUMO",
+              "weight_pct": 18.9
+            },
+            {
+              "from": "HOMO-9",
+              "to": "LUMO+1",
+              "weight_pct": 2.4
+            }
+          ]
+        },
+        {
+          "state": 18,
+          "E_eV": 5.265522515117036,
+          "lambda_nm": 235.46418811057768,
+          "f": 0.036302569961256775,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-5",
+              "to": "LUMO",
+              "weight_pct": 54.8
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+2",
+              "weight_pct": 36.4
+            }
+          ]
+        },
+        {
+          "state": 19,
+          "E_eV": 5.297235878784457,
+          "lambda_nm": 234.05451680292234,
+          "f": 0.03252978673862575,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-5",
+              "to": "LUMO+1",
+              "weight_pct": 49.0
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+2",
+              "weight_pct": 14.2
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO",
+              "weight_pct": 8.1
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO+1",
+              "weight_pct": 6.9
+            }
+          ]
+        },
+        {
+          "state": 20,
+          "E_eV": 5.341533407798346,
+          "lambda_nm": 232.11349426175983,
+          "f": 0.0019918975311295417,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+2",
+              "weight_pct": 51.8
+            },
+            {
+              "from": "HOMO-5",
+              "to": "LUMO+1",
+              "weight_pct": 19.3
+            },
+            {
+              "from": "HOMO-9",
+              "to": "LUMO",
+              "weight_pct": 13.2
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+1",
+              "weight_pct": 4.2
+            }
+          ]
+        }
+      ],
+      "all_converged": true,
+      "lowest_bright": {
+        "state": 1,
+        "E_eV": 3.045193310272579,
+        "lambda_nm": 407.1472178194888,
+        "f": 0.21453139883072816,
+        "converged": true,
+        "transitions": [
+          {
+            "from": "HOMO",
+            "to": "LUMO",
+            "weight_pct": 94.8
+          }
+        ]
+      },
+      "strongest": {
+        "state": 9,
+        "E_eV": 4.0112139455498195,
+        "lambda_nm": 309.09395530386104,
+        "f": 0.301168269861144,
+        "converged": true,
+        "transitions": [
+          {
+            "from": "HOMO",
+            "to": "LUMO+2",
+            "weight_pct": 61.6
+          },
+          {
+            "from": "HOMO",
+            "to": "LUMO+1",
+            "weight_pct": 14.7
+          },
+          {
+            "from": "HOMO-2",
+            "to": "LUMO",
+            "weight_pct": 6.8
+          },
+          {
+            "from": "HOMO-1",
+            "to": "LUMO",
+            "weight_pct": 4.3
+          }
+        ]
+      },
+      "status": "done",
+      "at": "2026-11-21T22:47:42+05:30"
+    },
+    "picrate-pcm/camb3lyp": {
+      "system": "picrate-pcm",
+      "xc": "camb3lyp",
+      "geometry": "<run-dir>/queue/out/td_free/free/picrate-pcm.xyz",
+      "charge": -1,
+      "settings": {
+        "method": "PCMDFRKS",
+        "xc": "camb3lyp",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 366,
+        "nelectron": 116,
+        "charge": -1,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": {
+          "model": "IEF-PCM",
+          "eps": 78.3553,
+          "lebedev_order": 29,
+          "vdw_scale": 1.2,
+          "r_probe": 0.0,
+          "radii_table": null,
+          "surface_discretization_method": "SWIG",
+          "equilibrium_solvation": false
+        },
+        "auxbasis": null,
+        "auxbasis_default": {
+          "H": "aug-cc-pvtz-jkfit",
+          "C": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "O": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "E_Ha": -920.4625581619041,
+      "scf_cycles": 15,
+      "scf_wall_s": 260.6,
+      "frontier": {
+        "HOMO_eV": -7.90150677436864,
+        "LUMO_eV": -1.788844300333766,
+        "gap_eV": 6.112662474034874
+      },
+      "td_solvent": {
+        "eps_response": 1.78,
+        "equilibrium_solvation": false
+      },
+      "td_class": "PCMTDA",
+      "td_wall_s": 4712.9,
+      "states": [
+        {
+          "state": 1,
+          "E_eV": 3.3924929258605214,
+          "lambda_nm": 365.466343215884,
+          "f": 0.26340184564455205,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO",
+              "weight_pct": 90.2
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+1",
+              "weight_pct": 2.6
+            }
+          ]
+        },
+        {
+          "state": 2,
+          "E_eV": 3.757335834303906,
+          "lambda_nm": 329.9790166959341,
+          "f": 0.21672309909867607,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+1",
+              "weight_pct": 40.8
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+2",
+              "weight_pct": 13.1
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO",
+              "weight_pct": 12.0
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+2",
+              "weight_pct": 11.6
+            }
+          ]
+        },
+        {
+          "state": 3,
+          "E_eV": 3.927166321736907,
+          "lambda_nm": 315.70905900711705,
+          "f": 0.002164381650343442,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-4",
+              "to": "LUMO",
+              "weight_pct": 34.4
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+2",
+              "weight_pct": 26.8
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+2",
+              "weight_pct": 9.0
+            },
+            {
+              "from": "HOMO-5",
+              "to": "LUMO+2",
+              "weight_pct": 7.0
+            }
+          ]
+        },
+        {
+          "state": 4,
+          "E_eV": 3.9378958249700964,
+          "lambda_nm": 314.84885306975207,
+          "f": 0.11099415382886435,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO",
+              "weight_pct": 41.4
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+1",
+              "weight_pct": 24.8
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+2",
+              "weight_pct": 8.9
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+2",
+              "weight_pct": 6.2
+            }
+          ]
+        },
+        {
+          "state": 5,
+          "E_eV": 4.008585718287604,
+          "lambda_nm": 309.2966126042175,
+          "f": 5.3733712062363346e-05,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+1",
+              "weight_pct": 83.2
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+2",
+              "weight_pct": 5.5
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+7",
+              "weight_pct": 3.4
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+1",
+              "weight_pct": 3.0
+            }
+          ]
+        },
+        {
+          "state": 6,
+          "E_eV": 4.026805841258038,
+          "lambda_nm": 307.8971355650596,
+          "f": 0.1873154046448199,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+1",
+              "weight_pct": 26.6
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO",
+              "weight_pct": 21.8
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+2",
+              "weight_pct": 18.4
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO",
+              "weight_pct": 15.3
+            }
+          ]
+        },
+        {
+          "state": 7,
+          "E_eV": 4.251037408902741,
+          "lambda_nm": 291.65633344074064,
+          "f": 0.023690373605281107,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+2",
+              "weight_pct": 52.6
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+2",
+              "weight_pct": 10.1
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO",
+              "weight_pct": 6.8
+            },
+            {
+              "from": "HOMO-9",
+              "to": "LUMO",
+              "weight_pct": 5.0
+            }
+          ]
+        },
+        {
+          "state": 8,
+          "E_eV": 4.434145474661475,
+          "lambda_nm": 279.6123832844379,
+          "f": 0.09797228465585091,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+2",
+              "weight_pct": 56.3
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO",
+              "weight_pct": 12.3
+            },
+            {
+              "from": "HOMO-8",
+              "to": "LUMO",
+              "weight_pct": 4.9
+            },
+            {
+              "from": "HOMO-5",
+              "to": "LUMO",
+              "weight_pct": 4.9
+            }
+          ]
+        },
+        {
+          "state": 9,
+          "E_eV": 4.6243613026911,
+          "lambda_nm": 268.1109677305029,
+          "f": 0.00042531141206003176,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+1",
+              "weight_pct": 40.4
+            },
+            {
+              "from": "HOMO-10",
+              "to": "LUMO+2",
+              "weight_pct": 14.1
+            },
+            {
+              "from": "HOMO-9",
+              "to": "LUMO",
+              "weight_pct": 11.5
+            },
+            {
+              "from": "HOMO-11",
+              "to": "LUMO",
+              "weight_pct": 10.4
+            }
+          ]
+        },
+        {
+          "state": 10,
+          "E_eV": 4.7309360362937625,
+          "lambda_nm": 262.0711788298237,
+          "f": 0.0004932105092136814,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-9",
+              "to": "LUMO+1",
+              "weight_pct": 49.9
+            },
+            {
+              "from": "HOMO-11",
+              "to": "LUMO+1",
+              "weight_pct": 33.7
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+1",
+              "weight_pct": 4.0
+            },
+            {
+              "from": "HOMO-11",
+              "to": "LUMO+2",
+              "weight_pct": 3.5
+            }
+          ]
+        },
+        {
+          "state": 11,
+          "E_eV": 4.9063193757439025,
+          "lambda_nm": 252.70307312842093,
+          "f": 0.0035191092494083033,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-10",
+              "to": "LUMO",
+              "weight_pct": 35.9
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO",
+              "weight_pct": 15.5
+            },
+            {
+              "from": "HOMO-9",
+              "to": "LUMO+2",
+              "weight_pct": 11.6
+            },
+            {
+              "from": "HOMO-11",
+              "to": "LUMO+2",
+              "weight_pct": 9.9
+            }
+          ]
+        },
+        {
+          "state": 12,
+          "E_eV": 5.13362606827829,
+          "lambda_nm": 241.51388658033224,
+          "f": 0.015967293383212712,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+1",
+              "weight_pct": 46.7
+            },
+            {
+              "from": "HOMO-10",
+              "to": "LUMO+2",
+              "weight_pct": 13.4
+            },
+            {
+              "from": "HOMO-9",
+              "to": "LUMO",
+              "weight_pct": 8.8
+            },
+            {
+              "from": "HOMO-11",
+              "to": "LUMO",
+              "weight_pct": 8.0
+            }
+          ]
+        },
+        {
+          "state": 13,
+          "E_eV": 5.350566053452662,
+          "lambda_nm": 231.72164806748688,
+          "f": 0.033074204118279785,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+1",
+              "weight_pct": 63.3
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+2",
+              "weight_pct": 19.7
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+4",
+              "weight_pct": 8.6
+            }
+          ]
+        },
+        {
+          "state": 14,
+          "E_eV": 5.5370683946366945,
+          "lambda_nm": 223.91668219249982,
+          "f": 0.232003257622998,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO",
+              "weight_pct": 57.5
+            },
+            {
+              "from": "HOMO-5",
+              "to": "LUMO",
+              "weight_pct": 14.1
+            },
+            {
+              "from": "HOMO-8",
+              "to": "LUMO",
+              "weight_pct": 10.1
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+2",
+              "weight_pct": 4.3
+            }
+          ]
+        },
+        {
+          "state": 15,
+          "E_eV": 5.590881102829116,
+          "lambda_nm": 221.7614649992487,
+          "f": 0.08715799973750989,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+2",
+              "weight_pct": 31.0
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+1",
+              "weight_pct": 22.4
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+4",
+              "weight_pct": 12.4
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO",
+              "weight_pct": 7.6
+            }
+          ]
+        },
+        {
+          "state": 16,
+          "E_eV": 6.125856411025477,
+          "lambda_nm": 202.3948817619198,
+          "f": 0.031194259356999432,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+4",
+              "weight_pct": 69.6
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+2",
+              "weight_pct": 19.8
+            }
+          ]
+        },
+        {
+          "state": 17,
+          "E_eV": 6.173434496727249,
+          "lambda_nm": 200.8350432254984,
+          "f": 0.0004589369613482559,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+3",
+              "weight_pct": 78.6
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+6",
+              "weight_pct": 13.0
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+8",
+              "weight_pct": 3.2
+            }
+          ]
+        },
+        {
+          "state": 18,
+          "E_eV": 6.312960624930966,
+          "lambda_nm": 196.39628023397626,
+          "f": 0.013503908449732153,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-3",
+              "to": "LUMO",
+              "weight_pct": 91.0
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO+4",
+              "weight_pct": 3.1
+            }
+          ]
+        },
+        {
+          "state": 19,
+          "E_eV": 6.579445497605063,
+          "lambda_nm": 188.4417135838128,
+          "f": 0.07481623168989089,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-6",
+              "to": "LUMO",
+              "weight_pct": 16.5
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+6",
+              "weight_pct": 16.1
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+7",
+              "weight_pct": 13.3
+            },
+            {
+              "from": "HOMO-7",
+              "to": "LUMO+1",
+              "weight_pct": 8.6
+            }
+          ]
+        },
+        {
+          "state": 20,
+          "E_eV": 6.596902219471278,
+          "lambda_nm": 187.9430591438067,
+          "f": 0.00852471887267308,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-7",
+              "to": "LUMO",
+              "weight_pct": 56.9
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO+1",
+              "weight_pct": 16.0
+            },
+            {
+              "from": "HOMO-5",
+              "to": "LUMO+2",
+              "weight_pct": 4.0
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO",
+              "weight_pct": 3.3
+            }
+          ]
+        }
+      ],
+      "all_converged": true,
+      "lowest_bright": {
+        "state": 1,
+        "E_eV": 3.3924929258605214,
+        "lambda_nm": 365.466343215884,
+        "f": 0.26340184564455205,
+        "converged": true,
+        "transitions": [
+          {
+            "from": "HOMO",
+            "to": "LUMO",
+            "weight_pct": 90.2
+          },
+          {
+            "from": "HOMO-2",
+            "to": "LUMO+1",
+            "weight_pct": 2.6
+          }
+        ]
+      },
+      "strongest": {
+        "state": 1,
+        "E_eV": 3.3924929258605214,
+        "lambda_nm": 365.466343215884,
+        "f": 0.26340184564455205,
+        "converged": true,
+        "transitions": [
+          {
+            "from": "HOMO",
+            "to": "LUMO",
+            "weight_pct": 90.2
+          },
+          {
+            "from": "HOMO-2",
+            "to": "LUMO+1",
+            "weight_pct": 2.6
+          }
+        ]
+      },
+      "status": "done",
+      "at": "2026-11-22T00:10:36+05:30"
+    },
+    "opt/bta-pcm": {
+      "atoms_from_pair": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        32
+      ],
+      "charge": 0,
+      "converged": true,
+      "steps": 11,
+      "E_Ha": -395.98792029602475,
+      "xyz": "free/bta-pcm.xyz",
+      "history": [
+        {
+          "E_Ha": -395.9835311011105,
+          "grms": 0.01925070374907295,
+          "gmax": 0.043255847514869765
+        },
+        {
+          "E_Ha": -395.98063854107977,
+          "grms": 0.023238431229485254,
+          "gmax": 0.04992268377170355
+        },
+        {
+          "E_Ha": -395.9873726949606,
+          "grms": 0.006961477866986568,
+          "gmax": 0.015607402643096334
+        },
+        {
+          "E_Ha": -395.9870950016618,
+          "grms": 0.00757840076390535,
+          "gmax": 0.020733050256089493
+        },
+        {
+          "E_Ha": -395.98775327707693,
+          "grms": 0.003586187355521191,
+          "gmax": 0.009742984860203224
+        },
+        {
+          "E_Ha": -395.9879057121652,
+          "grms": 0.0010306340591490842,
+          "gmax": 0.0021838261347072586
+        },
+        {
+          "E_Ha": -395.9878976181811,
+          "grms": 0.0010780059385437448,
+          "gmax": 0.0018615482496717663
+        },
+        {
+          "E_Ha": -395.98791501140494,
+          "grms": 0.00045343958146367276,
+          "gmax": 0.0011388427734453025
+        },
+        {
+          "E_Ha": -395.98791156350325,
+          "grms": 0.0005758599093548316,
+          "gmax": 0.0013100450885304424
+        },
+        {
+          "E_Ha": -395.98792009267544,
+          "grms": 0.00010296897696180775,
+          "gmax": 0.00024554802866580297
+        },
+        {
+          "E_Ha": -395.98792029602475,
+          "grms": 6.913967934637003e-05,
+          "gmax": 0.00012133076059880039
+        }
+      ],
+      "wall_min": 12.77,
+      "status": "done",
+      "at": "2026-11-22T00:23:22+05:30"
+    },
+    "bta-pcm/b3lyp": {
+      "system": "bta-pcm",
+      "xc": "b3lyp",
+      "geometry": "<run-dir>/queue/out/td_free/free/bta-pcm.xyz",
+      "charge": 0,
+      "settings": {
+        "method": "PCMDFRKS",
+        "xc": "b3lyp",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 233,
+        "nelectron": 62,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": {
+          "model": "IEF-PCM",
+          "eps": 78.3553,
+          "lebedev_order": 29,
+          "vdw_scale": 1.2,
+          "r_probe": 0.0,
+          "radii_table": null,
+          "surface_discretization_method": "SWIG",
+          "equilibrium_solvation": false
+        },
+        "auxbasis": null,
+        "auxbasis_default": {
+          "C": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "H": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "E_Ha": -395.98792029892564,
+      "scf_cycles": 12,
+      "scf_wall_s": 78.6,
+      "frontier": {
+        "HOMO_eV": -6.887352720816865,
+        "LUMO_eV": -1.6540498469002227,
+        "gap_eV": 5.233302873916642
+      },
+      "td_solvent": {
+        "eps_response": 1.78,
+        "equilibrium_solvation": false
+      },
+      "td_class": "PCMTDA",
+      "td_wall_s": 919.3,
+      "states": [
+        {
+          "state": 1,
+          "E_eV": 4.895176014107004,
+          "lambda_nm": 253.27832552435328,
+          "f": 0.10678774799439561,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO",
+              "weight_pct": 72.2
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO",
+              "weight_pct": 11.5
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+1",
+              "weight_pct": 7.2
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+1",
+              "weight_pct": 6.0
+            }
+          ]
+        },
+        {
+          "state": 2,
+          "E_eV": 5.219313513149299,
+          "lambda_nm": 237.54886171838479,
+          "f": 0.14800957242115168,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO",
+              "weight_pct": 59.7
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO",
+              "weight_pct": 16.2
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+1",
+              "weight_pct": 14.1
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+3",
+              "weight_pct": 6.4
+            }
+          ]
+        },
+        {
+          "state": 3,
+          "E_eV": 5.262821974828699,
+          "lambda_nm": 235.58501312223387,
+          "f": 0.007905796610569168,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO",
+              "weight_pct": 98.1
+            }
+          ]
+        },
+        {
+          "state": 4,
+          "E_eV": 6.062143155547779,
+          "lambda_nm": 204.52205633998543,
+          "f": 7.972669098292688e-05,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+2",
+              "weight_pct": 98.5
+            }
+          ]
+        },
+        {
+          "state": 5,
+          "E_eV": 6.280639018979181,
+          "lambda_nm": 197.406980444725,
+          "f": 0.06156436590844703,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+3",
+              "weight_pct": 44.2
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+1",
+              "weight_pct": 26.8
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO",
+              "weight_pct": 22.1
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+3",
+              "weight_pct": 2.8
+            }
+          ]
+        },
+        {
+          "state": 6,
+          "E_eV": 6.4474836225877565,
+          "lambda_nm": 192.29858601833533,
+          "f": 0.011787712532486653,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+2",
+              "weight_pct": 92.7
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+4",
+              "weight_pct": 5.1
+            }
+          ]
+        },
+        {
+          "state": 7,
+          "E_eV": 6.483238831680866,
+          "lambda_nm": 191.2380549581812,
+          "f": 0.0021342938219112576,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+4",
+              "weight_pct": 93.6
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+2",
+              "weight_pct": 5.0
+            }
+          ]
+        },
+        {
+          "state": 8,
+          "E_eV": 6.541125758313969,
+          "lambda_nm": 189.54565770641594,
+          "f": 0.4996026177118147,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+1",
+              "weight_pct": 31.1
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+3",
+              "weight_pct": 23.5
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+3",
+              "weight_pct": 14.4
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO",
+              "weight_pct": 11.5
+            }
+          ]
+        },
+        {
+          "state": 9,
+          "E_eV": 6.654492501812569,
+          "lambda_nm": 186.31653483151246,
+          "f": 0.008522194813085058,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+5",
+              "weight_pct": 96.7
+            }
+          ]
+        },
+        {
+          "state": 10,
+          "E_eV": 6.722512514391679,
+          "lambda_nm": 184.4313389295629,
+          "f": 0.0052327099063920164,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-4",
+              "to": "LUMO",
+              "weight_pct": 92.8
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+1",
+              "weight_pct": 2.2
+            }
+          ]
+        },
+        {
+          "state": 11,
+          "E_eV": 6.83216356776537,
+          "lambda_nm": 181.4713555526776,
+          "f": 0.0006306604038458713,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+1",
+              "weight_pct": 95.7
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO",
+              "weight_pct": 2.2
+            }
+          ]
+        },
+        {
+          "state": 12,
+          "E_eV": 6.869974409215538,
+          "lambda_nm": 180.4725767736264,
+          "f": 0.0036604542911530483,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+4",
+              "weight_pct": 95.1
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+5",
+              "weight_pct": 3.4
+            }
+          ]
+        },
+        {
+          "state": 13,
+          "E_eV": 6.9501590198516805,
+          "lambda_nm": 178.39044839961932,
+          "f": 0.86155588931332,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+1",
+              "weight_pct": 29.7
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+1",
+              "weight_pct": 22.5
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+3",
+              "weight_pct": 11.8
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO",
+              "weight_pct": 8.6
+            }
+          ]
+        },
+        {
+          "state": 14,
+          "E_eV": 7.048663555999039,
+          "lambda_nm": 175.89745547505728,
+          "f": 0.0021572424768075676,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+5",
+              "weight_pct": 93.8
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+4",
+              "weight_pct": 3.6
+            }
+          ]
+        },
+        {
+          "state": 15,
+          "E_eV": 7.070198760476382,
+          "lambda_nm": 175.361687274045,
+          "f": 0.24319272080777446,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+9",
+              "weight_pct": 22.9
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+3",
+              "weight_pct": 20.1
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+1",
+              "weight_pct": 17.9
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO",
+              "weight_pct": 17.7
+            }
+          ]
+        },
+        {
+          "state": 16,
+          "E_eV": 7.137847861976879,
+          "lambda_nm": 173.69969323731377,
+          "f": 0.01695453088594054,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+6",
+              "weight_pct": 61.3
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+3",
+              "weight_pct": 25.0
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+7",
+              "weight_pct": 8.8
+            }
+          ]
+        },
+        {
+          "state": 17,
+          "E_eV": 7.148585402859702,
+          "lambda_nm": 173.43878741436268,
+          "f": 0.054007576255079494,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+3",
+              "weight_pct": 34.4
+            },
+            {
+              "from": "HOMO-3",
+              "to": "LUMO",
+              "weight_pct": 34.3
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+1",
+              "weight_pct": 5.1
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+2",
+              "weight_pct": 4.7
+            }
+          ]
+        },
+        {
+          "state": 18,
+          "E_eV": 7.163713445362832,
+          "lambda_nm": 173.0725263449177,
+          "f": 0.004356970024488697,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+3",
+              "weight_pct": 67.9
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+6",
+              "weight_pct": 19.8
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+7",
+              "weight_pct": 5.1
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+8",
+              "weight_pct": 2.0
+            }
+          ]
+        },
+        {
+          "state": 19,
+          "E_eV": 7.264723524689916,
+          "lambda_nm": 170.66609345645,
+          "f": 9.734570811232397e-05,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+7",
+              "weight_pct": 75.4
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+6",
+              "weight_pct": 16.9
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+8",
+              "weight_pct": 5.6
+            }
+          ]
+        },
+        {
+          "state": 20,
+          "E_eV": 7.3339070215492805,
+          "lambda_nm": 169.0561361572981,
+          "f": 0.03334018172307408,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+2",
+              "weight_pct": 79.4
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+4",
+              "weight_pct": 6.1
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+5",
+              "weight_pct": 3.6
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+9",
+              "weight_pct": 2.9
+            }
+          ]
+        }
+      ],
+      "all_converged": true,
+      "lowest_bright": {
+        "state": 1,
+        "E_eV": 4.895176014107004,
+        "lambda_nm": 253.27832552435328,
+        "f": 0.10678774799439561,
+        "converged": true,
+        "transitions": [
+          {
+            "from": "HOMO",
+            "to": "LUMO",
+            "weight_pct": 72.2
+          },
+          {
+            "from": "HOMO-1",
+            "to": "LUMO",
+            "weight_pct": 11.5
+          },
+          {
+            "from": "HOMO-1",
+            "to": "LUMO+1",
+            "weight_pct": 7.2
+          },
+          {
+            "from": "HOMO",
+            "to": "LUMO+1",
+            "weight_pct": 6.0
+          }
+        ]
+      },
+      "strongest": {
+        "state": 13,
+        "E_eV": 6.9501590198516805,
+        "lambda_nm": 178.39044839961932,
+        "f": 0.86155588931332,
+        "converged": true,
+        "transitions": [
+          {
+            "from": "HOMO",
+            "to": "LUMO+1",
+            "weight_pct": 29.7
+          },
+          {
+            "from": "HOMO-1",
+            "to": "LUMO+1",
+            "weight_pct": 22.5
+          },
+          {
+            "from": "HOMO",
+            "to": "LUMO+3",
+            "weight_pct": 11.8
+          },
+          {
+            "from": "HOMO-1",
+            "to": "LUMO",
+            "weight_pct": 8.6
+          }
+        ]
+      },
+      "status": "done",
+      "at": "2026-11-22T00:40:01+05:30"
+    },
+    "bta-pcm/camb3lyp": {
+      "system": "bta-pcm",
+      "xc": "camb3lyp",
+      "geometry": "<run-dir>/queue/out/td_free/free/bta-pcm.xyz",
+      "charge": 0,
+      "settings": {
+        "method": "PCMDFRKS",
+        "xc": "camb3lyp",
+        "disp": null,
+        "basis": "6-311++g(d,p)",
+        "cart": false,
+        "nao": 233,
+        "nelectron": 62,
+        "charge": 0,
+        "spin": 0,
+        "grid_level": 4,
+        "conv_tol": 1e-10,
+        "max_cycle": 150,
+        "max_memory_mb": 8000,
+        "density_fit": true,
+        "solvent": {
+          "model": "IEF-PCM",
+          "eps": 78.3553,
+          "lebedev_order": 29,
+          "vdw_scale": 1.2,
+          "r_probe": 0.0,
+          "radii_table": null,
+          "surface_discretization_method": "SWIG",
+          "equilibrium_solvation": false
+        },
+        "auxbasis": null,
+        "auxbasis_default": {
+          "C": "aug-cc-pvtz-jkfit",
+          "N": "aug-cc-pvtz-jkfit",
+          "H": "aug-cc-pvtz-jkfit"
+        }
+      },
+      "E_Ha": -395.7853353057465,
+      "scf_cycles": 13,
+      "scf_wall_s": 86.4,
+      "frontier": {
+        "HOMO_eV": -8.272862672817737,
+        "LUMO_eV": -0.43441443298917426,
+        "gap_eV": 7.838448239828563
+      },
+      "td_solvent": {
+        "eps_response": 1.78,
+        "equilibrium_solvation": false
+      },
+      "td_class": "PCMTDA",
+      "td_wall_s": 1326.0,
+      "states": [
+        {
+          "state": 1,
+          "E_eV": 5.1441950514811605,
+          "lambda_nm": 241.01768529228184,
+          "f": 0.12768273260217236,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO",
+              "weight_pct": 50.6
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO",
+              "weight_pct": 28.5
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+4",
+              "weight_pct": 9.3
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+4",
+              "weight_pct": 7.7
+            }
+          ]
+        },
+        {
+          "state": 2,
+          "E_eV": 5.484700608543247,
+          "lambda_nm": 226.05463314966715,
+          "f": 0.18503189551850222,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO",
+              "weight_pct": 44.2
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO",
+              "weight_pct": 37.2
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+4",
+              "weight_pct": 10.8
+            }
+          ]
+        },
+        {
+          "state": 3,
+          "E_eV": 5.560051604863378,
+          "lambda_nm": 222.9910929091935,
+          "f": 0.012190621716478833,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO",
+              "weight_pct": 88.2
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+6",
+              "weight_pct": 8.6
+            }
+          ]
+        },
+        {
+          "state": 4,
+          "E_eV": 6.424081291962388,
+          "lambda_nm": 192.9991118809863,
+          "f": 9.590637759598481e-05,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+1",
+              "weight_pct": 88.5
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+8",
+              "weight_pct": 4.5
+            }
+          ]
+        },
+        {
+          "state": 5,
+          "E_eV": 6.796279008265825,
+          "lambda_nm": 182.42952981948937,
+          "f": 0.9513633588359307,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+4",
+              "weight_pct": 54.0
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO",
+              "weight_pct": 15.6
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+6",
+              "weight_pct": 12.4
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+4",
+              "weight_pct": 5.5
+            }
+          ]
+        },
+        {
+          "state": 6,
+          "E_eV": 6.8172145589693685,
+          "lambda_nm": 181.86929181636907,
+          "f": 0.014798079868192388,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+1",
+              "weight_pct": 81.8
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+2",
+              "weight_pct": 5.0
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+8",
+              "weight_pct": 4.8
+            }
+          ]
+        },
+        {
+          "state": 7,
+          "E_eV": 6.915326890202198,
+          "lambda_nm": 179.28899149462305,
+          "f": 0.06018492941092157,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+6",
+              "weight_pct": 61.1
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+4",
+              "weight_pct": 23.0
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+4",
+              "weight_pct": 5.1
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+6",
+              "weight_pct": 2.4
+            }
+          ]
+        },
+        {
+          "state": 8,
+          "E_eV": 6.950668770971328,
+          "lambda_nm": 178.37736552460362,
+          "f": 0.006768716479403057,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+2",
+              "weight_pct": 84.9
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+1",
+              "weight_pct": 3.3
+            }
+          ]
+        },
+        {
+          "state": 9,
+          "E_eV": 7.049300643401019,
+          "lambda_nm": 175.8815585714363,
+          "f": 0.008537227295327274,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-4",
+              "to": "LUMO",
+              "weight_pct": 79.8
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO",
+              "weight_pct": 4.1
+            },
+            {
+              "from": "HOMO-4",
+              "to": "LUMO+6",
+              "weight_pct": 3.8
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO+6",
+              "weight_pct": 3.6
+            }
+          ]
+        },
+        {
+          "state": 10,
+          "E_eV": 7.11156260266736,
+          "lambda_nm": 174.34170987048162,
+          "f": 0.0054302266399880875,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+3",
+              "weight_pct": 79.6
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+7",
+              "weight_pct": 4.1
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+8",
+              "weight_pct": 2.2
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+3",
+              "weight_pct": 2.1
+            }
+          ]
+        },
+        {
+          "state": 11,
+          "E_eV": 7.212911417059363,
+          "lambda_nm": 171.89202976590443,
+          "f": 0.47646675279862694,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+4",
+              "weight_pct": 44.7
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+6",
+              "weight_pct": 25.5
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+9",
+              "weight_pct": 12.4
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO",
+              "weight_pct": 3.7
+            }
+          ]
+        },
+        {
+          "state": 12,
+          "E_eV": 7.369611970006689,
+          "lambda_nm": 168.23707802337313,
+          "f": 0.008204824612900913,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+2",
+              "weight_pct": 55.1
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+3",
+              "weight_pct": 29.5
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+8",
+              "weight_pct": 2.5
+            }
+          ]
+        },
+        {
+          "state": 13,
+          "E_eV": 7.400946867312056,
+          "lambda_nm": 167.5247784139676,
+          "f": 0.30973127861618793,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-3",
+              "to": "LUMO",
+              "weight_pct": 42.7
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+6",
+              "weight_pct": 27.9
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+4",
+              "weight_pct": 10.5
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+9",
+              "weight_pct": 3.5
+            }
+          ]
+        },
+        {
+          "state": 14,
+          "E_eV": 7.539206232110954,
+          "lambda_nm": 164.45258901650288,
+          "f": 0.0018417139636949088,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+3",
+              "weight_pct": 49.2
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+2",
+              "weight_pct": 34.3
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+3",
+              "weight_pct": 2.9
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+7",
+              "weight_pct": 2.6
+            }
+          ]
+        },
+        {
+          "state": 15,
+          "E_eV": 7.561998295487096,
+          "lambda_nm": 163.95692455259103,
+          "f": 0.00570077318880143,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+7",
+              "weight_pct": 30.3
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+8",
+              "weight_pct": 29.1
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+5",
+              "weight_pct": 18.4
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+3",
+              "weight_pct": 5.6
+            }
+          ]
+        },
+        {
+          "state": 16,
+          "E_eV": 7.566659545959449,
+          "lambda_nm": 163.8559230092582,
+          "f": 0.10765161915590354,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-3",
+              "to": "LUMO",
+              "weight_pct": 38.2
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+6",
+              "weight_pct": 35.0
+            },
+            {
+              "from": "HOMO-1",
+              "to": "LUMO+4",
+              "weight_pct": 3.9
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+1",
+              "weight_pct": 3.8
+            }
+          ]
+        },
+        {
+          "state": 17,
+          "E_eV": 7.669089036523104,
+          "lambda_nm": 161.6674390003041,
+          "f": 0.0017576264880703124,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+4",
+              "weight_pct": 71.8
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO",
+              "weight_pct": 11.0
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+6",
+              "weight_pct": 4.9
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO",
+              "weight_pct": 3.3
+            }
+          ]
+        },
+        {
+          "state": 18,
+          "E_eV": 7.703378520681268,
+          "lambda_nm": 160.9478205791647,
+          "f": 0.00978002270616023,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+6",
+              "weight_pct": 30.0
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+5",
+              "weight_pct": 20.2
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+4",
+              "weight_pct": 15.5
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO",
+              "weight_pct": 13.6
+            }
+          ]
+        },
+        {
+          "state": 19,
+          "E_eV": 7.733824219757058,
+          "lambda_nm": 160.31421826638658,
+          "f": 0.0005338166878610836,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO",
+              "to": "LUMO+5",
+              "weight_pct": 52.0
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+6",
+              "weight_pct": 11.4
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+7",
+              "weight_pct": 8.3
+            },
+            {
+              "from": "HOMO-6",
+              "to": "LUMO",
+              "weight_pct": 7.6
+            }
+          ]
+        },
+        {
+          "state": 20,
+          "E_eV": 7.953572678614633,
+          "lambda_nm": 155.8849128686101,
+          "f": 0.005515896534195764,
+          "converged": true,
+          "transitions": [
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+1",
+              "weight_pct": 39.2
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+3",
+              "weight_pct": 18.9
+            },
+            {
+              "from": "HOMO",
+              "to": "LUMO+9",
+              "weight_pct": 14.9
+            },
+            {
+              "from": "HOMO-2",
+              "to": "LUMO+7",
+              "weight_pct": 7.0
+            }
+          ]
+        }
+      ],
+      "all_converged": true,
+      "lowest_bright": {
+        "state": 1,
+        "E_eV": 5.1441950514811605,
+        "lambda_nm": 241.01768529228184,
+        "f": 0.12768273260217236,
+        "converged": true,
+        "transitions": [
+          {
+            "from": "HOMO",
+            "to": "LUMO",
+            "weight_pct": 50.6
+          },
+          {
+            "from": "HOMO-1",
+            "to": "LUMO",
+            "weight_pct": 28.5
+          },
+          {
+            "from": "HOMO",
+            "to": "LUMO+4",
+            "weight_pct": 9.3
+          },
+          {
+            "from": "HOMO-1",
+            "to": "LUMO+4",
+            "weight_pct": 7.7
+          }
+        ]
+      },
+      "strongest": {
+        "state": 5,
+        "E_eV": 6.796279008265825,
+        "lambda_nm": 182.42952981948937,
+        "f": 0.9513633588359307,
+        "converged": true,
+        "transitions": [
+          {
+            "from": "HOMO",
+            "to": "LUMO+4",
+            "weight_pct": 54.0
+          },
+          {
+            "from": "HOMO-1",
+            "to": "LUMO",
+            "weight_pct": 15.6
+          },
+          {
+            "from": "HOMO-1",
+            "to": "LUMO+6",
+            "weight_pct": 12.4
+          },
+          {
+            "from": "HOMO-1",
+            "to": "LUMO+4",
+            "weight_pct": 5.5
+          }
+        ]
+      },
+      "status": "done",
+      "at": "2026-11-22T01:03:34+05:30"
+    }
+  },
+  "timings": {
+    "picrate-pcm/b3lyp": 3018.4,
+    "picrate-pcm/camb3lyp": 4973.5,
+    "bta-pcm/b3lyp": 997.9,
+    "bta-pcm/camb3lyp": 1412.4
+  },
+  "error": null,
+  "summary": {
+    "picrate-pcm/b3lyp": {
+      "S1_eV": 3.045193310272579,
+      "S1_nm": 407.1472178194888,
+      "S1_f": 0.21453139883072816,
+      "S1_CT": null,
+      "lowest_bright": {
+        "state": 1,
+        "E_eV": 3.045193310272579,
+        "lambda_nm": 407.1472178194888,
+        "f": 0.21453139883072816,
+        "converged": true,
+        "transitions": [
+          {
+            "from": "HOMO",
+            "to": "LUMO",
+            "weight_pct": 94.8
+          }
+        ]
+      },
+      "LUMO_on": null,
+      "all_converged": true
+    },
+    "picrate-pcm/camb3lyp": {
+      "S1_eV": 3.3924929258605214,
+      "S1_nm": 365.466343215884,
+      "S1_f": 0.26340184564455205,
+      "S1_CT": null,
+      "lowest_bright": {
+        "state": 1,
+        "E_eV": 3.3924929258605214,
+        "lambda_nm": 365.466343215884,
+        "f": 0.26340184564455205,
+        "converged": true,
+        "transitions": [
+          {
+            "from": "HOMO",
+            "to": "LUMO",
+            "weight_pct": 90.2
+          },
+          {
+            "from": "HOMO-2",
+            "to": "LUMO+1",
+            "weight_pct": 2.6
+          }
+        ]
+      },
+      "LUMO_on": null,
+      "all_converged": true
+    },
+    "bta-pcm/b3lyp": {
+      "S1_eV": 4.895176014107004,
+      "S1_nm": 253.27832552435328,
+      "S1_f": 0.10678774799439561,
+      "S1_CT": null,
+      "lowest_bright": {
+        "state": 1,
+        "E_eV": 4.895176014107004,
+        "lambda_nm": 253.27832552435328,
+        "f": 0.10678774799439561,
+        "converged": true,
+        "transitions": [
+          {
+            "from": "HOMO",
+            "to": "LUMO",
+            "weight_pct": 72.2
+          },
+          {
+            "from": "HOMO-1",
+            "to": "LUMO",
+            "weight_pct": 11.5
+          },
+          {
+            "from": "HOMO-1",
+            "to": "LUMO+1",
+            "weight_pct": 7.2
+          },
+          {
+            "from": "HOMO",
+            "to": "LUMO+1",
+            "weight_pct": 6.0
+          }
+        ]
+      },
+      "LUMO_on": null,
+      "all_converged": true
+    },
+    "bta-pcm/camb3lyp": {
+      "S1_eV": 5.1441950514811605,
+      "S1_nm": 241.01768529228184,
+      "S1_f": 0.12768273260217236,
+      "S1_CT": null,
+      "lowest_bright": {
+        "state": 1,
+        "E_eV": 5.1441950514811605,
+        "lambda_nm": 241.01768529228184,
+        "f": 0.12768273260217236,
+        "converged": true,
+        "transitions": [
+          {
+            "from": "HOMO",
+            "to": "LUMO",
+            "weight_pct": 50.6
+          },
+          {
+            "from": "HOMO-1",
+            "to": "LUMO",
+            "weight_pct": 28.5
+          },
+          {
+            "from": "HOMO",
+            "to": "LUMO+4",
+            "weight_pct": 9.3
+          },
+          {
+            "from": "HOMO-1",
+            "to": "LUMO+4",
+            "weight_pct": 7.7
+          }
+        ]
+      },
+      "LUMO_on": null,
+      "all_converged": true
+    }
+  },
+  "peak_rss_mb": 7033.4
+}

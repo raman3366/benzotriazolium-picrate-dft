@@ -1,0 +1,12 @@
+
+===== 2026-11-21T19:36:06  $ <run-dir>/env/bin/python <run-dir>/repo/dft/revision/c0_case.py --internal-refscf btpcz_pcm <run-dir>/queue/out/c0_btpcz_pcm_fdhess/fd/ref.json
+
+WARN: PCM is an experimental feature. It is still in testing.
+Features and APIs may be changed in the future.
+
+
+WARN: 3 small eigenvectors of overlap matrix removed because of linear dependency between AOs.
+
+
+converged SCF energy = -1317.25373389436
+[c0 refscf] btpcz_pcm: SCF E = -1317.2537338944 Ha (368 s); 606 basis functions, 33 atoms
