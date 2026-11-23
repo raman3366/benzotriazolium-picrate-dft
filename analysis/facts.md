@@ -1,6 +1,6 @@
 # Facts dossier: benzotriazolium picrate (BTPC, paper id `btpc`)
 
-Authoritative source of every number for the BTPC manuscript. Machine-readable twin: `facts.json` (1007 keys; each has value, unit, case, source file[:field] and a note). Both files are generated: `python scripts/analysis/build_facts.py` then `python scripts/analysis/build_facts_md.py`. Keys are quoted in backticks so an auditor can trace any number. "Derived" means computed here from a stored file (formula in the facts.json note); nothing was recomputed with quantum chemistry.
+Authoritative source of every number for the BTPC manuscript. Machine-readable twin: `facts.json` (2490 keys; each has value, unit, case, source file[:field] and a note). Both files are generated: `python scripts/analysis/build_facts.py` then `python scripts/analysis/build_facts_md.py`. Keys are quoted in backticks so an auditor can trace any number. "Derived" means computed here from a stored file (formula in the facts.json note); nothing was recomputed with quantum chemistry.
 
 Case names: `btpc_pcm` = IEF-PCM (water) model, **primary**; `btpc_gas` = gas-phase model, comparison. Atom labels are the CIF labels; the cation labels carry an internal `#4_666` suffix in the project files, which must never appear in the paper. Never call the compound a Schiff base.
 

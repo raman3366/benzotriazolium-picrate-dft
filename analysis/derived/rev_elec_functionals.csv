@@ -1,0 +1,13 @@
+xc,geometry,eps,HOMO_eV,LUMO_eV,gap_eV,LUMO_on,LUMO_picrate_pct,delta_cat_minus_pic_eV,source
+b3lyp,gas,1,-6.81806129158984,-3.34209088155537,3.47597041003447,cation,0.384,-0.446413088993889,data/revision_runs/queue/out/headline_gasgeom/result.json
+b3lyp,gas,78.3553,-7.02442498706369,-3.20638916901123,3.81803581805246,picrate,99.731,0.794452492507967,data/revision_runs/queue/out/headline_gasgeom/result.json
+b3lyp,pcm,1,-6.44276496189574,-3.85207163728606,2.59069332460968,cation,0.056,-1.19854608582206,data/revision_runs/queue/out/headline_pcmgeom/result.json
+b3lyp,pcm,78.3553,-6.90265512816764,-3.16724847613933,3.73540665202831,picrate,99.865,0.596302389953865,data/revision_runs/queue/out/headline_pcmgeom/result.json
+pbe0,gas,1,-6.99288372715086,-3.15156261422054,3.84132111293032,cation,0.35,-0.475355496977484,data/revision_runs/queue/out/sp8_pbe0/result.json
+pbe0,gas,78.3553,-7.2264978791965,-3.00548242495787,4.22101545423863,picrate,99.716,0.766991084819735,data/revision_runs/queue/out/sp8_pbe0/result.json
+pbe0,pcm,1,-6.60947541379228,-3.66026054611679,2.94921486767549,cation,0.047,-1.22960062946232,data/revision_runs/queue/out/sp8_pbe0/result.json
+pbe0,pcm,78.3553,-7.09571146294645,-2.96518213910835,4.1305293238381,picrate,99.858,0.576567476072041,data/revision_runs/queue/out/sp8_pbe0/result.json
+camb3lyp,gas,1,-8.15194352495697,-2.079799573084,6.07214395187297,cation,0.401,-0.421330199934999,data/revision_runs/queue/out/sp8_camb3lyp/result.json
+camb3lyp,gas,78.3553,-8.34105924494015,-1.95875508512805,6.3823041598121,picrate,99.648,0.796728989191717,data/revision_runs/queue/out/sp8_camb3lyp/result.json
+camb3lyp,pcm,1,-7.75394334445219,-2.58899765098641,5.16494569346578,cation,0.017,-1.16956331780703,data/revision_runs/queue/out/sp8_camb3lyp/result.json
+camb3lyp,pcm,78.3553,-8.19576462600632,-1.92308763610869,6.27267698989762,picrate,99.806,0.616729228890882,data/revision_runs/queue/out/sp8_camb3lyp/result.json

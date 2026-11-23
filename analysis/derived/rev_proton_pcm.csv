@@ -1,0 +1,9 @@
+method,E_salt_Ha,E_neutral_Ha,dE_neutral_minus_salt_kcal,source
+b3lyp,-1317.2536885600,-1317.2464975094,4.512452,data/revision_runs/queue/out/neutral_start_pcm/result.json:items.pcm.E_Ha - pcm.e_total
+wb97xd3bj,-1317.6066951532,-1317.6039448423,1.725846,data/revision_runs/queue/out/sp_neutral_pcm/result.json:items.neutral_pcm|wb97x-d3bj.E_Ha - data/revision_runs/queue/out/sp_min_pcm/result.json:items.opt|wb97x-d3bj.E_Ha
+m062x,-1316.7319215676,-1316.7303526386,0.984518,data/revision_runs/queue/out/sp_neutral_pcm/result.json:items.neutral_pcm|m062x.E_Ha - data/revision_runs/queue/out/sp_min_pcm/result.json:items.opt|m062x.E_Ha
+pbe0,-1315.8172110104,-1315.8116797295,3.470931,data/revision_runs/queue/out/sp_neutral_pcm/result.json:items.neutral_pcm|pbe0.E_Ha - data/revision_runs/queue/out/sp_min_pcm/result.json:items.opt|pbe0.E_Ha
+camb3lyp,-1316.6994159927,-1316.6940970624,3.337679,data/revision_runs/queue/out/sp_neutral_pcm/result.json:items.neutral_pcm|cam-b3lyp.E_Ha - data/revision_runs/queue/out/sp_min_pcm/result.json:items.opt|cam-b3lyp.E_Ha
+dfmp2,-1313.8700477187,-1313.8744653186,-2.772086,data/revision_runs/queue/out/sp_neutral_pcm/result.json:items.neutral_pcm|dfmp2.E_Ha - data/revision_runs/queue/out/sp_min_pcm/result.json:items.opt|dfmp2.E_Ha
+scsmp2,-1313.6937305034,-1313.6967442630,-1.891163,data/revision_runs/queue/out/sp_neutral_pcm/result.json:items.neutral_pcm|dfmp2.E_SCS_MP2_Ha - data/revision_runs/queue/out/sp_min_pcm/result.json:items.opt|dfmp2.E_SCS_MP2_Ha
+hf,-1309.7428873937,-1309.7360592001,4.284756,data/revision_runs/queue/out/sp_neutral_pcm/result.json:items.neutral_pcm|dfmp2.E_HF_Ha - data/revision_runs/queue/out/sp_min_pcm/result.json:items.opt|dfmp2.E_HF_Ha

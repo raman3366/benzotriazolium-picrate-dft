@@ -1196,5 +1196,19 @@ add9('saddle.hessian_step_first_bohr', float(re.search(r'step ([\d.]+) Bohr', fa
      'bohr', 'btpc_pcm', 'saddle.freq_imag_step0p005', 'step of the first IEF-PCM Hessian (the check)')
 print('r2 additions:', len(R2))
 
-json.dump(facts, open(OUT / 'facts.json', 'w'), indent=1, ensure_ascii=False)
+# =====================================================================================  10. revision round 1
+# Results of the revision calculations (COMPTC-D-26-02710, Nov 2026): data/revision_runs/queue*/out/<job>/result.json
+# (calculations/revision1/<job>/ here, through scripts/paths.py). One module per topic in papers/btpc/data/rev/
+# (scripts/analysis/rev/ here); keys start with 'rev.'.
+sys.path.insert(0, str(OUT))
+from rev import proton as _rev_p, structure as _rev_s, electronic as _rev_e, experimental as _rev_x, model as _rev_m
+_n0 = len(facts)
+for _m in (_rev_p, _rev_s, _rev_e, _rev_x, _rev_m):
+    _m.build(add, facts)
+print('revision additions:', len(facts) - _n0)
+
+_dst = (OUT / 'facts.json').resolve()           # dataset: the file the view links to (analysis/facts.json)
+_tmp = _dst.with_name('facts.json.tmp')
+json.dump(facts, open(_tmp, 'w'), indent=1, ensure_ascii=False)
+os.replace(_tmp, _dst)          # atomic: readers never see a half-written file
 print(f'wrote {len(facts)} facts to {OUT / "facts.json"}')

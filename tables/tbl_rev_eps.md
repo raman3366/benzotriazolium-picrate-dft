@@ -1,0 +1,20 @@
+| *ε*                 | *E*~HOMO~ (eV) | *E*~LUMO~ (eV) | LUMO on picrate (%) | Δ (eV) | EA~ΔSCF~ (eV) | IE~ΔSCF~ (eV) | Added electron on picrate (%) |
+|:-------|------:|------:|-------:|------:|------:|------:|--------:|
+| *Gas-phase minimum* |                |                |                     |        |               |               |                               |
+| 1                   |         −6.818 |         −3.342 |                 0.4 | −0.446 |         1.814 |         8.439 |                          40.0 |
+| 1.64                |         −6.891 |         −3.011 |                27.8 | −0.018 |             – |             – |                             – |
+| 2                   |         −6.914 |         −3.031 |                99.3 | +0.125 |             – |             – |                             – |
+| 4                   |         −6.970 |         −3.115 |                99.7 | +0.504 |             – |             – |                             – |
+| 8                   |         −6.999 |         −3.161 |                99.7 | +0.642 |             – |             – |                             – |
+| 20                  |         −7.016 |         −3.191 |                99.7 | +0.743 |             – |             – |                             – |
+| 78.3553             |         −7.024 |         −3.206 |                99.7 | +0.794 |         3.357 |         6.845 |                          99.6 |
+| *IEF-PCM minimum*   |                |                |                     |        |               |               |                               |
+| 1                   |         −6.443 |         −3.852 |                 0.1 | −1.199 |         2.098 |         8.072 |                          18.1 |
+| 2                   |         −6.668 |         −3.236 |                 0.2 | −0.343 |             – |             – |                             – |
+| 3.153               |         −6.755 |         −2.999 |                40.1 | −0.013 |             – |             – |                             – |
+| 4                   |         −6.788 |         −3.029 |                99.6 | +0.126 |             – |             – |                             – |
+| 8                   |         −6.848 |         −3.100 |                99.8 | +0.367 |             – |             – |                             – |
+| 20                  |         −6.885 |         −3.145 |                99.9 | +0.533 |             – |             – |                             – |
+| 78.3553             |         −6.903 |         −3.167 |                99.9 | +0.596 |         3.321 |         6.711 |                          99.7 |
+
+Table: Frontier orbitals of the ion pair at fixed geometry as the permittivity *ε* of the continuum is varied, B3LYP/6-311++G(d,p), at the gas-phase and at the IEF-PCM (water) minimum; *ε* = 1 is the calculation without continuum and *ε* = 78.3553 is IEF-PCM (water). LUMO on picrate: Mulliken share of the LUMO on the picrate atoms; the HOMO is on the picrate at every point (99.1–99.9 %). Δ = *E*(lowest cation-localised virtual) − *E*(lowest picrate-localised virtual), so a negative Δ means a cation LUMO. Δ changes sign at *ε* = 1.68 at the gas-phase minimum and at *ε* = 3.22 at the IEF-PCM minimum (linear interpolation in (*ε* − 1)/*ε*); the points at *ε* = 1.64 and 3.153 were added next to these crossings, where the two acceptor levels lie 0.018 and 0.013 eV apart and mix (LUMO 27.8 and 40.1 % on the picrate). At the IEF-PCM minimum of the *P*2~1~/*n* form the crossing is at *ε* = 3.19. EA~ΔSCF~ = *E*(N) − *E*(N+1) and IE~ΔSCF~ = *E*(N−1) − *E*(N): vertical values from separate unrestricted calculations of the anion and cation doublets at the same geometry, with the continuum relaxed for each charge state. Added electron on picrate: Hirshfeld share of the unpaired spin of the N+1 doublet on the picrate atoms; the hole of the N−1 doublet is on the picrate in all four cases (at least 98.4 %). {#tbl:tbl_rev_eps}

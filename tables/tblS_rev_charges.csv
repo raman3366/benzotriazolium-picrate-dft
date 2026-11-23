@@ -1,0 +1,11 @@
+Charge (e),Gas phase,IEF-PCM (water),Gas-phase minimum in IEF-PCM (water),IEF-PCM minimum in the gas phase,"P21/n form, gas phase","P21/n form, IEF-PCM (water)"
+"Picrate, Mulliken",-0.881,-1.000,-0.929,-0.952,-0.608,-0.981
+"Picrate, Löwdin",-0.722,-0.853,-0.749,-0.828,-0.226,-0.850
+"Picrate, Hirshfeld",-0.586,-0.759,-0.613,-0.732,-0.242,-0.755
+"Picrate, CM5",-0.653,-0.795,–,–,-0.416,-0.791
+"Picrate, Hirshfeld (Multiwfn)",-0.607,-0.773,–,–,-0.246,-0.770
+"Picrate, CM5 (Multiwfn)",-0.673,-0.809,–,–,-0.419,-0.807
+"Inter-ion H, Mulliken",0.748,0.744,–,–,0.614,0.746
+"Inter-ion H, Löwdin",0.120,0.130,–,–,0.121,0.130
+"Inter-ion H, Hirshfeld",0.101,0.110,–,–,0.115,0.109
+"Inter-ion H, CM5",0.320,0.330,–,–,0.314,0.329

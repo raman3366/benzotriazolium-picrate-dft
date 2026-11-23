@@ -1,0 +1,13 @@
+{
+ "_about": "Experimental values supplied by the co-authors (answers to the authors' questionnaire of the revision, received 20 Nov 2026; not deposited). Item codes as in that questionnaire.",
+ "benzotriazole_mass_g":   {"value": 5.00, "unit": "g",  "item": "B3"},
+ "picric_acid_mass_g":     {"value": 3.86, "unit": "g",  "item": "B3", "note": "as weighed; picric acid was kept moist (B6), so the dry mass is lower"},
+ "methanol_mL":            {"value": 20,   "unit": "mL", "item": "B3"},
+ "water_mL":               {"value": 30,   "unit": "mL", "item": "B3"},
+ "recrystallisations":     {"value": 2,    "unit": "",   "item": "B4"},
+ "growth_days":            {"value": 18,   "unit": "d",  "item": "B4", "note": "slow evaporation at room temperature"},
+ "crystal_size_mm":        {"value": [5, 3, 1], "unit": "mm", "item": "B4", "note": "largest crystals, pale yellow"},
+ "uv_crystal_thickness_mm":{"value": 1.5,  "unit": "mm", "item": "C4", "note": "solid-state UV-vis of ref. [12]"},
+ "melting_point_C":        {"value": 160,  "unit": "°C", "item": "C5", "note": "method not stated by the co-authors"},
+ "supplier": {"value": "Merck (Germany), used as received", "unit": "", "item": "B2"}
+}

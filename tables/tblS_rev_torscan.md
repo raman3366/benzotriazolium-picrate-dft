@@ -1,0 +1,13 @@
+| *τ* (°) | Δ*E*, B3LYP (kcal mol⁻¹) | Δ*E*, D3(BJ) (kcal mol⁻¹) | N4···O1, B3LYP (Å) | N4···O1, D3(BJ) (Å) | N4–H4N, B3LYP (Å) | N4–H4N, D3(BJ) (Å) | Ring planes, B3LYP (°) | Ring planes, D3(BJ) (°) |
+|----:|------:|------:|--------:|--------:|-------:|-------:|-------:|-------:|
+|    −180 |                    0.643 |                     0.697 |              2.473 |               2.466 |             1.093 |              1.084 |                   13.9 |                    13.4 |
+|    −165 |                    0.484 |                     0.526 |              2.476 |               2.470 |             1.094 |              1.085 |                    7.0 |                     6.7 |
+|    −150 |                    0.212 |                     0.285 |              2.477 |               2.471 |             1.097 |              1.088 |                   11.1 |                    10.7 |
+|    −135 |                    0.051 |                     0.060 |              2.477 |               2.472 |             1.102 |              1.093 |                   18.0 |                    18.3 |
+|    −120 |                   −0.003 |                     0.001 |              2.478 |               2.472 |             1.109 |              1.100 |                   27.3 |                    27.7 |
+|    −105 |                    0.056 |                     0.047 |              2.478 |               2.472 |             1.117 |              1.108 |                   37.7 |                    39.2 |
+|     −90 |                    0.181 |                     0.122 |              2.477 |               2.472 |             1.126 |              1.115 |                   48.3 |                    50.7 |
+|     −75 |                    0.455 |                     0.298 |              2.477 |               2.474 |             1.134 |              1.120 |                   58.7 |                    61.8 |
+|     −60 |                    0.863 |                     0.563 |              2.476 |               2.477 |             1.144 |              1.124 |                   68.1 |                    72.6 |
+
+Table: Relaxed scans of the pseudo-torsion C1–O1···N4–C12 of the ion pair in the gas phase with B3LYP and B3LYP-D3(BJ)/6-311++G(d,p): at each value every other coordinate was optimised to the Gaussian default criteria. Δ*E* is relative to the unconstrained minimum of the same functional (B3LYP, the published gas-phase minimum at *τ* = −117.8°; B3LYP-D3(BJ), the new minimum at −120.7°); *RT* at 298.15 K is 0.592 kcal mol⁻¹. The X-ray torsion is −164.2°. All nine points of both scans converged and H4N stays on N4 at every point. Ring planes: angle between the least-squares planes of the picrate ring and of the cation. {#tbl:tblS_rev_torscan}

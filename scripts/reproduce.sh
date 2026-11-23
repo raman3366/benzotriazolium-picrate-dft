@@ -83,6 +83,11 @@ else
   echo "NOTE: $why: tables built without the pandoc checks (they need pandoc $PANDOC_MIN or newer; set PANDOC=...)"
   "$PY" scripts/tables/make_tables.py
 fi
+# the eleven tables of the revision (made from facts.json like the others; fix_widths.py sets their column widths)
+for t in rev_proton_tables rev_struct_tables rev_elec_tables fix_widths; do
+  "$PY" scripts/tables/$t.py > /dev/null
+done
+echo "11 revision tables rebuilt"
 "$PY" scripts/tables/tables_to_csv.py > /dev/null
 
 echo "== 6. every rebuilt file must be byte-identical to the deposit"

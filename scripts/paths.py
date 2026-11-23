@@ -56,13 +56,21 @@ _SUBDIR = (
     ('geometry', ('preopt.xyz', 'opt.xyz', 'opt_traj.xyz', 'opt_summary.json', 'geometry_vs_start.csv',
                   'proton_check.json')),
     ('wavefunction', ('final.molden', 'final.chk')),
-    ('frequencies', ('hessian.npy', 'freq.json', 'freq_step0.005.json')),
+    ('frequencies', ('hessian.npy', 'freq.json', 'freq_step0.005.json', 'softmode_check.json')),
     ('orbitals', ('fmo.json', 'fmo_table.md')),
     ('grids', ('*.cube', '*_plane.txt', 'rdg_scatter.txt')),
     ('multiwfn', ('mwfn_*.in', 'surfanalysis.txt', 'vtx.txt', 'mep_extrema.csv', 'mep_range.json',
                   'mep_surface.json', 'nci_spikes.csv', 'rdg_scatter.npz', '*_ring.npz')),
     ('run', ('RESULTS.md', 'STAGES.md', 'status.json')),
 )
+
+# Revision calculations (docs/revision.md). Each job folder calculations/revision1/<job>/ came from the queue folder
+# data/revision_runs/<queue>/out/<job>/ of the project: these two jobs ran on the second VM (queue_vm2), all others on
+# the first (queue). The second crystal form (structure/btpcz/README.md) has the cases below; its results were in
+# data/revision_runs/repo_results/btpcz/<case>/.
+REVISION = CALC / 'revision1'
+REVISION_VM2_JOBS = ('cc_neutral_631gd_f080', 'cc_salt_631gd_f080')
+BTPCZ_CASES = ('btpcz_gas', 'btpcz_pcm')
 
 
 def cif_path() -> Path:
@@ -83,9 +91,44 @@ def calc_file(case: str, name: str) -> Path:
     raise KeyError(f'no dataset location for {case}/{name}')
 
 
+def _revision_runs(r: str) -> Path:
+    """Dataset path of a path below data/revision_runs/ of the project (the revision calculations)."""
+    q, _, rest = r.partition('/')
+    if q in ('queue', 'queue_vm2'):
+        vm = 'vm2' if q == 'queue_vm2' else 'vm1'
+        if rest.startswith('out/'):
+            job, _, name = rest[len('out/'):].partition('/')
+            return REVISION / job / name if name else REVISION / job
+        if rest.startswith('logs/') and rest.endswith('.log'):
+            return REVISION / rest[len('logs/'):-len('.log')] / 'queue.log'
+        if rest in ('status.json', 'runner.log', 'runner.out'):
+            return REVISION / 'runner' / vm / rest
+    if q in ('vm_extras', 'vm2_extras'):
+        return REPO / 'environment' / 'revision1' / ('vm2' if q == 'vm2_extras' else 'vm1') / rest
+    if q == 'repo_results' and rest.startswith('btpcz/'):
+        case, _, name = rest[len('btpcz/'):].partition('/')
+        return calc_file(case, name)
+    raise KeyError(f'no dataset location for workspace path data/revision_runs/{r!r}')
+
+
 def resolve(old: str | os.PathLike) -> Path:
     """Dataset path of a workspace path (relative to the workspace root)."""
     o = Path(old).as_posix().lstrip('./')
+    if o.startswith('dft/revision/'):
+        return SCRIPTS / 'revision1' / o[len('dft/revision/'):]
+    if o.startswith('data/revision_runs/'):
+        return _revision_runs(o[len('data/revision_runs/'):])
+    if o.startswith('molecules/btpcz/'):
+        r = o[len('molecules/btpcz/'):]
+        if r.startswith('cases/'):
+            return CASES_DIR / r[len('cases/'):]
+        if r == 'input/btpcz_cluster.xyz':
+            return STRUCTURE / 'btpcz' / 'btpcz_cluster.xyz'
+        if r == 'input/2230422.cif':
+            return STRUCTURE / '2230422.cif'              # not deposited (structure/btpcz/README.md)
+        if r.startswith('results/'):
+            case, _, name = r[len('results/'):].partition('/')
+            return calc_file(case, name)
     if o.startswith('data/r2/'):
         o = o[len('data/r2/'):]
         if o.startswith('logs/') and o[5:] in DRIVER_LOGS:
@@ -148,6 +191,37 @@ def _old_new_pairs():
             pairs.append((f'data/r2/{m}/results/{c}/{name}', p))
             if name in TRACKED:
                 pairs.append((f'{m}/results/{c}/{name}', p))
+    # revision calculations: the job folders under their queue folders, the VM environment records, the second
+    # crystal form's results, cases and starting geometry (docs/revision.md)
+    if REVISION.is_dir():
+        for d in sorted(REVISION.iterdir()):
+            if d.is_dir() and d.name != 'runner':
+                q = 'queue_vm2' if d.name in REVISION_VM2_JOBS else 'queue'
+                pairs.append((f'data/revision_runs/{q}/out/{d.name}', d))
+    pairs += [('data/revision_runs/vm_extras', REPO / 'environment' / 'revision1' / 'vm1'),
+              ('data/revision_runs/vm2_extras', REPO / 'environment' / 'revision1' / 'vm2')]
+    for c in BTPCZ_CASES:
+        pairs.append((f'molecules/btpcz/cases/{c}.json', CASES_DIR / f'{c}.json'))
+        root = CALC / c
+        for p in sorted(root.rglob('*')) if root.is_dir() else []:
+            if not p.is_file():
+                continue
+            rel = p.relative_to(root)
+            if rel.parts[0] == 'run' and rel.parts[1] == 'logs':
+                name = 'logs/' + rel.name
+            elif rel.parts[0] == 'multiwfn' and rel.name == 'settings.ini':
+                name = 'mwfn_home/settings.ini'
+            elif rel.parts[0] == 'grids' and rel.suffix == '.xz':
+                name = rel.stem
+                p = p.with_suffix('')
+            elif rel.parts[0] == 'grids':
+                continue
+            else:
+                name = rel.name
+            pairs.append((f'data/revision_runs/repo_results/btpcz/{c}/{name}', p))
+    pairs.append(('molecules/btpcz/input/btpcz_cluster.xyz', STRUCTURE / 'btpcz' / 'btpcz_cluster.xyz'))
+    pairs.append(('papers/btpc/data/experimental.json', ANALYSIS / 'experimental.json'))
+    pairs.append(('papers/btpc/data/rev', SCRIPTS / 'analysis' / 'rev'))
     for name in ('facts.json', 'facts.md', 'derived'):
         pairs.append((f'papers/btpc/data/{name}', ANALYSIS / name))
     for name in ('build_facts.py', 'build_facts_md.py', 'wfn_topology.py'):

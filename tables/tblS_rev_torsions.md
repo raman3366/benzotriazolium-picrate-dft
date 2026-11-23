@@ -1,0 +1,28 @@
+| Torsion or angle                           |       X-ray | Gas phase, B3LYP | IEF-PCM (water), B3LYP | Gas phase, B3LYP-D3(BJ) | IEF-PCM (water), B3LYP-D3(BJ) |
+|:----------------------|-----------:|------------:|------------:|------------:|------------:|
+| *Inter-ion orientation (°)*                |             |                  |                        |                         |                               |
+| C1–O1···N4–C12                             | −164.2 (ap) |     −117.8 (−ac) |           −121.6 (−ac) |            −120.7 (−ac) |                     −9.0 (sp) |
+| C6–C1–O1···H4N                             |  −20.1 (sp) |      −30.4 (−sc) |              −7.4 (sp) |              −28.6 (sp) |                   −61.0 (−sc) |
+| *Nitro groups, O–N–C–C (°)*                |             |                  |                        |                         |                               |
+| O2–N1–C2–C1 (*ortho*)                      |  −11.1 (sp) |      −41.5 (−sc) |            −37.1 (−sc) |             −41.1 (−sc) |                   −37.7 (−sc) |
+| O3–N1–C2–C3 (*ortho*)                      |  −10.7 (sp) |      −39.1 (−sc) |            −35.0 (−sc) |             −38.6 (−sc) |                   −36.4 (−sc) |
+| O4–N2–C4–C3 (*para*)                       |    8.4 (sp) |         0.6 (sp) |               0.5 (sp) |                0.3 (sp) |                      0.8 (sp) |
+| O5–N2–C4–C5 (*para*)                       |    9.0 (sp) |         0.0 (sp) |              −0.4 (sp) |               −0.3 (sp) |                      0.1 (sp) |
+| O7–N3–C6–C1 (*ortho*)                      |   12.9 (sp) |        23.2 (sp) |              27.3 (sp) |               22.5 (sp) |                     28.7 (sp) |
+| O6–N3–C6–C5 (*ortho*)                      |   11.0 (sp) |        21.2 (sp) |              25.6 (sp) |               20.3 (sp) |                     26.5 (sp) |
+| *Picrate ring (°)*                         |             |                  |                        |                         |                               |
+| O1–C1–C2–N1                                |   −1.1 (sp) |        −7.1 (sp) |              −6.3 (sp) |               −6.9 (sp) |                     −5.9 (sp) |
+| O1–C1–C6–N3                                |    1.7 (sp) |         5.9 (sp) |               6.2 (sp) |                5.7 (sp) |                      4.0 (sp) |
+| C6–C1–C2–C3                                |   −0.5 (sp) |        −3.9 (sp) |              −3.5 (sp) |               −3.9 (sp) |                     −2.3 (sp) |
+| *Cation (°)*                               |             |                  |                        |                         |                               |
+| C12–N4–N5–N6                               |   −0.1 (sp) |         0.0 (sp) |               0.1 (sp) |                0.0 (sp) |                      0.2 (sp) |
+| N4–N5–N6–C7                                |   −0.2 (sp) |         0.1 (sp) |              −0.1 (sp) |                0.1 (sp) |                     −0.2 (sp) |
+| H4N–N4–N5–N6                               | −173.6 (ap) |      −179.5 (ap) |             179.5 (ap) |             −179.5 (ap) |                    179.4 (ap) |
+| H6N–N6–N5–N4                               | −179.2 (ap) |       179.7 (ap) |             179.9 (ap) |              179.7 (ap) |                    179.9 (ap) |
+| *Ring–ring relation*                       |             |                  |                        |                         |                               |
+| Angle between the ring planes (°)          |         5.5 |             29.1 |                   58.2 |                    27.6 |                          71.7 |
+| Ring centroid distance (Å)                 |       6.746 |            6.466 |                  6.936 |                   6.406 |                         5.915 |
+| O1···N4 line to the picrate ring plane (°) |         7.0 |             17.5 |                    2.1 |                    17.6 |                          43.5 |
+| O1···N4 line to the cation plane (°)       |         1.5 |              3.5 |                    7.8 |                     3.4 |                           6.6 |
+
+Table: Torsion angles of the benzotriazolium picrate ion pair in the crystal (*P*2~1~/*c*, 298 K), in the published B3LYP/6-311++G(d,p) structures and in the B3LYP-D3(BJ)/6-311++G(d,p) minima, gas phase and IEF-PCM (water), with the relation between the two rings (15 torsions). The Klyne–Prelog range of each torsion is given in parentheses: sp, synperiplanar (|*τ*| < 30°); sc, synclinal (30–90°); ac, anticlinal (90–150°); ap, antiperiplanar (150–180°); the sign is given for sc and ac. C1–O1···N4–C12 and C6–C1–O1···H4N are pseudo-torsions through the non-bonded O1···N4 and O1···H4N contacts; the first measures the turn of the two ions about the N4–H4N···O1 bond. X-ray torsions were computed from the deposited coordinates of the modelled pair; the CIF contains no torsion list, so they carry no standard uncertainties, and those involving H4N or H6N rest on the short X-ray N–H positions. The published IEF-PCM structure was accepted on the gradient criteria only; the B3LYP-D3(BJ) IEF-PCM structure met all five criteria, but its Hessian was not checked (@tbl:tblS_rev_softmode). Ring planes are the least-squares planes of the six picrate ring carbons and of the nine ring atoms of the cation. Atom labels follow the CIF. {#tbl:tblS_rev_torsions}
