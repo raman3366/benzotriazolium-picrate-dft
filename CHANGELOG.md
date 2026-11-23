@@ -11,7 +11,7 @@
 - Not yet included: the rendered figures (`figures/`) and the DFT supplementary information (`si/`), which come with
   the revised article at v1.0.0.
 
-## 1.0.0 (unreleased)
+## 1.0.0 (23 Nov 2026)
 
 - Added on 23 Nov 2026 (private): the calculations of the revision of the article (`docs/revision.md`).
   - `calculations/revision1/`: the 57 revision jobs (proton transfer along N4–H4N···O1 with scans, other

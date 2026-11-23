@@ -10,9 +10,9 @@ tables, the figures and the DFT supplementary information of the revised article
 (P2₁/n, COD 2230422) treated in the same way, and 57 further jobs on proton transfer, the location of the LUMO,
 dispersion, the inter-ion torsion and excited states ("Revision calculations" below; `docs/revision.md`).
 
-> **Status: private build, not a release.** The facts register, tables, figures and DFT supplementary information
-> are those of the revised article (23 Nov 2026). The DOI is added at release v1.0.0; nothing here is final before
-> then.
+> **Version 1.0.0 (23 Nov 2026).** The facts register, tables, figures and DFT supplementary information are those of
+> the revised article submitted to *Computational and Theoretical Chemistry* (manuscript COMPTC-D-26-02710). The
+> article reference is added when it is published.
 
 ## Contents
 
@@ -150,7 +150,7 @@ counts.
 
 ## How to cite
 
-Cite the dataset as given in `CITATION.cff`. The DOI and the article reference are added at release.
+Cite the dataset as given in `CITATION.cff`, with the DOI of the Zenodo record of this release. The article reference is added when it is published.
 
 ## Contact
 

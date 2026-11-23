@@ -1,7 +1,9 @@
 cff-version: 1.2.0
 message: "If you use this data or code, please cite it as below."
 type: dataset
-title: "Benzotriazolium picrate (BTPC): B3LYP/6-311++G(d,p) data on the N4–H4N···O1 ion pair in the gas phase and in IEF-PCM water (geometries, Hessians, wavefunctions, wavefunction analyses and scripts)"
+version: "1.0.0"
+date-released: "2026-11-23"
+title: "Benzotriazolium picrate ion pairs at low ΔpKa: DFT, MP2 and CCSD(T) data on the proton position and the frontier orbitals in the gas phase and in IEF-PCM water (geometries, scans, Hessians, wavefunctions, analyses and scripts)"
 authors:
   - family-names: "Lasalle"
     given-names: "B. Sahaya Infant"
